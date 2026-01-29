@@ -1,11 +1,11 @@
-import 'package:axpertflutter/Constants/CommonMethods.dart';
-import 'package:axpertflutter/Constants/Const.dart';
-import 'package:axpertflutter/ModelPages/InApplicationWebView/page/InApplicationWebView.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuActiveListPage/Controllers/ListItemDetailsController.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuActiveListPage/Controllers/UpdatedActiveTaskListController/ActiveTaskListController.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuActiveListPage/Widgets/WidgetPendingStatusScrollbar.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/Widgets/WidgetLandingAppBar.dart';
-import 'package:axpertflutter/Utils/LogServices/LogService.dart';
+import 'package:ubbottleapp/Constants/CommonMethods.dart';
+import 'package:ubbottleapp/Constants/Const.dart';
+import 'package:ubbottleapp/ModelPages/InApplicationWebView/page/InApplicationWebView.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuActiveListPage/Controllers/ListItemDetailsController.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuActiveListPage/Controllers/UpdatedActiveTaskListController/ActiveTaskListController.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuActiveListPage/Widgets/WidgetPendingStatusScrollbar.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/Widgets/WidgetLandingAppBar.dart';
+import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -26,7 +26,8 @@ class PendingListItemDetails extends StatelessWidget {
     var size = Get.size;
     print("size1 $size");
     return Obx(() {
-      if (listItemDetailsController.widgetProcessFlowNeedRefresh.value == true) {
+      if (listItemDetailsController.widgetProcessFlowNeedRefresh.value ==
+          true) {
         listItemDetailsController.widgetProcessFlowNeedRefresh.toggle();
         return reBuild(size);
       } else
@@ -38,7 +39,8 @@ class PendingListItemDetails extends StatelessWidget {
         resizeToAvoidBottomInset: false,
         appBar: WidgetLandingAppBar(),
         body: Padding(
-          padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 20),
+          padding:
+              const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 20),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,8 +48,11 @@ class PendingListItemDetails extends StatelessWidget {
               Container(
                 height: 50,
                 width: double.maxFinite,
-                decoration:
-                    BoxDecoration(border: Border(bottom: BorderSide(width: 1, color: HexColor('707070').withOpacity(0.2)))),
+                decoration: BoxDecoration(
+                    border: Border(
+                        bottom: BorderSide(
+                            width: 1,
+                            color: HexColor('707070').withOpacity(0.2)))),
                 // color: Colors.red,
                 child: ListView.separated(
                     shrinkWrap: true,
@@ -58,46 +63,71 @@ class PendingListItemDetails extends StatelessWidget {
                         onTap: () {
                           listItemDetailsController.onProcessFlowItemTap(index);
                           // print(pendingListController.processFlowList[index].taskid.toString());
-                          if (listItemDetailsController.processFlowList[index].taskid.toString().toLowerCase() != 'null' &&
-                              listItemDetailsController.processFlowList[index].taskid.toString() !=
+                          if (listItemDetailsController
+                                      .processFlowList[index].taskid
+                                      .toString()
+                                      .toLowerCase() !=
+                                  'null' &&
+                              listItemDetailsController
+                                      .processFlowList[index].taskid
+                                      .toString() !=
                                   listItemDetailsController.selectedTaskID) {
                             //if(listItemDetailsController.processFlowList[index].tasktype.toString().toUpperCase() == "APPROVE" )
                             listItemDetailsController.fetchDetails(
-                                hasArgument: true, pendingProcessFlowModel: listItemDetailsController.processFlowList[index]);
+                                hasArgument: true,
+                                pendingProcessFlowModel:
+                                    listItemDetailsController
+                                        .processFlowList[index]);
                             // print(pendingListController.processFlowList[index].toJson());
                           }
                         },
-                        child: WidgetPendingStatusScrollBar(listItemDetailsController.processFlowList[index]),
+                        child: WidgetPendingStatusScrollBar(
+                            listItemDetailsController.processFlowList[index]),
                       );
                     },
                     separatorBuilder: (context, index) {
                       return Center(
                           child: Text(
                         " > ",
-                        style: TextStyle(color: HexColor("848D9C").withOpacity(0.4)),
+                        style: TextStyle(
+                            color: HexColor("848D9C").withOpacity(0.4)),
                       ));
                     },
-                    itemCount: listItemDetailsController.processFlowList.length),
+                    itemCount:
+                        listItemDetailsController.processFlowList.length),
               ),
               SizedBox(height: 0),
-              if (listItemDetailsController.selected_processFlow_taskType.toUpperCase() == "MAKE") ...[
+              if (listItemDetailsController.selected_processFlow_taskType
+                      .toUpperCase() ==
+                  "MAKE") ...[
                 Visibility(
-                    visible: listItemDetailsController.selected_processFlow_taskType.toUpperCase() == "MAKE" ? true : false,
+                    visible: listItemDetailsController
+                                .selected_processFlow_taskType
+                                .toUpperCase() ==
+                            "MAKE"
+                        ? true
+                        : false,
                     child: Expanded(
                       // height: size.height - 200,
                       // width: double.maxFinite,
                       // color: Colors.red,
-                      child: InApplicationWebViewer(Const.getFullWebUrl(CommonMethods.activeList_CreateURL_MAKE(
+                      child: InApplicationWebViewer(Const.getFullWebUrl(
+                          CommonMethods.activeList_CreateURL_MAKE(
                         listItemDetailsController.openModel,
                       ))),
                     )),
               ] else ...[
                 Visibility(
-                  visible: listItemDetailsController.pendingTaskModel != null ? true : false,
+                  visible: listItemDetailsController.pendingTaskModel != null
+                      ? true
+                      : false,
                   child: Container(
                     padding: EdgeInsets.only(top: 5, bottom: 10),
-                    decoration:
-                        BoxDecoration(border: Border(bottom: BorderSide(width: 1, color: HexColor('707070').withOpacity(0.2)))),
+                    decoration: BoxDecoration(
+                        border: Border(
+                            bottom: BorderSide(
+                                width: 1,
+                                color: HexColor('707070').withOpacity(0.2)))),
                     child: Padding(
                       padding: EdgeInsets.only(left: 10, right: 10),
                       child: Row(
@@ -120,33 +150,56 @@ class PendingListItemDetails extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text("Ticket",
-                                  style: GoogleFonts.nunitoSans(textStyle: TextStyle(color: HexColor('495057'), fontSize: 16))),
+                                  style: GoogleFonts.nunitoSans(
+                                      textStyle: TextStyle(
+                                          color: HexColor('495057'),
+                                          fontSize: 16))),
                               Text(
-                                  listItemDetailsController.pendingTaskModel != null
-                                      ? '#' + listItemDetailsController.pendingTaskModel!.taskid ?? ' '
+                                  listItemDetailsController.pendingTaskModel !=
+                                          null
+                                      ? '#' +
+                                              listItemDetailsController
+                                                  .pendingTaskModel!.taskid ??
+                                          ' '
                                       : '',
                                   style: GoogleFonts.nunitoSans(
-                                      textStyle:
-                                          TextStyle(color: HexColor('495057'), fontSize: 22, fontWeight: FontWeight.w800))),
+                                      textStyle: TextStyle(
+                                          color: HexColor('495057'),
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.w800))),
                             ],
                           ),
                           Expanded(child: Text("")),
                           SizedBox(width: 10),
                           Visibility(
-                            visible: listItemDetailsController.pendingTaskModel != null
-                                ? listItemDetailsController.pendingTaskModel!.tasktype.toLowerCase() == ''
-                                    ? false
-                                    : true
-                                : false,
+                            visible:
+                                listItemDetailsController.pendingTaskModel !=
+                                        null
+                                    ? listItemDetailsController
+                                                .pendingTaskModel!.tasktype
+                                                .toLowerCase() ==
+                                            ''
+                                        ? false
+                                        : true
+                                    : false,
                             child: Container(
-                              decoration: BoxDecoration(borderRadius: BorderRadius.circular((20)), color: Colors.orange),
+                              decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular((20)),
+                                  color: Colors.orange),
                               child: Padding(
-                                padding: EdgeInsets.only(left: 15, right: 15, top: 5, bottom: 5),
+                                padding: EdgeInsets.only(
+                                    left: 15, right: 15, top: 5, bottom: 5),
                                 child: Text(
-                                  listItemDetailsController.pendingTaskModel != null
-                                      ? CommonMethods.capitalize(listItemDetailsController.pendingTaskModel!.tasktype ?? ' ')
+                                  listItemDetailsController.pendingTaskModel !=
+                                          null
+                                      ? CommonMethods.capitalize(
+                                          listItemDetailsController
+                                                  .pendingTaskModel!.tasktype ??
+                                              ' ')
                                       : '',
-                                  style: GoogleFonts.nunitoSans(textStyle: TextStyle(color: Colors.white, fontSize: 14)),
+                                  style: GoogleFonts.nunitoSans(
+                                      textStyle: TextStyle(
+                                          color: Colors.white, fontSize: 14)),
                                 ),
                               ),
                             ),
@@ -158,11 +211,16 @@ class PendingListItemDetails extends StatelessWidget {
                 ),
                 SizedBox(height: 10),
                 Visibility(
-                  visible: listItemDetailsController.pendingTaskModel != null ? true : false,
+                  visible: listItemDetailsController.pendingTaskModel != null
+                      ? true
+                      : false,
                   child: Container(
                     padding: EdgeInsets.only(top: 5, bottom: 10),
-                    decoration:
-                        BoxDecoration(border: Border(bottom: BorderSide(width: 1, color: HexColor('707070').withOpacity(0.2)))),
+                    decoration: BoxDecoration(
+                        border: Border(
+                            bottom: BorderSide(
+                                width: 1,
+                                color: HexColor('707070').withOpacity(0.2)))),
                     child: Padding(
                       padding: EdgeInsets.only(left: 10, right: 10),
                       child: Row(
@@ -172,16 +230,25 @@ class PendingListItemDetails extends StatelessWidget {
                           Expanded(
                             child: Text("Pending Approval",
                                 style: GoogleFonts.roboto(
-                                    textStyle: TextStyle(fontSize: 13, color: HexColor('495057').withOpacity(0.8)))),
+                                    textStyle: TextStyle(
+                                        fontSize: 13,
+                                        color: HexColor('495057')
+                                            .withOpacity(0.8)))),
                           ),
                           SizedBox(
                               width: size.width * 0.4,
                               child: Text(
-                                  listItemDetailsController.pendingTaskModel != null
-                                      ? CommonMethods.capitalize(listItemDetailsController.pendingTaskModel!.touser ?? ' ')
+                                  listItemDetailsController.pendingTaskModel !=
+                                          null
+                                      ? CommonMethods.capitalize(
+                                          listItemDetailsController
+                                                  .pendingTaskModel!.touser ??
+                                              ' ')
                                       : '',
                                   style: GoogleFonts.roboto(
-                                      textStyle: TextStyle(fontWeight: FontWeight.bold, color: HexColor('495057'))))),
+                                      textStyle: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: HexColor('495057'))))),
                         ],
                       ),
                     ),
@@ -189,11 +256,16 @@ class PendingListItemDetails extends StatelessWidget {
                 ),
                 SizedBox(height: 10),
                 Visibility(
-                  visible: listItemDetailsController.pendingTaskModel != null ? true : false,
+                  visible: listItemDetailsController.pendingTaskModel != null
+                      ? true
+                      : false,
                   child: Container(
                     padding: EdgeInsets.only(top: 5, bottom: 10),
-                    decoration:
-                        BoxDecoration(border: Border(bottom: BorderSide(width: 1, color: HexColor('707070').withOpacity(0.2)))),
+                    decoration: BoxDecoration(
+                        border: Border(
+                            bottom: BorderSide(
+                                width: 1,
+                                color: HexColor('707070').withOpacity(0.2)))),
                     child: Padding(
                       padding: EdgeInsets.only(left: 10, right: 10),
                       child: Row(
@@ -206,16 +278,24 @@ class PendingListItemDetails extends StatelessWidget {
                           Expanded(
                             child: Text("Raised By",
                                 style: GoogleFonts.roboto(
-                                    textStyle: TextStyle(fontSize: 13, color: HexColor('495057').withOpacity(0.8)))),
+                                    textStyle: TextStyle(
+                                        fontSize: 13,
+                                        color: HexColor('495057')
+                                            .withOpacity(0.8)))),
                           ),
                           SizedBox(
                             width: size.width * 0.4,
                             child: Text(
                               listItemDetailsController.pendingTaskModel != null
-                                  ? CommonMethods.capitalize(listItemDetailsController.pendingTaskModel!.fromuser ?? ' ')
+                                  ? CommonMethods.capitalize(
+                                      listItemDetailsController
+                                              .pendingTaskModel!.fromuser ??
+                                          ' ')
                                   : '',
                               style: GoogleFonts.roboto(
-                                  textStyle: TextStyle(fontWeight: FontWeight.bold, color: HexColor('495057'))),
+                                  textStyle: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: HexColor('495057'))),
                             ),
                           ),
                         ],
@@ -225,11 +305,16 @@ class PendingListItemDetails extends StatelessWidget {
                 ),
                 SizedBox(height: 10),
                 Visibility(
-                  visible: listItemDetailsController.pendingTaskModel != null ? true : false,
+                  visible: listItemDetailsController.pendingTaskModel != null
+                      ? true
+                      : false,
                   child: Container(
                     padding: EdgeInsets.only(top: 5, bottom: 10),
-                    decoration:
-                        BoxDecoration(border: Border(bottom: BorderSide(width: 1, color: HexColor('707070').withOpacity(0.2)))),
+                    decoration: BoxDecoration(
+                        border: Border(
+                            bottom: BorderSide(
+                                width: 1,
+                                color: HexColor('707070').withOpacity(0.2)))),
                     child: Padding(
                       padding: EdgeInsets.only(left: 10, right: 10),
                       child: Row(
@@ -242,16 +327,24 @@ class PendingListItemDetails extends StatelessWidget {
                           Expanded(
                             child: Text("Assigned By",
                                 style: GoogleFonts.roboto(
-                                    textStyle: TextStyle(fontSize: 13, color: HexColor('495057').withOpacity(0.8)))),
+                                    textStyle: TextStyle(
+                                        fontSize: 13,
+                                        color: HexColor('495057')
+                                            .withOpacity(0.8)))),
                           ),
                           SizedBox(
                             width: size.width * 0.4,
                             child: Text(
                               listItemDetailsController.pendingTaskModel != null
-                                  ? CommonMethods.capitalize(listItemDetailsController.pendingTaskModel!.initiator ?? ' ')
+                                  ? CommonMethods.capitalize(
+                                      listItemDetailsController
+                                              .pendingTaskModel!.initiator ??
+                                          ' ')
                                   : '',
                               style: GoogleFonts.roboto(
-                                  textStyle: TextStyle(fontWeight: FontWeight.bold, color: HexColor('495057'))),
+                                  textStyle: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: HexColor('495057'))),
                             ),
                           ),
                         ],
@@ -261,11 +354,16 @@ class PendingListItemDetails extends StatelessWidget {
                 ),
                 SizedBox(height: 10),
                 Visibility(
-                  visible: listItemDetailsController.pendingTaskModel != null ? true : false,
+                  visible: listItemDetailsController.pendingTaskModel != null
+                      ? true
+                      : false,
                   child: Container(
                     padding: EdgeInsets.only(top: 5, bottom: 10),
-                    decoration:
-                        BoxDecoration(border: Border(bottom: BorderSide(width: 1, color: HexColor('707070').withOpacity(0.2)))),
+                    decoration: BoxDecoration(
+                        border: Border(
+                            bottom: BorderSide(
+                                width: 1,
+                                color: HexColor('707070').withOpacity(0.2)))),
                     child: Padding(
                       padding: EdgeInsets.only(left: 10, right: 10),
                       child: Row(
@@ -278,35 +376,50 @@ class PendingListItemDetails extends StatelessWidget {
                           Expanded(
                             child: Text("Assigned On",
                                 style: GoogleFonts.roboto(
-                                    textStyle: TextStyle(fontSize: 13, color: HexColor('495057').withOpacity(0.8)))),
+                                    textStyle: TextStyle(
+                                        fontSize: 13,
+                                        color: HexColor('495057')
+                                            .withOpacity(0.8)))),
                           ),
                           SizedBox(
                             width: size.width * 0.4,
                             child: Row(
                               children: [
                                 Text(
-                                  listItemDetailsController.pendingTaskModel != null
-                                      ? listItemDetailsController
-                                          .getDateValue(listItemDetailsController.pendingTaskModel!.eventdatetime)
+                                  listItemDetailsController.pendingTaskModel !=
+                                          null
+                                      ? listItemDetailsController.getDateValue(
+                                          listItemDetailsController
+                                              .pendingTaskModel!.eventdatetime)
                                       : "",
                                   style: GoogleFonts.roboto(
-                                      textStyle: TextStyle(fontWeight: FontWeight.bold, color: HexColor('495057'))),
+                                      textStyle: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: HexColor('495057'))),
                                 ),
                                 SizedBox(width: 4),
                                 Visibility(
-                                    visible: listItemDetailsController.pendingTaskModel != null ? true : false,
+                                    visible: listItemDetailsController
+                                                .pendingTaskModel !=
+                                            null
+                                        ? true
+                                        : false,
                                     child: Icon(
                                       Icons.access_time,
                                       size: 15,
                                     )),
                                 SizedBox(width: 1),
                                 Text(
-                                  listItemDetailsController.pendingTaskModel != null
-                                      ? listItemDetailsController
-                                          .getTimeValue(listItemDetailsController.pendingTaskModel!.eventdatetime)
+                                  listItemDetailsController.pendingTaskModel !=
+                                          null
+                                      ? listItemDetailsController.getTimeValue(
+                                          listItemDetailsController
+                                              .pendingTaskModel!.eventdatetime)
                                       : "",
                                   style: GoogleFonts.roboto(
-                                      textStyle: TextStyle(fontWeight: FontWeight.bold, color: HexColor('495057'))),
+                                      textStyle: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: HexColor('495057'))),
                                 ),
                               ],
                             ),
@@ -318,11 +431,16 @@ class PendingListItemDetails extends StatelessWidget {
                 ),
                 SizedBox(height: 10),
                 Visibility(
-                  visible: listItemDetailsController.pendingTaskModel != null ? true : false,
+                  visible: listItemDetailsController.pendingTaskModel != null
+                      ? true
+                      : false,
                   child: Container(
                     padding: EdgeInsets.only(top: 5, bottom: 10),
-                    decoration:
-                        BoxDecoration(border: Border(bottom: BorderSide(width: 1, color: HexColor('707070').withOpacity(0.2)))),
+                    decoration: BoxDecoration(
+                        border: Border(
+                            bottom: BorderSide(
+                                width: 1,
+                                color: HexColor('707070').withOpacity(0.2)))),
                     child: Padding(
                       padding: EdgeInsets.only(left: 10, right: 10),
                       child: Row(
@@ -340,16 +458,28 @@ class PendingListItemDetails extends StatelessWidget {
                             children: [
                               Text("Description",
                                   style: GoogleFonts.roboto(
-                                      textStyle: TextStyle(fontWeight: FontWeight.bold, color: HexColor('495057')))),
+                                      textStyle: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: HexColor('495057')))),
                               SizedBox(height: 10),
                               Text(
-                                  listItemDetailsController.pendingTaskModel != null
-                                      ? listItemDetailsController.pendingTaskModel!.displaycontent.toLowerCase() != 'null'
-                                          ? listItemDetailsController.pendingTaskModel!.displaycontent.toString()
+                                  listItemDetailsController.pendingTaskModel !=
+                                          null
+                                      ? listItemDetailsController
+                                                  .pendingTaskModel!
+                                                  .displaycontent
+                                                  .toLowerCase() !=
+                                              'null'
+                                          ? listItemDetailsController
+                                              .pendingTaskModel!.displaycontent
+                                              .toString()
                                           : ' '
                                       : "",
                                   style: GoogleFonts.roboto(
-                                      textStyle: TextStyle(fontSize: 13, color: HexColor('495057').withOpacity(0.8)))),
+                                      textStyle: TextStyle(
+                                          fontSize: 13,
+                                          color: HexColor('495057')
+                                              .withOpacity(0.8)))),
                               SizedBox(
                                 height: 20,
                               )
@@ -363,7 +493,9 @@ class PendingListItemDetails extends StatelessWidget {
                 SizedBox(height: 30),
                 Visibility(
                   visible: listItemDetailsController.pendingTaskModel != null
-                      ? listItemDetailsController.pendingTaskModel!.showbuttons.toLowerCase() == "t"
+                      ? listItemDetailsController.pendingTaskModel!.showbuttons
+                                  .toLowerCase() ==
+                              "t"
                           ? true
                           : false
                       : false,
@@ -380,7 +512,9 @@ class PendingListItemDetails extends StatelessWidget {
                 ),
                 SizedBox(height: 0),
                 Visibility(
-                    visible: listItemDetailsController.pendingTaskModel == null ? true : false,
+                    visible: listItemDetailsController.pendingTaskModel == null
+                        ? true
+                        : false,
                     child: Container(
                       height: 500,
                       child: Center(
@@ -395,8 +529,10 @@ class PendingListItemDetails extends StatelessWidget {
 
   List<Widget> generateList(size) {
     if (listItemDetailsController.pendingTaskModel != null) {
-      if (listItemDetailsController.pendingTaskModel!.tasktype.toUpperCase() == "CHECK") return generateCheckList(size);
-      if (listItemDetailsController.pendingTaskModel!.tasktype.toUpperCase() == "APPROVE") return generateApproveList(size);
+      if (listItemDetailsController.pendingTaskModel!.tasktype.toUpperCase() ==
+          "CHECK") return generateCheckList(size);
+      if (listItemDetailsController.pendingTaskModel!.tasktype.toUpperCase() ==
+          "APPROVE") return generateApproveList(size);
     }
     return [Container()];
   }
@@ -404,10 +540,15 @@ class PendingListItemDetails extends StatelessWidget {
   generateCheckList(size) {
     List<Widget> list = [];
     list.add(widgetCheckButton(size));
-    if (listItemDetailsController.pendingTaskModel!.returnable.toUpperCase() == "T") list.add(widgetReturnButton(size));
+    if (listItemDetailsController.pendingTaskModel!.returnable.toUpperCase() ==
+        "T") list.add(widgetReturnButton(size));
     if (listItemDetailsController.pendingTaskModel!.allowsendflg.toUpperCase() == "2" ||
-        listItemDetailsController.pendingTaskModel!.allowsendflg.toUpperCase() == "3" ||
-        listItemDetailsController.pendingTaskModel!.allowsendflg.toUpperCase() == "4") {
+        listItemDetailsController.pendingTaskModel!.allowsendflg
+                .toUpperCase() ==
+            "3" ||
+        listItemDetailsController.pendingTaskModel!.allowsendflg
+                .toUpperCase() ==
+            "4") {
       list.add(widgetSendButton(size));
     }
     list.add(widgetViewButton(size));
@@ -419,10 +560,15 @@ class PendingListItemDetails extends StatelessWidget {
     List<Widget> list = [];
     list.add(widgetApproveButton(size));
     list.add(widgetRejectButton(size));
-    if (listItemDetailsController.pendingTaskModel!.returnable.toUpperCase() == "T") list.add(widgetReturnButton(size));
+    if (listItemDetailsController.pendingTaskModel!.returnable.toUpperCase() ==
+        "T") list.add(widgetReturnButton(size));
     if (listItemDetailsController.pendingTaskModel!.allowsendflg.toUpperCase() == "2" ||
-        listItemDetailsController.pendingTaskModel!.allowsendflg.toUpperCase() == "3" ||
-        listItemDetailsController.pendingTaskModel!.allowsendflg.toUpperCase() == "4") {
+        listItemDetailsController.pendingTaskModel!.allowsendflg
+                .toUpperCase() ==
+            "3" ||
+        listItemDetailsController.pendingTaskModel!.allowsendflg
+                .toUpperCase() ==
+            "4") {
       list.add(widgetSendButton(size));
     }
     list.add(widgetViewButton(size));
@@ -431,7 +577,13 @@ class PendingListItemDetails extends StatelessWidget {
   }
 
   widgetApproveButton(size) {
-    var hasComments = listItemDetailsController.pendingTaskModel?.approvalcomments.toString().toLowerCase() == 't' ? true : false;
+    var hasComments = listItemDetailsController
+                .pendingTaskModel?.approvalcomments
+                .toString()
+                .toLowerCase() ==
+            't'
+        ? true
+        : false;
     listItemDetailsController.comments.text = "";
     listItemDetailsController.errCom.value = "";
     return AspectRatio(
@@ -460,10 +612,17 @@ class PendingListItemDetails extends StatelessWidget {
                         color: Colors.grey.shade300,
                       ),
                       Visibility(
-                        visible: listItemDetailsController.pendingTaskModel!.cmsg_reject.toString() != '' ? true : false,
+                        visible: listItemDetailsController
+                                    .pendingTaskModel!.cmsg_reject
+                                    .toString() !=
+                                ''
+                            ? true
+                            : false,
                         child: Center(
                             child: Text(
-                          listItemDetailsController.pendingTaskModel!.cmsg_appcheck.toString(),
+                          listItemDetailsController
+                              .pendingTaskModel!.cmsg_appcheck
+                              .toString(),
                         )),
                       ),
                       // Visibility(visible: hasComments, child: Text("*")),
@@ -474,20 +633,28 @@ class PendingListItemDetails extends StatelessWidget {
                               child: TextFormField(
                                 controller: listItemDetailsController.comments,
                                 validator: (text) {
-                                  return (text == null && hasComments || text == '' && hasComments)
+                                  return (text == null && hasComments ||
+                                          text == '' && hasComments)
                                       ? "Comments are mandatory"
                                       : null;
                                 },
                                 decoration: InputDecoration(
-                                    floatingLabelBehavior: FloatingLabelBehavior.always,
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                                    hintText: "Enter Comments${hasComments ? "*" : ""}",
+                                    floatingLabelBehavior:
+                                        FloatingLabelBehavior.always,
+                                    border: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(10)),
+                                    hintText:
+                                        "Enter Comments${hasComments ? "*" : ""}",
                                     // labelText: "Enter Comments${hasComments ? "*" : ""}",
                                     labelText: hasComments ? "*" : "",
                                     labelStyle: TextStyle(color: Colors.red),
-                                    errorText: listItemDetailsController.errCom.value == ''
+                                    errorText: listItemDetailsController
+                                                .errCom.value ==
+                                            ''
                                         ? null
-                                        : listItemDetailsController.errCom.value,
+                                        : listItemDetailsController
+                                            .errCom.value,
                                     filled: true,
                                     fillColor: Colors.grey.shade100),
                               ),
@@ -504,11 +671,15 @@ class PendingListItemDetails extends StatelessWidget {
                               },
                               child: Text("Cancel"),
                               style: ButtonStyle(
-                                  backgroundColor: MaterialStateProperty.resolveWith((states) => Colors.grey.shade200)),
+                                  backgroundColor:
+                                      MaterialStateProperty.resolveWith(
+                                          (states) => Colors.grey.shade200)),
                             ),
                             ElevatedButton(
                                 onPressed: () {
-                                  if (hasComments && listItemDetailsController.comments.text.isEmpty) {
+                                  if (hasComments &&
+                                      listItemDetailsController
+                                          .comments.text.isEmpty) {
                                     Get.showSnackbar(GetSnackBar(
                                       duration: Duration(seconds: 2),
                                       title: "Add Comments",
@@ -517,7 +688,9 @@ class PendingListItemDetails extends StatelessWidget {
                                     return;
                                   }
 
-                                  listItemDetailsController.actionApproveOrRejectOrCheck(hasComments, "Approve");
+                                  listItemDetailsController
+                                      .actionApproveOrRejectOrCheck(
+                                          hasComments, "Approve");
                                 },
                                 child: Text("Approve"))
                           ],
@@ -530,7 +703,8 @@ class PendingListItemDetails extends StatelessWidget {
             ));
           },
           child: Material(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             elevation: 5,
             child: Container(
               height: 60,
@@ -546,7 +720,8 @@ class PendingListItemDetails extends StatelessWidget {
                   ),
                   Text(
                     "Approve",
-                    style: GoogleFonts.roboto(textStyle: TextStyle(fontSize: 13)),
+                    style:
+                        GoogleFonts.roboto(textStyle: TextStyle(fontSize: 13)),
                   )
                 ],
               ),
@@ -558,7 +733,13 @@ class PendingListItemDetails extends StatelessWidget {
   }
 
   widgetCheckButton(size) {
-    var hasComments = listItemDetailsController.pendingTaskModel?.approvalcomments.toString().toLowerCase() == 't' ? true : false;
+    var hasComments = listItemDetailsController
+                .pendingTaskModel?.approvalcomments
+                .toString()
+                .toLowerCase() ==
+            't'
+        ? true
+        : false;
     listItemDetailsController.comments.text = "";
     listItemDetailsController.errCom.value = "";
     return AspectRatio(
@@ -587,10 +768,17 @@ class PendingListItemDetails extends StatelessWidget {
                         color: Colors.grey.shade300,
                       ),
                       Visibility(
-                        visible: listItemDetailsController.pendingTaskModel!.cmsg_reject.toString() != '' ? true : false,
+                        visible: listItemDetailsController
+                                    .pendingTaskModel!.cmsg_reject
+                                    .toString() !=
+                                ''
+                            ? true
+                            : false,
                         child: Center(
                             child: Text(
-                          listItemDetailsController.pendingTaskModel!.cmsg_appcheck.toString(),
+                          listItemDetailsController
+                              .pendingTaskModel!.cmsg_appcheck
+                              .toString(),
                         )),
                       ),
                       Visibility(
@@ -600,12 +788,17 @@ class PendingListItemDetails extends StatelessWidget {
                               child: TextField(
                                 controller: listItemDetailsController.comments,
                                 decoration: InputDecoration(
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                                    border: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(10)),
                                     hintText: "Enter Comments",
                                     labelText: "Enter Comments",
-                                    errorText: listItemDetailsController.errCom.value == ''
+                                    errorText: listItemDetailsController
+                                                .errCom.value ==
+                                            ''
                                         ? null
-                                        : listItemDetailsController.errCom.value,
+                                        : listItemDetailsController
+                                            .errCom.value,
                                     filled: true,
                                     fillColor: Colors.grey.shade100),
                               ),
@@ -622,11 +815,15 @@ class PendingListItemDetails extends StatelessWidget {
                               },
                               child: Text("Cancel"),
                               style: ButtonStyle(
-                                  backgroundColor: MaterialStateProperty.resolveWith((states) => Colors.grey.shade200)),
+                                  backgroundColor:
+                                      MaterialStateProperty.resolveWith(
+                                          (states) => Colors.grey.shade200)),
                             ),
                             ElevatedButton(
                                 onPressed: () {
-                                  listItemDetailsController.actionApproveOrRejectOrCheck(hasComments, "Check");
+                                  listItemDetailsController
+                                      .actionApproveOrRejectOrCheck(
+                                          hasComments, "Check");
                                 },
                                 child: Text("Check"))
                           ],
@@ -639,7 +836,8 @@ class PendingListItemDetails extends StatelessWidget {
             ));
           },
           child: Material(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             elevation: 5,
             child: Container(
               height: 60,
@@ -655,7 +853,8 @@ class PendingListItemDetails extends StatelessWidget {
                   ),
                   Text(
                     "Check",
-                    style: GoogleFonts.roboto(textStyle: TextStyle(fontSize: 13)),
+                    style:
+                        GoogleFonts.roboto(textStyle: TextStyle(fontSize: 13)),
                   )
                 ],
               ),
@@ -667,7 +866,12 @@ class PendingListItemDetails extends StatelessWidget {
   }
 
   widgetRejectButton(size) {
-    var hasComments = listItemDetailsController.pendingTaskModel?.rejectcomments.toString().toLowerCase() == 't' ? true : false;
+    var hasComments = listItemDetailsController.pendingTaskModel?.rejectcomments
+                .toString()
+                .toLowerCase() ==
+            't'
+        ? true
+        : false;
 
     listItemDetailsController.comments.text = "";
     listItemDetailsController.errCom.value = "";
@@ -697,10 +901,17 @@ class PendingListItemDetails extends StatelessWidget {
                         color: Colors.grey.shade300,
                       ),
                       Visibility(
-                        visible: listItemDetailsController.pendingTaskModel!.cmsg_reject.toString() != '' ? true : false,
+                        visible: listItemDetailsController
+                                    .pendingTaskModel!.cmsg_reject
+                                    .toString() !=
+                                ''
+                            ? true
+                            : false,
                         child: Center(
                             child: Text(
-                          listItemDetailsController.pendingTaskModel!.cmsg_appcheck.toString(),
+                          listItemDetailsController
+                              .pendingTaskModel!.cmsg_appcheck
+                              .toString(),
                         )),
                       ),
                       Visibility(
@@ -710,14 +921,21 @@ class PendingListItemDetails extends StatelessWidget {
                               child: TextField(
                                 controller: listItemDetailsController.comments,
                                 decoration: InputDecoration(
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                                    floatingLabelBehavior: FloatingLabelBehavior.always,
-                                    hintText: "Enter Comments${hasComments ? "*" : ""}",
+                                    border: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(10)),
+                                    floatingLabelBehavior:
+                                        FloatingLabelBehavior.always,
+                                    hintText:
+                                        "Enter Comments${hasComments ? "*" : ""}",
                                     labelText: hasComments ? "*" : "",
                                     labelStyle: TextStyle(color: Colors.red),
-                                    errorText: listItemDetailsController.errCom.value == ''
+                                    errorText: listItemDetailsController
+                                                .errCom.value ==
+                                            ''
                                         ? null
-                                        : listItemDetailsController.errCom.value,
+                                        : listItemDetailsController
+                                            .errCom.value,
                                     filled: true,
                                     fillColor: Colors.grey.shade100),
                               ),
@@ -734,11 +952,15 @@ class PendingListItemDetails extends StatelessWidget {
                               },
                               child: Text("Cancel"),
                               style: ButtonStyle(
-                                  backgroundColor: MaterialStateProperty.resolveWith((states) => Colors.grey.shade200)),
+                                  backgroundColor:
+                                      MaterialStateProperty.resolveWith(
+                                          (states) => Colors.grey.shade200)),
                             ),
                             ElevatedButton(
                                 onPressed: () {
-                                  if (hasComments && listItemDetailsController.comments.text.isEmpty) {
+                                  if (hasComments &&
+                                      listItemDetailsController
+                                          .comments.text.isEmpty) {
                                     Get.showSnackbar(GetSnackBar(
                                       duration: Duration(seconds: 2),
                                       title: "Add Comments",
@@ -747,7 +969,9 @@ class PendingListItemDetails extends StatelessWidget {
                                     return;
                                   }
 
-                                  listItemDetailsController.actionApproveOrRejectOrCheck(hasComments, "Reject");
+                                  listItemDetailsController
+                                      .actionApproveOrRejectOrCheck(
+                                          hasComments, "Reject");
 
                                   // listItemDetailsController.actionApproveOrRejectOrCheck(hasComments, "Reject");
                                 },
@@ -762,7 +986,8 @@ class PendingListItemDetails extends StatelessWidget {
             ));
           },
           child: Material(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             elevation: 5,
             child: Container(
               height: 60,
@@ -778,7 +1003,8 @@ class PendingListItemDetails extends StatelessWidget {
                   ),
                   Text(
                     "Reject",
-                    style: GoogleFonts.roboto(textStyle: TextStyle(fontSize: 13)),
+                    style:
+                        GoogleFonts.roboto(textStyle: TextStyle(fontSize: 13)),
                   )
                 ],
               ),
@@ -790,7 +1016,12 @@ class PendingListItemDetails extends StatelessWidget {
   }
 
   widgetReturnButton(size) {
-    var hasComments = listItemDetailsController.pendingTaskModel?.returncomments.toString().toLowerCase() == 't' ? true : false;
+    var hasComments = listItemDetailsController.pendingTaskModel?.returncomments
+                .toString()
+                .toLowerCase() ==
+            't'
+        ? true
+        : false;
     listItemDetailsController.comments.text = "";
     listItemDetailsController.errCom.value = "";
     return AspectRatio(
@@ -819,20 +1050,30 @@ class PendingListItemDetails extends StatelessWidget {
                         color: Colors.grey.shade300,
                       ),
                       Visibility(
-                        visible: listItemDetailsController.pendingTaskModel!.cmsg_reject.toString() != '' ? true : false,
+                        visible: listItemDetailsController
+                                    .pendingTaskModel!.cmsg_reject
+                                    .toString() !=
+                                ''
+                            ? true
+                            : false,
                         child: Center(
                             child: Text(
-                          listItemDetailsController.pendingTaskModel!.cmsg_appcheck.toString(),
+                          listItemDetailsController
+                              .pendingTaskModel!.cmsg_appcheck
+                              .toString(),
                         )),
                       ),
                       DropdownButtonHideUnderline(
                         child: ButtonTheme(
                           alignedDropdown: true,
                           child: DropdownButtonFormField(
-                            value: listItemDetailsController.ddSelectedValue.value,
+                            value:
+                                listItemDetailsController.ddSelectedValue.value,
                             items: listItemDetailsController.dropdownMenuItem(),
-                            onChanged: (value) => listItemDetailsController.dropDownItemChanged(value),
-                            decoration: InputDecoration(prefixIcon: Icon(Icons.person)),
+                            onChanged: (value) => listItemDetailsController
+                                .dropDownItemChanged(value),
+                            decoration:
+                                InputDecoration(prefixIcon: Icon(Icons.person)),
                             // border: OutlineInputBorder(
                             //   borderRadius: BorderRadius.circular(10),
                             // )
@@ -846,14 +1087,21 @@ class PendingListItemDetails extends StatelessWidget {
                               child: TextField(
                                 controller: listItemDetailsController.comments,
                                 decoration: InputDecoration(
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                                    floatingLabelBehavior: FloatingLabelBehavior.always,
-                                    hintText: "Enter Comments${hasComments ? "*" : ""}",
+                                    border: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(10)),
+                                    floatingLabelBehavior:
+                                        FloatingLabelBehavior.always,
+                                    hintText:
+                                        "Enter Comments${hasComments ? "*" : ""}",
                                     labelText: hasComments ? "*" : "",
                                     labelStyle: TextStyle(color: Colors.red),
-                                    errorText: listItemDetailsController.errCom.value == ''
+                                    errorText: listItemDetailsController
+                                                .errCom.value ==
+                                            ''
                                         ? null
-                                        : listItemDetailsController.errCom.value,
+                                        : listItemDetailsController
+                                            .errCom.value,
                                     filled: true,
                                     fillColor: Colors.grey.shade100),
                               ),
@@ -870,11 +1118,15 @@ class PendingListItemDetails extends StatelessWidget {
                               },
                               child: Text("Cancel"),
                               style: ButtonStyle(
-                                  backgroundColor: MaterialStateProperty.resolveWith((states) => Colors.grey.shade200)),
+                                  backgroundColor:
+                                      MaterialStateProperty.resolveWith(
+                                          (states) => Colors.grey.shade200)),
                             ),
                             ElevatedButton(
                                 onPressed: () {
-                                  if (hasComments && listItemDetailsController.comments.text.isEmpty) {
+                                  if (hasComments &&
+                                      listItemDetailsController
+                                          .comments.text.isEmpty) {
                                     Get.showSnackbar(GetSnackBar(
                                       duration: Duration(seconds: 2),
                                       title: "Add Comments",
@@ -885,7 +1137,8 @@ class PendingListItemDetails extends StatelessWidget {
 
                                   // listItemDetailsController.actionApproveOrRejectOrCheck(hasComments, "Reject");
 
-                                  listItemDetailsController.actionReturn(hasComments);
+                                  listItemDetailsController
+                                      .actionReturn(hasComments);
                                 },
                                 child: Text("Return"))
                           ],
@@ -898,7 +1151,8 @@ class PendingListItemDetails extends StatelessWidget {
             ));
           },
           child: Material(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             elevation: 5,
             child: Container(
               height: 60,
@@ -914,7 +1168,8 @@ class PendingListItemDetails extends StatelessWidget {
                   ),
                   Text(
                     "Return",
-                    style: GoogleFonts.roboto(textStyle: TextStyle(fontSize: 13)),
+                    style:
+                        GoogleFonts.roboto(textStyle: TextStyle(fontSize: 13)),
                   )
                 ],
               ),
@@ -926,7 +1181,13 @@ class PendingListItemDetails extends StatelessWidget {
   }
 
   widgetSendButton(size) {
-    var hasComments = listItemDetailsController.pendingTaskModel?.approvalcomments.toString().toLowerCase() != 't' ? true : false;
+    var hasComments = listItemDetailsController
+                .pendingTaskModel?.approvalcomments
+                .toString()
+                .toLowerCase() !=
+            't'
+        ? true
+        : false;
     listItemDetailsController.comments.text = "";
     listItemDetailsController.errCom.value = "";
     return AspectRatio(
@@ -956,20 +1217,31 @@ class PendingListItemDetails extends StatelessWidget {
                         color: Colors.grey.shade300,
                       ),
                       Visibility(
-                        visible: listItemDetailsController.pendingTaskModel!.cmsg_reject.toString() != '' ? true : false,
+                        visible: listItemDetailsController
+                                    .pendingTaskModel!.cmsg_reject
+                                    .toString() !=
+                                ''
+                            ? true
+                            : false,
                         child: Center(
                             child: Text(
-                          listItemDetailsController.pendingTaskModel!.cmsg_appcheck.toString(),
+                          listItemDetailsController
+                              .pendingTaskModel!.cmsg_appcheck
+                              .toString(),
                         )),
                       ),
                       DropdownButtonHideUnderline(
                         child: ButtonTheme(
                           alignedDropdown: true,
                           child: DropdownButtonFormField(
-                            value: listItemDetailsController.ddSendToUsers_SelectedValue.value,
-                            items: listItemDetailsController.dropdownMenuItem_sendToUsers(),
-                            onChanged: (value) => listItemDetailsController.dropDownItemChanged_SendToUsers(value),
-                            decoration: InputDecoration(prefixIcon: Icon(Icons.person)),
+                            value: listItemDetailsController
+                                .ddSendToUsers_SelectedValue.value,
+                            items: listItemDetailsController
+                                .dropdownMenuItem_sendToUsers(),
+                            onChanged: (value) => listItemDetailsController
+                                .dropDownItemChanged_SendToUsers(value),
+                            decoration:
+                                InputDecoration(prefixIcon: Icon(Icons.person)),
                             // border: OutlineInputBorder(
                             //   borderRadius: BorderRadius.circular(10),
                             // )
@@ -983,12 +1255,17 @@ class PendingListItemDetails extends StatelessWidget {
                               child: TextField(
                                 controller: listItemDetailsController.comments,
                                 decoration: InputDecoration(
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                                    border: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(10)),
                                     hintText: "Enter Comments",
                                     labelText: "Enter Comments",
-                                    errorText: listItemDetailsController.errCom.value == ''
+                                    errorText: listItemDetailsController
+                                                .errCom.value ==
+                                            ''
                                         ? null
-                                        : listItemDetailsController.errCom.value,
+                                        : listItemDetailsController
+                                            .errCom.value,
                                     filled: true,
                                     fillColor: Colors.grey.shade100),
                               ),
@@ -1005,11 +1282,14 @@ class PendingListItemDetails extends StatelessWidget {
                               },
                               child: Text("Cancel"),
                               style: ButtonStyle(
-                                  backgroundColor: MaterialStateProperty.resolveWith((states) => Colors.grey.shade200)),
+                                  backgroundColor:
+                                      MaterialStateProperty.resolveWith(
+                                          (states) => Colors.grey.shade200)),
                             ),
                             ElevatedButton(
                                 onPressed: () {
-                                  listItemDetailsController.actionSend(hasComments);
+                                  listItemDetailsController
+                                      .actionSend(hasComments);
                                 },
                                 child: Text("Send"))
                           ],
@@ -1022,7 +1302,8 @@ class PendingListItemDetails extends StatelessWidget {
             ));
           },
           child: Material(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             elevation: 5,
             child: Container(
               height: 60,
@@ -1038,7 +1319,8 @@ class PendingListItemDetails extends StatelessWidget {
                   ),
                   Text(
                     "Send",
-                    style: GoogleFonts.roboto(textStyle: TextStyle(fontSize: 13)),
+                    style:
+                        GoogleFonts.roboto(textStyle: TextStyle(fontSize: 13)),
                   )
                 ],
               ),
@@ -1059,7 +1341,8 @@ class PendingListItemDetails extends StatelessWidget {
             listItemDetailsController.viewBtnClicked();
           },
           child: Material(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             elevation: 5,
             child: Container(
               height: 60,
@@ -1075,7 +1358,8 @@ class PendingListItemDetails extends StatelessWidget {
                   ),
                   Text(
                     "View",
-                    style: GoogleFonts.roboto(textStyle: TextStyle(fontSize: 13)),
+                    style:
+                        GoogleFonts.roboto(textStyle: TextStyle(fontSize: 13)),
                   )
                 ],
               ),
@@ -1096,7 +1380,8 @@ class PendingListItemDetails extends StatelessWidget {
             listItemDetailsController.historyBtnClicked();
           },
           child: Material(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             elevation: 5,
             child: Container(
               height: 60,
@@ -1112,7 +1397,8 @@ class PendingListItemDetails extends StatelessWidget {
                   ),
                   Text(
                     "History",
-                    style: GoogleFonts.roboto(textStyle: TextStyle(fontSize: 13)),
+                    style:
+                        GoogleFonts.roboto(textStyle: TextStyle(fontSize: 13)),
                   )
                 ],
               ),

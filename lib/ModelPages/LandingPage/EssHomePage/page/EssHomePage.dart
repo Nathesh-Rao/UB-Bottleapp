@@ -1,17 +1,17 @@
 import 'dart:developer';
 
-import 'package:axpertflutter/ModelPages/InApplicationWebView/page/InApplicationWebView.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/Controller/LandingPageController.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/controller/EssController.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/widgets/WidgetEssAnnouncement.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/widgets/WidgetEssAppDrawer.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/widgets/WidgetEssAttendanceCard.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/widgets/WidgetEssBottomNavigation.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/widgets/WidgetEssHomeCard.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/widgets/WidgetEssKPICards.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/widgets/WidgetEssOtherServiceCard.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/widgets/WidgetHeaderWidget.dart';
-import 'package:axpertflutter/Utils/LogServices/LogService.dart';
+import 'package:ubbottleapp/ModelPages/InApplicationWebView/page/InApplicationWebView.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/Controller/LandingPageController.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/controller/EssController.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/widgets/WidgetEssAnnouncement.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/widgets/WidgetEssAppDrawer.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/widgets/WidgetEssAttendanceCard.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/widgets/WidgetEssBottomNavigation.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/widgets/WidgetEssHomeCard.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/widgets/WidgetEssKPICards.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/widgets/WidgetEssOtherServiceCard.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/widgets/WidgetHeaderWidget.dart';
+import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -24,7 +24,8 @@ import '../widgets/WidgetEssRecentActivity.dart';
 class EssHomePage extends StatelessWidget {
   EssHomePage({super.key});
   final EssController controller = Get.put(EssController());
-  final LandingPageController landingPageController = Get.put(LandingPageController());
+  final LandingPageController landingPageController =
+      Get.put(LandingPageController());
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +43,8 @@ class EssHomePage extends StatelessWidget {
               controller.getPage(),
               Visibility(
                   visible: controller.menuHomePageController.switchPage.value,
-                  child: InApplicationWebViewer(controller.menuHomePageController.webUrl))
+                  child: InApplicationWebViewer(
+                      controller.menuHomePageController.webUrl))
             ],
           ),
         ),

@@ -1,6 +1,6 @@
-import 'package:axpertflutter/ModelPages/LandingPage/Controller/LandingPageController.dart';
-import 'package:axpertflutter/ModelPages/LoginPage/Controller/LoginController.dart';
-import 'package:axpertflutter/Utils/LogServices/LogService.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/Controller/LandingPageController.dart';
+import 'package:ubbottleapp/ModelPages/LoginPage/Controller/LoginController.dart';
+import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
 

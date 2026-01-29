@@ -1,5 +1,5 @@
-import 'package:axpertflutter/ModelPages/ShowLogs/Controller/ShowLogsController.dart';
-import 'package:axpertflutter/Utils/LogServices/LogService.dart';
+import 'package:ubbottleapp/ModelPages/ShowLogs/Controller/ShowLogsController.dart';
+import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 

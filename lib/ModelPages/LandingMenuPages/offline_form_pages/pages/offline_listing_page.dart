@@ -1,16 +1,14 @@
-import 'package:axpertflutter/Constants/MyColors.dart';
-import 'package:axpertflutter/Constants/Routes.dart';
-import 'package:axpertflutter/ModelPages/InApplicationWebView/controller/webview_controller.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/offline_form_pages/controller/offline_form_controller.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/offline_form_pages/controller/offline_static_form_controller.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/offline_form_pages/inward_entry/inward_entry_dynamic_controller.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/offline_form_pages/inward_entry/inward_entry_dynamic_page_v1.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/offline_form_pages/inward_entry/widgets/form_action_tile.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/offline_form_pages/inward_entry/widgets/report_action_tile.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/offline_form_pages/models/form_page_model.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/offline_form_pages/pages/offline_static_page.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/offline_form_pages/widgets/offline_page_card.dart';
-import 'package:axpertflutter/Utils/ServerConnections/InternetConnectivity.dart';
+import 'package:ubbottleapp/Constants/MyColors.dart';
+import 'package:ubbottleapp/Constants/Routes.dart';
+import 'package:ubbottleapp/ModelPages/InApplicationWebView/controller/webview_controller.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/controller/offline_form_controller.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/inward_entry/inward_entry_dynamic_controller.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/inward_entry/inward_entry_dynamic_page_v1.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/widgets/form_action_tile.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/widgets/report_action_tile.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/form_page_model.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/widgets/offline_page_card.dart';
+import 'package:ubbottleapp/Utils/ServerConnections/InternetConnectivity.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -21,7 +19,7 @@ class OfflineListingPage extends GetView<OfflineFormController> {
 
   @override
   Widget build(BuildContext context) {
-    Get.put(OfflineStaticFormController());
+    // Get.put(OfflineStaticFormController());
     var inwardEntryDynamicController = Get.put(InwardEntryDynamicController());
     InternetConnectivity connectionController = Get.find();
     WidgetsBinding.instance.addPostFrameCallback((_) {

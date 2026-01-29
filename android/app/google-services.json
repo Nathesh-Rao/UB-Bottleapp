@@ -2,7 +2,7 @@
   "project_info": {
     "project_number": "687601632005",
     "project_id": "axperthybrid",
-    "storage_bucket": "axperthybrid.appspot.com"
+    "storage_bucket": "axperthybrid.firebasestorage.app"
   },
   "client": [
     {
@@ -118,6 +118,51 @@
     },
     {
       "client_info": {
+        "mobilesdk_app_id": "1:687601632005:android:ca0d5f22cd3aab88eead6c",
+        "android_client_info": {
+          "package_name": "com.agile.TrustLine"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "687601632005-511rriq2921p4nllqdqhdj4139eklgut.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.agile.TrustLine",
+            "certificate_hash": "da99fa2941a1c5e520a8d0fbb93f83ccd79f9458"
+          }
+        },
+        {
+          "client_id": "687601632005-jc9fmqrmc9qvl6vmjgfjqs0kpb420eah.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAL8btbnDnPpGgDMwAoJnQdOsftEejMvUE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "687601632005-jc9fmqrmc9qvl6vmjgfjqs0kpb420eah.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "687601632005-0q411q33j3rgtc30rjbko707jhlgs4ok.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.agile.axpert",
+                "app_store_id": "1586951768"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:687601632005:android:f148e83d97f01c30eead6c",
         "android_client_info": {
           "package_name": "com.agile.axpert"
@@ -166,6 +211,43 @@
         "mobilesdk_app_id": "1:687601632005:android:1634d4b73e1d7d71eead6c",
         "android_client_info": {
           "package_name": "com.agile.axpertHybrid"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "687601632005-jc9fmqrmc9qvl6vmjgfjqs0kpb420eah.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAL8btbnDnPpGgDMwAoJnQdOsftEejMvUE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "687601632005-jc9fmqrmc9qvl6vmjgfjqs0kpb420eah.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "687601632005-0q411q33j3rgtc30rjbko707jhlgs4ok.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.agile.axpert",
+                "app_store_id": "1586951768"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:687601632005:android:975feef13c0494a5eead6c",
+        "android_client_info": {
+          "package_name": "com.agile.axpert_space"
         }
       },
       "oauth_client": [
@@ -372,9 +454,54 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:687601632005:android:dfb81190bbe996fdeead6c",
+        "mobilesdk_app_id": "1:687601632005:android:6c2c8d38140fbbefeead6c",
         "android_client_info": {
-          "package_name": "com.agile.buzzily"
+          "package_name": "com.agile.bmrcl"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "687601632005-30pe7nknmveo77luoepf53i3rnl2p4g7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.agile.bmrcl",
+            "certificate_hash": "da99fa2941a1c5e520a8d0fbb93f83ccd79f9458"
+          }
+        },
+        {
+          "client_id": "687601632005-jc9fmqrmc9qvl6vmjgfjqs0kpb420eah.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAL8btbnDnPpGgDMwAoJnQdOsftEejMvUE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "687601632005-jc9fmqrmc9qvl6vmjgfjqs0kpb420eah.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "687601632005-0q411q33j3rgtc30rjbko707jhlgs4ok.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.agile.axpert",
+                "app_store_id": "1586951768"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:687601632005:android:2eef49ec1746cde8eead6c",
+        "android_client_info": {
+          "package_name": "com.agile.payazzure"
         }
       },
       "oauth_client": [
@@ -409,9 +536,128 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:687601632005:android:8f3b1fad1caed956eead6c",
+        "mobilesdk_app_id": "1:687601632005:android:bd6c1b16a7c4b952eead6c",
         "android_client_info": {
-          "package_name": "com.agile.flutter_axpert"
+          "package_name": "com.agile.space"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "687601632005-jc9fmqrmc9qvl6vmjgfjqs0kpb420eah.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAL8btbnDnPpGgDMwAoJnQdOsftEejMvUE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "687601632005-jc9fmqrmc9qvl6vmjgfjqs0kpb420eah.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "687601632005-0q411q33j3rgtc30rjbko707jhlgs4ok.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.agile.axpert",
+                "app_store_id": "1586951768"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:687601632005:android:52de00626719c997eead6c",
+        "android_client_info": {
+          "package_name": "com.agile.trustlineHybrid"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "687601632005-cbtr4ik0t3m5o4poo8ec4s0rnorobmht.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.agile.trustlineHybrid",
+            "certificate_hash": "da99fa2941a1c5e520a8d0fbb93f83ccd79f9458"
+          }
+        },
+        {
+          "client_id": "687601632005-jc9fmqrmc9qvl6vmjgfjqs0kpb420eah.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAL8btbnDnPpGgDMwAoJnQdOsftEejMvUE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "687601632005-jc9fmqrmc9qvl6vmjgfjqs0kpb420eah.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "687601632005-0q411q33j3rgtc30rjbko707jhlgs4ok.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.agile.axpert",
+                "app_store_id": "1586951768"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:687601632005:android:82c7f6e82ab4b28ceead6c",
+        "android_client_info": {
+          "package_name": "com.agile.ub_bottleapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "687601632005-jc9fmqrmc9qvl6vmjgfjqs0kpb420eah.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAL8btbnDnPpGgDMwAoJnQdOsftEejMvUE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "687601632005-jc9fmqrmc9qvl6vmjgfjqs0kpb420eah.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "687601632005-0q411q33j3rgtc30rjbko707jhlgs4ok.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.agile.axpert",
+                "app_store_id": "1586951768"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:687601632005:android:6fb1a8afa9763477eead6c",
+        "android_client_info": {
+          "package_name": "com.agile.ublsfs"
         }
       },
       "oauth_client": [

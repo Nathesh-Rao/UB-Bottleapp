@@ -1,9 +1,9 @@
 import 'dart:developer';
 
-import 'package:axpertflutter/Constants/MyColors.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/AttendanceManagement/controller/AttendanceController.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/AttendanceManagement/widgets/WidgetButton.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/AttendanceManagement/widgets/WidgetHorizontalProgressIndicator.dart';
+import 'package:ubbottleapp/Constants/MyColors.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/AttendanceManagement/controller/AttendanceController.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/AttendanceManagement/widgets/WidgetButton.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/AttendanceManagement/widgets/WidgetHorizontalProgressIndicator.dart';
 import 'package:bottom_picker/bottom_picker.dart';
 import 'package:bottom_picker/resources/arrays.dart';
 import 'package:flutter/cupertino.dart';
@@ -68,14 +68,16 @@ class AttendanceApplyLeavePage extends StatelessWidget {
                                 child: datePicker(
                                     label: "Start Date",
                                     value: attendanceController.startDate.value,
-                                    onSelect: attendanceController.onStartDateSelect,
+                                    onSelect:
+                                        attendanceController.onStartDateSelect,
                                     context: context)),
                             SizedBox(width: 20),
                             Flexible(
                                 child: datePicker(
                                     label: "End Date",
                                     value: attendanceController.endDate.value,
-                                    onSelect: attendanceController.onEndDateSelect,
+                                    onSelect:
+                                        attendanceController.onEndDateSelect,
                                     context: context)),
                           ],
                         ),
@@ -91,7 +93,8 @@ class AttendanceApplyLeavePage extends StatelessWidget {
                           children: [
                             Radio(
                                 activeColor: MyColors.baseBlue,
-                                value: attendanceController.leaveModeValue.value,
+                                value:
+                                    attendanceController.leaveModeValue.value,
                                 groupValue: 0,
                                 onChanged: (_) {
                                   attendanceController.updateLeaveMode(0);
@@ -99,11 +102,16 @@ class AttendanceApplyLeavePage extends StatelessWidget {
                             Text(
                               "Half Day",
                               style: GoogleFonts.poppins(
-                                  color: attendanceController.leaveModeValue.value == 0 ? MyColors.baseBlue : MyColors.text2),
+                                  color: attendanceController
+                                              .leaveModeValue.value ==
+                                          0
+                                      ? MyColors.baseBlue
+                                      : MyColors.text2),
                             ),
                             Radio(
                                 activeColor: MyColors.baseBlue,
-                                value: attendanceController.leaveModeValue.value,
+                                value:
+                                    attendanceController.leaveModeValue.value,
                                 groupValue: 1,
                                 onChanged: (_) {
                                   attendanceController.updateLeaveMode(1);
@@ -111,7 +119,11 @@ class AttendanceApplyLeavePage extends StatelessWidget {
                             Text(
                               "Full Day",
                               style: GoogleFonts.poppins(
-                                  color: attendanceController.leaveModeValue.value == 1 ? MyColors.baseBlue : MyColors.text2),
+                                  color: attendanceController
+                                              .leaveModeValue.value ==
+                                          1
+                                      ? MyColors.baseBlue
+                                      : MyColors.text2),
                             ),
                           ],
                         ),
@@ -125,7 +137,9 @@ class AttendanceApplyLeavePage extends StatelessWidget {
                       TextFormField(
                         maxLines: 8,
                         decoration: InputDecoration(
-                          border: OutlineInputBorder(borderSide: BorderSide.none, borderRadius: BorderRadius.circular(10)),
+                          border: OutlineInputBorder(
+                              borderSide: BorderSide.none,
+                              borderRadius: BorderRadius.circular(10)),
                           filled: true,
                           fillColor: Color(0xffECF2FF),
                         ),
@@ -157,7 +171,8 @@ class AttendanceApplyLeavePage extends StatelessWidget {
       margin: EdgeInsets.symmetric(vertical: 10),
       height: 60,
       padding: EdgeInsets.symmetric(horizontal: 15),
-      decoration: BoxDecoration(color: Color(0xffECF2FF), borderRadius: BorderRadius.circular(7)),
+      decoration: BoxDecoration(
+          color: Color(0xffECF2FF), borderRadius: BorderRadius.circular(7)),
       child: Center(
         child: DropdownButton<String>(
           enableFeedback: true,
@@ -171,7 +186,9 @@ class AttendanceApplyLeavePage extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
-          value: attendanceController.selectedLeave.value == '' ? null : attendanceController.selectedLeave.value,
+          value: attendanceController.selectedLeave.value == ''
+              ? null
+              : attendanceController.selectedLeave.value,
           icon: Icon(Icons.keyboard_arrow_down_rounded),
           // alignment: AlignmentDirectional.bottomCenter,
           elevation: 16,
@@ -179,7 +196,8 @@ class AttendanceApplyLeavePage extends StatelessWidget {
           underline: SizedBox.shrink(),
 
           onChanged: attendanceController.updateLeaveType,
-          items: attendanceController.leaveTypes.keys.map<DropdownMenuItem<String>>((String value) {
+          items: attendanceController.leaveTypes.keys
+              .map<DropdownMenuItem<String>>((String value) {
             return DropdownMenuItem<String>(
               value: value,
               child: Text(
@@ -221,7 +239,10 @@ class AttendanceApplyLeavePage extends StatelessWidget {
   }
 
   Widget datePicker(
-      {required String label, required String value, required BuildContext context, required Function(dynamic) onSelect}) {
+      {required String label,
+      required String value,
+      required BuildContext context,
+      required Function(dynamic) onSelect}) {
     var style = GoogleFonts.poppins(
       fontWeight: FontWeight.w600,
     );
@@ -263,23 +284,31 @@ class AttendanceApplyLeavePage extends StatelessWidget {
             _heightBox(10),
             Container(
               height: 60,
-              decoration: BoxDecoration(color: Color(0xffECF2FF), borderRadius: BorderRadius.circular(7)),
+              decoration: BoxDecoration(
+                  color: Color(0xffECF2FF),
+                  borderRadius: BorderRadius.circular(7)),
               padding: EdgeInsets.symmetric(horizontal: 10),
               child: Center(
                 child: Row(
                   children: [
                     Icon(
                       Icons.calendar_month,
-                      color: value != 'DD-MM-YYYY' ? Colors.black : Color(0xff7A7B95),
+                      color: value != 'DD-MM-YYYY'
+                          ? Colors.black
+                          : Color(0xff7A7B95),
                     ),
                     Spacer(),
                     Text(
                       value,
                       style: GoogleFonts.poppins(
                         fontSize: 14,
-                        fontWeight: value != 'DD-MM-YYYY' ? FontWeight.bold : FontWeight.w500,
+                        fontWeight: value != 'DD-MM-YYYY'
+                            ? FontWeight.bold
+                            : FontWeight.w500,
 
-                        color: value != 'DD-MM-YYYY' ? Colors.black : Color(0xff7A7B95),
+                        color: value != 'DD-MM-YYYY'
+                            ? Colors.black
+                            : Color(0xff7A7B95),
                         // Color(0xff7A7B95)
                       ),
                     ),
@@ -292,7 +321,10 @@ class AttendanceApplyLeavePage extends StatelessWidget {
         ));
   }
 
-  Widget _datePicker({required String label, required bool isStart, required BuildContext context}) {
+  Widget _datePicker(
+      {required String label,
+      required bool isStart,
+      required BuildContext context}) {
     var style = GoogleFonts.poppins(
       fontWeight: FontWeight.w600,
     );
@@ -338,7 +370,9 @@ class AttendanceApplyLeavePage extends StatelessWidget {
           _heightBox(10),
           Container(
             height: 60,
-            decoration: BoxDecoration(color: Color(0xffECF2FF), borderRadius: BorderRadius.circular(7)),
+            decoration: BoxDecoration(
+                color: Color(0xffECF2FF),
+                borderRadius: BorderRadius.circular(7)),
             padding: EdgeInsets.symmetric(horizontal: 10),
             child: Center(
               child: Row(
@@ -347,18 +381,22 @@ class AttendanceApplyLeavePage extends StatelessWidget {
                   Spacer(),
                   Obx(
                     () => Text(
-                      isStart ? attendanceController.startDate.value : attendanceController.endDate.value,
+                      isStart
+                          ? attendanceController.startDate.value
+                          : attendanceController.endDate.value,
                       style: GoogleFonts.poppins(
                         fontSize: 14,
                         fontWeight: isStart
-                            ? attendanceController.startDate.value != 'DD-MM-YYYY'
+                            ? attendanceController.startDate.value !=
+                                    'DD-MM-YYYY'
                                 ? FontWeight.bold
                                 : FontWeight.w500
                             : attendanceController.endDate.value != 'DD-MM-YYYY'
                                 ? FontWeight.bold
                                 : FontWeight.w500,
                         color: isStart
-                            ? attendanceController.startDate.value != 'DD-MM-YYYY'
+                            ? attendanceController.startDate.value !=
+                                    'DD-MM-YYYY'
                                 ? Colors.black
                                 : Color(0xff7A7B95)
                             : attendanceController.endDate.value != 'DD-MM-YYYY'
@@ -391,7 +429,8 @@ class AttendanceApplyLeavePage extends StatelessWidget {
     return Align(
       alignment: Alignment.topCenter,
       child: Container(
-        padding: EdgeInsets.only(bottom: 50, top: MediaQuery.of(context).padding.top),
+        padding: EdgeInsets.only(
+            bottom: 50, top: MediaQuery.of(context).padding.top),
         height: MediaQuery.of(context).padding.top + 130,
         decoration: BoxDecoration(
           gradient: MyColors.subBGGradientVertical,

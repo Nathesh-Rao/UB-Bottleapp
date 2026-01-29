@@ -1,10 +1,10 @@
 import 'dart:math';
 
-import 'package:axpertflutter/Constants/AppStorage.dart';
-import 'package:axpertflutter/Constants/MyColors.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/Controller/LandingPageController.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/Widgets/WidgetNotification.dart';
-import 'package:axpertflutter/main.dart';
+import 'package:ubbottleapp/Constants/AppStorage.dart';
+import 'package:ubbottleapp/Constants/MyColors.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/Controller/LandingPageController.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/Widgets/WidgetNotification.dart';
+import 'package:ubbottleapp/main.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -30,8 +30,10 @@ class NotificationPage extends StatelessWidget {
         flutterLocalNotificationsPlugin.cancelAll();
         if (unreadCount != 0) {
           var userName = AppStorage().retrieveValue(AppStorage.USER_NAME) ?? "";
-          Map oldNotifyNum = AppStorage().retrieveValue(AppStorage.NOTIFICATION_UNREAD) ?? {};
-          var projectName = AppStorage().retrieveValue(AppStorage.PROJECT_NAME) ?? "";
+          Map oldNotifyNum =
+              AppStorage().retrieveValue(AppStorage.NOTIFICATION_UNREAD) ?? {};
+          var projectName =
+              AppStorage().retrieveValue(AppStorage.PROJECT_NAME) ?? "";
           Map projectWiseNum = oldNotifyNum[projectName] ?? {};
           var notNo = projectWiseNum[userName] ?? "0";
           notNo = "0";
@@ -46,7 +48,8 @@ class NotificationPage extends StatelessWidget {
         appBar: AppBar(
           title: Text("Notifications"),
           flexibleSpace: Container(
-            decoration: BoxDecoration(gradient: MyColors.updatedUIBackgroundGradient),
+            decoration:
+                BoxDecoration(gradient: MyColors.updatedUIBackgroundGradient),
           ),
           // elevation: 0,
           // backgroundColor: Colors.white,
@@ -82,7 +85,8 @@ class NotificationPage extends StatelessWidget {
           ],
         ),
         body: SafeArea(
-          child: Obx(() => Padding(padding: EdgeInsets.only(bottom: 10), child: reBuild())),
+          child: Obx(() =>
+              Padding(padding: EdgeInsets.only(bottom: 10), child: reBuild())),
         ),
       ),
     );
@@ -101,14 +105,16 @@ class NotificationPage extends StatelessWidget {
       landingPageController.getNotificationList();
       return ListView.builder(
         itemBuilder: (context, index) {
-          return drawNotificationItem(landingPageController.list[index], index, isNew: index < unreadCount ? true : false);
+          return drawNotificationItem(landingPageController.list[index], index,
+              isNew: index < unreadCount ? true : false);
         },
         itemCount: landingPageController.list.length,
       );
     } else
       return ListView.builder(
         itemBuilder: (context, index) {
-          return drawNotificationItem(landingPageController.list[index], index, isNew: index < unreadCount ? true : false);
+          return drawNotificationItem(landingPageController.list[index], index,
+              isNew: index < unreadCount ? true : false);
         },
         itemCount: landingPageController.list.length,
       );
@@ -121,7 +127,8 @@ class NotificationPage extends StatelessWidget {
         key: ValueKey(index),
         background: Container(
           padding: EdgeInsets.only(left: 20),
-          decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(10)),
+          decoration: BoxDecoration(
+              color: Colors.red, borderRadius: BorderRadius.circular(10)),
           child: Align(
             alignment: Alignment.centerLeft,
             child: Text(
@@ -135,7 +142,8 @@ class NotificationPage extends StatelessWidget {
         },
         secondaryBackground: Container(
           padding: EdgeInsets.only(right: 20),
-          decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(10)),
+          decoration: BoxDecoration(
+              color: Colors.red, borderRadius: BorderRadius.circular(10)),
           child: Align(
             alignment: Alignment.centerRight,
             child: Text(
@@ -153,15 +161,18 @@ class NotificationPage extends StatelessWidget {
               child: Container(
                   width: double.maxFinite,
                   constraints: BoxConstraints(minHeight: 120),
-                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(10)),
+                  decoration:
+                      BoxDecoration(borderRadius: BorderRadius.circular(10)),
                   child: Row(
                     children: [
                       Expanded(
                           child: GestureDetector(
                               onTap: () {
-                                landingPageController.fetchAndOpenWebView(index);
+                                landingPageController
+                                    .fetchAndOpenWebView(index);
                               },
-                              child: Container(color: Colors.transparent, child: item))),
+                              child: Container(
+                                  color: Colors.transparent, child: item))),
                       IconButton(
                         icon: Icon(
                           Icons.delete,
@@ -206,8 +217,10 @@ class NotificationPage extends StatelessWidget {
 
   getFromStorage() {
     var userName = AppStorage().retrieveValue(AppStorage.USER_NAME) ?? "";
-    var notiProjectName = AppStorage().retrieveValue(AppStorage.PROJECT_NAME).toString();
-    Map oldNotifyNum = AppStorage().retrieveValue(AppStorage.NOTIFICATION_UNREAD) ?? {};
+    var notiProjectName =
+        AppStorage().retrieveValue(AppStorage.PROJECT_NAME).toString();
+    Map oldNotifyNum =
+        AppStorage().retrieveValue(AppStorage.NOTIFICATION_UNREAD) ?? {};
     Map projectWiseNum = oldNotifyNum[notiProjectName] ?? {};
     var notNo = projectWiseNum[userName] ?? "0";
     print(notNo);

@@ -1,10 +1,10 @@
 import 'package:auto_size_text/auto_size_text.dart';
-import 'package:axpertflutter/Constants/CommonMethods.dart';
-import 'package:axpertflutter/Constants/MyColors.dart';
-import 'package:axpertflutter/Constants/Routes.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_module.dart';
+import 'package:ubbottleapp/Constants/CommonMethods.dart';
+import 'package:ubbottleapp/Constants/MyColors.dart';
+import 'package:ubbottleapp/Constants/Routes.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_module.dart';
 
-import 'package:axpertflutter/Utils/LogServices/LogService.dart';
+import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_switch/flutter_switch.dart';
 import 'package:get/get.dart';

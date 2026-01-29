@@ -1,8 +1,8 @@
-import 'package:axpertflutter/Constants/MyColors.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuDashboardPage/Controllers/MenuDashboaardController.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuDashboardPage/Widgets/WidgetCharts.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/Widgets/WidgetNoDataFound.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/Widgets/WidgetSlidingNotification.dart';
+import 'package:ubbottleapp/Constants/MyColors.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuDashboardPage/Controllers/MenuDashboaardController.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuDashboardPage/Widgets/WidgetCharts.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/Widgets/WidgetNoDataFound.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/Widgets/WidgetSlidingNotification.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -23,7 +23,7 @@ class MenuDashboardPage extends StatelessWidget {
       backgroundColor: MyColors.white3.withAlpha(130),
       body: Column(
         children: [
-         WidgetSlidingNotificationPanel(),
+          WidgetSlidingNotificationPanel(),
           SizedBox(height: 5),
           Obx(
             () => Visibility(
@@ -40,8 +40,10 @@ class MenuDashboardPage extends StatelessWidget {
           ),
           Obx(
             () => Expanded(
-
-              flex: (menuDashboardController.chartList.isEmpty && menuDashboardController.dashBoardWidgetList.isEmpty) ? 0 : 1,
+              flex: (menuDashboardController.chartList.isEmpty &&
+                      menuDashboardController.dashBoardWidgetList.isEmpty)
+                  ? 0
+                  : 1,
               child: ListView(
                 padding: EdgeInsets.symmetric(vertical: 10),
                 shrinkWrap: true,
@@ -50,14 +52,19 @@ class MenuDashboardPage extends StatelessWidget {
                   ...List.generate(
                       menuDashboardController.chartList.length,
                       (index) => Visibility(
-                            visible: validateModel(menuDashboardController.chartList[index]),
+                            visible: validateModel(
+                                menuDashboardController.chartList[index]),
                             child: Padding(
-                              padding: const EdgeInsets.only(bottom: 20, left: 15, right: 15),
-                              child: WidgetCharts(menuDashboardController.chartList[index]),
+                              padding: const EdgeInsets.only(
+                                  bottom: 20, left: 15, right: 15),
+                              child: WidgetCharts(
+                                  menuDashboardController.chartList[index]),
                             ),
                           )),
-                  ...List.generate(menuDashboardController.dashBoardWidgetList.length,
-                      (index) => menuDashboardController.dashBoardWidgetList[index]),
+                  ...List.generate(
+                      menuDashboardController.dashBoardWidgetList.length,
+                      (index) =>
+                          menuDashboardController.dashBoardWidgetList[index]),
                 ],
               ),
             ),

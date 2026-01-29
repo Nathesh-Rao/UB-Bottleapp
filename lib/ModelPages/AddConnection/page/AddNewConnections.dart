@@ -1,8 +1,8 @@
-import 'package:axpertflutter/Constants/MyColors.dart';
-import 'package:axpertflutter/ModelPages/AddConnection/Controllers/AddConnectionController.dart';
-import 'package:axpertflutter/ModelPages/AddConnection/Widgets/ConnectCode.dart';
-import 'package:axpertflutter/ModelPages/AddConnection/Widgets/QRCodeScanner.dart';
-import 'package:axpertflutter/ModelPages/AddConnection/Widgets/URLDetails.dart';
+import 'package:ubbottleapp/Constants/MyColors.dart';
+import 'package:ubbottleapp/ModelPages/AddConnection/Controllers/AddConnectionController.dart';
+import 'package:ubbottleapp/ModelPages/AddConnection/Widgets/ConnectCode.dart';
+import 'package:ubbottleapp/ModelPages/AddConnection/Widgets/QRCodeScanner.dart';
+import 'package:ubbottleapp/ModelPages/AddConnection/Widgets/URLDetails.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -26,7 +26,9 @@ class _AddNewConnectionState extends State<AddNewConnection> {
   void initState() {
     super.initState();
     LogService.writeLog(message: "[>] AddNewConnection");
-    if (argumentData != null && argumentData is List && argumentData.length > 1) {
+    if (argumentData != null &&
+        argumentData is List &&
+        argumentData.length > 1) {
       project = argumentData[1];
     }
     pages = [QRCodeScanner(), ConnectCode(), URLDetails(project: project)];
@@ -34,9 +36,11 @@ class _AddNewConnectionState extends State<AddNewConnection> {
     try {
       projectController.index.value = 0;
       projectController.heading.value = "Add new Connection";
-      if (argumentData != null) projectController.index.value = argumentData[0]?.toInt() ?? 0;
+      if (argumentData != null)
+        projectController.index.value = argumentData[0]?.toInt() ?? 0;
     } catch (e) {
-      LogService.writeLog(message: "[ERROR] AddNewConnection\Scope: initState\nError: $e");
+      LogService.writeLog(
+          message: "[ERROR] AddNewConnection\Scope: initState\nError: $e");
     }
     print(projectController.index.value);
     switch (projectController.index.value) {
@@ -82,7 +86,9 @@ class _AddNewConnectionState extends State<AddNewConnection> {
                 child: ClipRRect(
                   clipBehavior: Clip.antiAliasWithSaveLayer,
                   borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(80), topLeft: Radius.circular(80), topRight: Radius.circular(80)),
+                      bottomLeft: Radius.circular(80),
+                      topLeft: Radius.circular(80),
+                      topRight: Radius.circular(80)),
                   child: Container(
                     height: MediaQuery.of(context).size.height / 1.5,
                     width: MediaQuery.of(context).size.width,
@@ -107,11 +113,14 @@ class _AddNewConnectionState extends State<AddNewConnection> {
                               child: RadioListTile(
                                 activeColor: MyColors.blue2,
                                 contentPadding: EdgeInsets.zero,
-                                visualDensity: const VisualDensity(horizontal: VisualDensity.minimumDensity),
+                                visualDensity: const VisualDensity(
+                                    horizontal: VisualDensity.minimumDensity),
                                 value: "QR",
-                                groupValue: projectController.selectedRadioValue.value,
+                                groupValue:
+                                    projectController.selectedRadioValue.value,
                                 onChanged: (v) {
-                                  projectController.selectedRadioValue.value = v.toString();
+                                  projectController.selectedRadioValue.value =
+                                      v.toString();
                                   projectController.index.value = 0;
                                 },
                                 title: Text(
@@ -129,11 +138,14 @@ class _AddNewConnectionState extends State<AddNewConnection> {
                               child: RadioListTile(
                                 activeColor: MyColors.blue2,
                                 contentPadding: EdgeInsets.zero,
-                                visualDensity: const VisualDensity(horizontal: VisualDensity.minimumDensity),
+                                visualDensity: const VisualDensity(
+                                    horizontal: VisualDensity.minimumDensity),
                                 value: "CC",
-                                groupValue: projectController.selectedRadioValue.value,
+                                groupValue:
+                                    projectController.selectedRadioValue.value,
                                 onChanged: (v) {
-                                  projectController.selectedRadioValue.value = v.toString();
+                                  projectController.selectedRadioValue.value =
+                                      v.toString();
                                   projectController.index.value = 1;
                                 },
                                 title: Text(
@@ -151,11 +163,14 @@ class _AddNewConnectionState extends State<AddNewConnection> {
                               child: RadioListTile(
                                 activeColor: MyColors.blue2,
                                 contentPadding: EdgeInsets.zero,
-                                visualDensity: const VisualDensity(horizontal: VisualDensity.minimumDensity),
+                                visualDensity: const VisualDensity(
+                                    horizontal: VisualDensity.minimumDensity),
                                 value: "URL",
-                                groupValue: projectController.selectedRadioValue.value,
+                                groupValue:
+                                    projectController.selectedRadioValue.value,
                                 onChanged: (v) {
-                                  projectController.selectedRadioValue.value = v.toString();
+                                  projectController.selectedRadioValue.value =
+                                      v.toString();
                                   projectController.index.value = 2;
                                 },
                                 title: Text(

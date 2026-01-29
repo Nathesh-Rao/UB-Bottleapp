@@ -1,7 +1,7 @@
 import 'package:animate_do/animate_do.dart';
-import 'package:axpertflutter/Constants/MyColors.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/AttendanceManagement/controller/AttendanceController.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/AttendanceManagement/models/TeamMemberModel.dart';
+import 'package:ubbottleapp/Constants/MyColors.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/AttendanceManagement/controller/AttendanceController.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/AttendanceManagement/models/TeamMemberModel.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -122,8 +122,10 @@ class WidgetProfileBottomSheet extends StatelessWidget {
       duration: Duration(milliseconds: 500),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children: List.generate(attendanceController.teamMemberList.length,
-            (index) => _teamUserInfoWidget(attendanceController.teamMemberList[index])),
+        children: List.generate(
+            attendanceController.teamMemberList.length,
+            (index) => _teamUserInfoWidget(
+                attendanceController.teamMemberList[index])),
       ),
     );
   }

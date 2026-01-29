@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:axpertflutter/Constants/MyColors.dart';
-import 'package:axpertflutter/Utils/LogServices/LogService.dart';
+import 'package:ubbottleapp/Constants/MyColors.dart';
+import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';

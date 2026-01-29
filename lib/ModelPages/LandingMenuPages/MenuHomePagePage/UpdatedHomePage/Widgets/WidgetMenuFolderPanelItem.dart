@@ -1,11 +1,12 @@
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/Models/MenuFolderModel.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/Models/MenuFolderModel.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../../Constants/MyColors.dart';
 import 'WidgetMenuFolderPanelInnerItem.dart';
 
 class WidgetMenuFolderPanelItem extends StatelessWidget {
-  const WidgetMenuFolderPanelItem({super.key, required this.panelItems, required this.keyname});
+  const WidgetMenuFolderPanelItem(
+      {super.key, required this.panelItems, required this.keyname});
 
   final List<MenuFolderModel> panelItems;
   final String keyname;
@@ -59,7 +60,8 @@ class WidgetMenuFolderPanelItem extends StatelessWidget {
   }
 
   generateItems() {
-    List<Widget> items = List.generate(panelItems.length, (index) => WidgetMenuFolderPanelInnerItem(item: panelItems[index]));
+    List<Widget> items = List.generate(panelItems.length,
+        (index) => WidgetMenuFolderPanelInnerItem(item: panelItems[index]));
 
     if (items.length >= 8) {
       items = items.sublist(0, 7);

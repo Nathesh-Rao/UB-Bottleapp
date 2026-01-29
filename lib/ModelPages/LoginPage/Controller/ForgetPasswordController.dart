@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:axpertflutter/Constants/CommonMethods.dart';
-import 'package:axpertflutter/Constants/Const.dart';
-import 'package:axpertflutter/Utils/ServerConnections/ServerConnections.dart';
+import 'package:ubbottleapp/Constants/CommonMethods.dart';
+import 'package:ubbottleapp/Constants/Const.dart';
+import 'package:ubbottleapp/Utils/ServerConnections/ServerConnections.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -62,8 +62,12 @@ class ForgetPasswordController extends GetxController {
       String val = item["usergroup"].toString();
       userTypeList.add(CommonMethods.capitalize(val));
     }
-    userTypeList..sort((a, b) => a.toString().toLowerCase().compareTo(b.toString().toLowerCase()));
-    userTypeList.contains("Power") ? ddSelectedValue.value = "Power" : ddSelectedValue.value = userTypeList[0];
+    userTypeList
+      ..sort((a, b) =>
+          a.toString().toLowerCase().compareTo(b.toString().toLowerCase()));
+    userTypeList.contains("Power")
+        ? ddSelectedValue.value = "Power"
+        : ddSelectedValue.value = userTypeList[0];
     //dropDownItemChanged(ddSelectedValue);
   }
 
@@ -103,7 +107,8 @@ class ForgetPasswordController extends GetxController {
 
   bool validateOTPSubmittionForm() {
     otpError.value = passError.value = conPassError.value = '';
-    Pattern pattern = r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~]).{7,}$';
+    Pattern pattern =
+        r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~]).{7,}$';
     RegExp regex = RegExp(pattern.toString());
     if (otpController.text.toString() == "") {
       otpError.value = "Enter OTP";
@@ -118,7 +123,8 @@ class ForgetPasswordController extends GetxController {
       return false;
     }
     if (!regex.hasMatch(passwordController.text)) {
-      passError.value = "Password should contain upper,lower,digit and Special character";
+      passError.value =
+          "Password should contain upper,lower,digit and Special character";
       return false;
     }
     if (passwordController.text.length <= 7) {
@@ -147,14 +153,17 @@ class ForgetPasswordController extends GetxController {
         'email': emailController.text.trim().toString()
       };
       var url = Const.getFullARMUrl(ServerConnections.API_FORGOTPASSWORD);
-      var resp = await serverConnections.postToServer(url: url, body: jsonEncode(body));
+      var resp = await serverConnections.postToServer(
+          url: url, body: jsonEncode(body));
       LoadingScreen.dismiss();
       if (resp.toString() != "") {
         var jsonMsg = jsonDecode(resp);
         print(jsonMsg);
         if (jsonMsg['result']['success'].toString() == "false") {
           Get.snackbar("Alert!", jsonMsg['result']['message'],
-              snackPosition: SnackPosition.BOTTOM, colorText: Colors.white, backgroundColor: Colors.red);
+              snackPosition: SnackPosition.BOTTOM,
+              colorText: Colors.white,
+              backgroundColor: Colors.red);
         } else {
           Get.defaultDialog(
               title: "Success",
@@ -197,7 +206,8 @@ class ForgetPasswordController extends GetxController {
       'otp': enteredPin.value,
     };
     var url = Const.getFullARMUrl(ServerConnections.API_OTP_VALIDATE_USER);
-    var responses = await serverConnections.postToServer(url: url, body: jsonEncode(otpBody));
+    var responses = await serverConnections.postToServer(
+        url: url, body: jsonEncode(otpBody));
     //print(responses);
     if (responses != "") {
       var jsonResp = jsonDecode(responses);
@@ -218,7 +228,8 @@ class ForgetPasswordController extends GetxController {
         reSendOtpCount++;
         otpError.value = "";
       } else {
-        otpError.value = "You exceeds the maximum limit.\nPlease try again later";
+        otpError.value =
+            "You exceeds the maximum limit.\nPlease try again later";
       }
     } catch (e) {
       otpError.value = "You exceeds the maximum limit.\nPlease try again later";
@@ -238,14 +249,18 @@ class ForgetPasswordController extends GetxController {
         'updatedPassword': passwordController.text.trim().toString(),
         'otp': otpController.text.trim().toString(),
       };
-      var url = Const.getFullARMUrl(ServerConnections.API_VALIDATE_FORGETPASSWORD);
-      var resp = await serverConnections.postToServer(url: url, body: jsonEncode(body));
+      var url =
+          Const.getFullARMUrl(ServerConnections.API_VALIDATE_FORGETPASSWORD);
+      var resp = await serverConnections.postToServer(
+          url: url, body: jsonEncode(body));
       LoadingScreen.dismiss();
       if (resp != "" && !resp.toString().toLowerCase().contains(("error"))) {
         var jsonResp = jsonDecode(resp);
         if (jsonResp['result']['success'].toString() == "false") {
           Get.snackbar("Alert!", jsonResp['result']['message'],
-              snackPosition: SnackPosition.BOTTOM, colorText: Colors.white, backgroundColor: Colors.red);
+              snackPosition: SnackPosition.BOTTOM,
+              colorText: Colors.white,
+              backgroundColor: Colors.red);
         } else {
           Get.defaultDialog(
               title: "Success",

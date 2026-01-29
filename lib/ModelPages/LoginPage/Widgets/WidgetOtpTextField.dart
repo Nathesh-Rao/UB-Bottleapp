@@ -1,5 +1,5 @@
-import 'package:axpertflutter/Constants/MyColors.dart';
-import 'package:axpertflutter/ModelPages/LoginPage/Widgets/WidgetRotatingSuffixField.dart';
+import 'package:ubbottleapp/Constants/MyColors.dart';
+import 'package:ubbottleapp/ModelPages/LoginPage/Widgets/WidgetRotatingSuffixField.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:otp_text_field/otp_field.dart';
@@ -16,7 +16,6 @@ class WidgetOtpTextField extends StatelessWidget {
     this.controller,
     this.errorText = '',
     this.onCompleted,
-
   });
 
   final String label;
@@ -97,7 +96,7 @@ class WidgetOtpTextField extends StatelessWidget {
               length: otpLength,
               controller: controller,
               defaultPinTheme: errorText.isNotEmpty ? errorTheme : defaultTheme,
-             /* validator: (value) {
+              /* validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'PIN is required';
                 } else if (value.length < 4) {

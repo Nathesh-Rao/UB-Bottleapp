@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import 'package:axpertflutter/ModelPages/LandingPage/Widgets/WidgetKPIPanelItem.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/Widgets/WidgetKPIPanelItem.dart';
 import 'package:flutter/material.dart';
 
 class Widgetkpipanel extends StatelessWidget {

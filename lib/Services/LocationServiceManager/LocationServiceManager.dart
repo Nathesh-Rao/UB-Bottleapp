@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:axpertflutter/Utils/FirebaseHandler/FirebaseMessagesHandler.dart';
-import 'package:axpertflutter/Utils/LogServices/LogService.dart';
+import 'package:ubbottleapp/Utils/FirebaseHandler/FirebaseMessagesHandler.dart';
+import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
 import 'package:background_location_tracker/background_location_tracker.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -35,7 +35,8 @@ class LocationServiceManager {
         if (dataString != "" && interval != "0") {
           Map data = jsonDecode(dataString);
           if (lastApiCall == "0") {
-            inner['lastApiCall'] = DateFormat("dd-MM-yyyy HH:mm:ss").format(DateTime.now());
+            inner['lastApiCall'] =
+                DateFormat("dd-MM-yyyy HH:mm:ss").format(DateTime.now());
             sharedPref = await SharedPreferences.getInstance();
             await sharedPref.reload();
             await sharedPref.setString("outerData", jsonEncode(outerData));
@@ -45,10 +46,12 @@ class LocationServiceManager {
           } else {
             var dt = DateFormat("dd-MM-yyyy HH:mm:ss").parse(lastApiCall);
             var diff = DateTime.now().difference(dt).inMinutes;
-            print("Time difference ${diff} minutes; interval ${interval}; last call ${lastApiCall}; Identifier ${keyField}");
+            print(
+                "Time difference ${diff} minutes; interval ${interval}; last call ${lastApiCall}; Identifier ${keyField}");
             if (diff >= int.parse(interval)) {
               lastApiCall = "-1";
-              inner['lastApiCall'] = DateFormat("dd-MM-yyyy HH:mm:ss").format(DateTime.now());
+              inner['lastApiCall'] =
+                  DateFormat("dd-MM-yyyy HH:mm:ss").format(DateTime.now());
               sharedPref = await SharedPreferences.getInstance();
               await sharedPref.reload();
               await sharedPref.setString("outerData", jsonEncode(outerData));
@@ -103,7 +106,8 @@ void backgroundCallback() async {
   BackgroundLocationTrackerManager.handleBackgroundUpdated(
     (BackgroundLocationUpdateData data) async {
       print("update");
-      await LocationServiceManager().saveLocationDataToSharedPref(data.lat.toString(), data.lon.toString());
+      await LocationServiceManager().saveLocationDataToSharedPref(
+          data.lat.toString(), data.lon.toString());
     },
   );
 }
@@ -125,7 +129,9 @@ initLocationService() async {
       ),
     ),
   );
-  LogService.writeOnConsole(message: "initLocationService()=> BackgroundLocationTrackerManager initialized");
+  LogService.writeOnConsole(
+      message:
+          "initLocationService()=> BackgroundLocationTrackerManager initialized");
 }
 
 Future startLocationTracking() async {

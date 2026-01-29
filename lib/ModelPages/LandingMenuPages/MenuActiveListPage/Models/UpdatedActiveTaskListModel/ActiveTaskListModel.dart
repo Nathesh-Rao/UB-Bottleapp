@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuActiveListPage/Models/PendingListModel.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuActiveListPage/Models/PendingListModel.dart';
 
 class ActiveTaskListModel {
   String? touser;
@@ -115,7 +115,8 @@ class ActiveTaskListModel {
     this.cstatus,
   });
 
-  factory ActiveTaskListModel.fromRawJson(String str) => ActiveTaskListModel.fromJson(json.decode(str));
+  factory ActiveTaskListModel.fromRawJson(String str) =>
+      ActiveTaskListModel.fromJson(json.decode(str));
 
   String toRawJson() => json.encode(toJson());
 
@@ -165,7 +166,8 @@ class ActiveTaskListModel {
         hlink_transid: hlinkTransid ?? "",
         hlink_params: hlinkParams ?? "",
       );
-  factory ActiveTaskListModel.fromJson(Map<String, dynamic> json) => ActiveTaskListModel(
+  factory ActiveTaskListModel.fromJson(Map<String, dynamic> json) =>
+      ActiveTaskListModel(
         touser: json["touser"],
         processname: json["processname"],
         taskname: json["taskname"],

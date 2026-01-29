@@ -1,12 +1,12 @@
-import 'package:axpertflutter/Constants/CommonMethods.dart';
-import 'package:axpertflutter/Constants/Routes.dart';
-import 'package:axpertflutter/Constants/Const.dart';
-import 'package:axpertflutter/ModelPages/InApplicationWebView/controller/webview_controller.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuActiveListPage/Controllers/ListItemDetailsController.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuActiveListPage/Controllers/PendingListController.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuActiveListPage/Widgets/WidgetDottedSeparator.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuActiveListPage/Widgets/WidgetPendingListItem.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/Widgets/WidgetNoDataFound.dart';
+import 'package:ubbottleapp/Constants/CommonMethods.dart';
+import 'package:ubbottleapp/Constants/Routes.dart';
+import 'package:ubbottleapp/Constants/Const.dart';
+import 'package:ubbottleapp/ModelPages/InApplicationWebView/controller/webview_controller.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuActiveListPage/Controllers/ListItemDetailsController.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuActiveListPage/Controllers/PendingListController.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuActiveListPage/Widgets/WidgetDottedSeparator.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuActiveListPage/Widgets/WidgetPendingListItem.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/Widgets/WidgetNoDataFound.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -15,7 +15,8 @@ import 'package:hexcolor/hexcolor.dart';
 class PendingListPage extends StatelessWidget {
   PendingListPage({super.key});
 
-  final PendingListController pendingListController = Get.put(PendingListController());
+  final PendingListController pendingListController =
+      Get.put(PendingListController());
   @override
   Widget build(BuildContext context) {
     return Obx(() {
@@ -45,18 +46,23 @@ reBuild(PendingListController pendingListController, BuildContext context) {
                 controller: pendingListController.searchController,
                 onChanged: pendingListController.filterList,
                 decoration: InputDecoration(
-                    prefixIcon: pendingListController.searchController.text.toString() == ""
+                    prefixIcon: pendingListController.searchController.text
+                                .toString() ==
+                            ""
                         ? GestureDetector(child: Icon(Icons.search))
                         : GestureDetector(
                             onTap: () {
                               pendingListController.clearCalled();
                             },
-                            child: Icon(Icons.clear, color: HexColor("#8E8E8EA3")),
+                            child:
+                                Icon(Icons.clear, color: HexColor("#8E8E8EA3")),
                           ),
                     isDense: true,
                     contentPadding: EdgeInsets.zero,
                     hintText: "Search",
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(width: 1))),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(width: 1))),
               ),
             ),
             SizedBox(width: 6),
@@ -71,7 +77,9 @@ reBuild(PendingListController pendingListController, BuildContext context) {
                   height: 35,
                   width: 30,
                   decoration: BoxDecoration(
-                      color: pendingListController.selectedIconNumber.value == 4 ? HexColor('0E72FD') : Colors.white,
+                      color: pendingListController.selectedIconNumber.value == 4
+                          ? HexColor('0E72FD')
+                          : Colors.white,
                       borderRadius: BorderRadius.circular(10)),
                   child: Center(
                     child: Icon(
@@ -92,13 +100,16 @@ reBuild(PendingListController pendingListController, BuildContext context) {
               child: GestureDetector(
                 onTap: () {
                   pendingListController.selectedIconNumber.value = 5;
-                  Get.dialog(showBulkApprovalProcessDialog(context, pendingListController));
+                  Get.dialog(showBulkApprovalProcessDialog(
+                      context, pendingListController));
                 },
                 child: Container(
                   height: 35,
                   width: 30,
                   decoration: BoxDecoration(
-                      color: pendingListController.selectedIconNumber.value == 5 ? HexColor('0E72FD') : Colors.white,
+                      color: pendingListController.selectedIconNumber.value == 5
+                          ? HexColor('0E72FD')
+                          : Colors.white,
                       borderRadius: BorderRadius.circular(10)),
                   child: Center(
                     child: Icon(
@@ -117,8 +128,10 @@ reBuild(PendingListController pendingListController, BuildContext context) {
       ),
       // SizedBox(height: 10),
       Visibility(
-          visible:
-              (pendingListController.pending_activeList.length == 0 && !pendingListController.isLoading.value) ? true : false,
+          visible: (pendingListController.pending_activeList.length == 0 &&
+                  !pendingListController.isLoading.value)
+              ? true
+              : false,
           child: WidgetNoDataFound()),
 
       Visibility(
@@ -128,17 +141,26 @@ reBuild(PendingListController pendingListController, BuildContext context) {
                 itemBuilder: (context, index) {
                   return ListTile(
                     onTap: () async {
-                      print(pendingListController.pending_activeList[index].toJson());
-                      switch (pendingListController.pending_activeList[index].tasktype.toString().toUpperCase()) {
+                      print(pendingListController.pending_activeList[index]
+                          .toJson());
+                      switch (pendingListController
+                          .pending_activeList[index].tasktype
+                          .toString()
+                          .toUpperCase()) {
                         case "MAKE":
-                          var URL = CommonMethods.activeList_CreateURL_MAKE(pendingListController.pending_activeList[index]);
+                          var URL = CommonMethods.activeList_CreateURL_MAKE(
+                              pendingListController.pending_activeList[index]);
                           // if (!URL.isEmpty) Get.toNamed(Routes.InApplicationWebViewer, arguments: [Const.getFullWebUrl(URL)]);
-                          if (!URL.isEmpty) webViewController.openWebView(url: Const.getFullWebUrl(URL));
+                          if (!URL.isEmpty)
+                            webViewController.openWebView(
+                                url: Const.getFullWebUrl(URL));
                           break;
                         case "CHECK":
                         case "APPROVE":
-                          ListItemDetailsController listItemDetailsController = Get.put(ListItemDetailsController());
-                          listItemDetailsController.openModel = pendingListController.pending_activeList[index];
+                          ListItemDetailsController listItemDetailsController =
+                              Get.put(ListItemDetailsController());
+                          listItemDetailsController.openModel =
+                              pendingListController.pending_activeList[index];
                           print("Going to active details page");
                           await Get.toNamed(Routes.ProjectListingPageDetails);
                           print("returned from active details page");
@@ -146,16 +168,20 @@ reBuild(PendingListController pendingListController, BuildContext context) {
                         case "":
                         case "NULL":
                         case "CACHED SAVE":
-                          var URL = CommonMethods.activeList_CreateURL_MESSAGE(pendingListController.pending_activeList[index]);
+                          var URL = CommonMethods.activeList_CreateURL_MESSAGE(
+                              pendingListController.pending_activeList[index]);
                           // if (!URL.isEmpty) Get.toNamed(Routes.InApplicationWebViewer, arguments: [Const.getFullWebUrl(URL)]);
-                          if (!URL.isEmpty) webViewController.openWebView(url: Const.getFullWebUrl(URL));
+                          if (!URL.isEmpty)
+                            webViewController.openWebView(
+                                url: Const.getFullWebUrl(URL));
 
                           break;
                         default:
                           break;
                       }
                     },
-                    title: WidgetPendingListItem(pendingListController.pending_activeList[index]),
+                    title: WidgetPendingListItem(
+                        pendingListController.pending_activeList[index]),
                   );
                   // return GestureDetector(
                   //     onTap: () {
@@ -176,7 +202,8 @@ reBuild(PendingListController pendingListController, BuildContext context) {
 }
 
 Widget showFilterDialog(BuildContext context, var pendingListController) {
-  pendingListController.errDateFrom.value = pendingListController.errDateTo.value = '';
+  pendingListController.errDateFrom.value =
+      pendingListController.errDateTo.value = '';
   return Obx(() => GestureDetector(
         onTap: () {
           FocusManager.instance.primaryFocus?.unfocus();
@@ -191,10 +218,14 @@ Widget showFilterDialog(BuildContext context, var pendingListController) {
                   Center(
                     child: Text(
                       "Filter results",
-                      style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
                     ),
                   ),
-                  Container(margin: EdgeInsets.only(top: 10), height: 1, color: Colors.grey.withOpacity(0.6)),
+                  Container(
+                      margin: EdgeInsets.only(top: 10),
+                      height: 1,
+                      color: Colors.grey.withOpacity(0.6)),
                   SizedBox(height: 20),
                   // TextField(
                   //   controller: pendingListController.searchTextController,
@@ -225,19 +256,23 @@ Widget showFilterDialog(BuildContext context, var pendingListController) {
                         fillColor: Colors.grey.withOpacity(0.05),
                         suffix: GestureDetector(
                             onTap: () {
-                              pendingListController.processNameController.text = "";
+                              pendingListController.processNameController.text =
+                                  "";
                               FocusManager.instance.primaryFocus?.unfocus();
                             },
                             child: Container(
                               child: Text("X"),
                             )),
-                        border: OutlineInputBorder(borderSide: BorderSide(width: 1), borderRadius: BorderRadius.circular(10)),
+                        border: OutlineInputBorder(
+                            borderSide: BorderSide(width: 1),
+                            borderRadius: BorderRadius.circular(10)),
                         hintText: "Process Name "),
                   ),
                   Center(
                       child: Padding(
                           padding: EdgeInsets.only(top: 10, bottom: 10),
-                          child: Text("OR", style: TextStyle(fontWeight: FontWeight.bold)))),
+                          child: Text("OR",
+                              style: TextStyle(fontWeight: FontWeight.bold)))),
                   TextField(
                     controller: pendingListController.fromUserController,
                     decoration: InputDecoration(
@@ -245,19 +280,23 @@ Widget showFilterDialog(BuildContext context, var pendingListController) {
                         fillColor: Colors.grey.withOpacity(0.05),
                         suffix: GestureDetector(
                             onTap: () {
-                              pendingListController.fromUserController.text = "";
+                              pendingListController.fromUserController.text =
+                                  "";
                               FocusManager.instance.primaryFocus?.unfocus();
                             },
                             child: Container(
                               child: Text("X"),
                             )),
-                        border: OutlineInputBorder(borderSide: BorderSide(width: 1), borderRadius: BorderRadius.circular(10)),
+                        border: OutlineInputBorder(
+                            borderSide: BorderSide(width: 1),
+                            borderRadius: BorderRadius.circular(10)),
                         hintText: "From User "),
                   ),
                   Center(
                       child: Padding(
                           padding: EdgeInsets.only(top: 10, bottom: 10),
-                          child: Text("OR", style: TextStyle(fontWeight: FontWeight.bold)))),
+                          child: Text("OR",
+                              style: TextStyle(fontWeight: FontWeight.bold)))),
                   TextField(
                     controller: pendingListController.dateFromController,
                     textAlign: TextAlign.center,
@@ -266,17 +305,22 @@ Widget showFilterDialog(BuildContext context, var pendingListController) {
                         fillColor: Colors.grey.withOpacity(0.05),
                         suffix: GestureDetector(
                             onTap: () {
-                              pendingListController.dateFromController.text = "";
+                              pendingListController.dateFromController.text =
+                                  "";
                             },
                             child: Container(
                               child: Text("X"),
                             )),
-                        border: OutlineInputBorder(borderSide: BorderSide(width: 1), borderRadius: BorderRadius.circular(10)),
-                        errorText: pendingListController.errText(pendingListController.errDateFrom.value),
+                        border: OutlineInputBorder(
+                            borderSide: BorderSide(width: 1),
+                            borderRadius: BorderRadius.circular(10)),
+                        errorText: pendingListController
+                            .errText(pendingListController.errDateFrom.value),
                         hintText: "From Date: DD-MMM-YYYY "),
                     canRequestFocus: false,
                     onTap: () {
-                      selectDate(context, pendingListController.dateFromController);
+                      selectDate(
+                          context, pendingListController.dateFromController);
                     },
                     enableInteractiveSelection: false,
                   ),
@@ -294,13 +338,17 @@ Widget showFilterDialog(BuildContext context, var pendingListController) {
                             child: Container(
                               child: Text("X"),
                             )),
-                        border: OutlineInputBorder(borderSide: BorderSide(width: 1), borderRadius: BorderRadius.circular(10)),
-                        errorText: pendingListController.errText(pendingListController.errDateTo.value),
+                        border: OutlineInputBorder(
+                            borderSide: BorderSide(width: 1),
+                            borderRadius: BorderRadius.circular(10)),
+                        errorText: pendingListController
+                            .errText(pendingListController.errDateTo.value),
                         hintText: "To Date: DD-MMM-YYYY"),
                     canRequestFocus: false,
                     enableInteractiveSelection: false,
                     onTap: () {
-                      selectDate(context, pendingListController.dateToController);
+                      selectDate(
+                          context, pendingListController.dateToController);
                     },
                   ),
                   SizedBox(height: 20),
@@ -335,15 +383,35 @@ Widget showFilterDialog(BuildContext context, var pendingListController) {
 
 void selectDate(BuildContext context, TextEditingController text) async {
   FocusManager.instance.primaryFocus?.unfocus();
-  const months = <String>['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  final DateTime? picked =
-      await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime(1990), lastDate: DateTime.now());
+  const months = <String>[
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec'
+  ];
+  final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1990),
+      lastDate: DateTime.now());
   if (picked != null)
-    text.text =
-        picked.day.toString().padLeft(2, '0') + "-" + months[picked.month - 1] + "-" + picked.year.toString().padLeft(2, '0');
+    text.text = picked.day.toString().padLeft(2, '0') +
+        "-" +
+        months[picked.month - 1] +
+        "-" +
+        picked.year.toString().padLeft(2, '0');
 }
 
-Widget showBulkApprovalProcessDialog(BuildContext context, PendingListController pendingListController) {
+Widget showBulkApprovalProcessDialog(
+    BuildContext context, PendingListController pendingListController) {
   return Obx(() => GestureDetector(
         onTap: () {
           FocusManager.instance.primaryFocus?.unfocus();
@@ -358,10 +426,14 @@ Widget showBulkApprovalProcessDialog(BuildContext context, PendingListController
                   Center(
                     child: Text(
                       "Bulk Approve",
-                      style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
                     ),
                   ),
-                  Container(margin: EdgeInsets.only(top: 10), height: 1, color: Colors.grey.withOpacity(0.6)),
+                  Container(
+                      margin: EdgeInsets.only(top: 10),
+                      height: 1,
+                      color: Colors.grey.withOpacity(0.6)),
                   SizedBox(height: 20),
                   ConstrainedBox(
                     constraints: new BoxConstraints(
@@ -369,16 +441,21 @@ Widget showBulkApprovalProcessDialog(BuildContext context, PendingListController
                     ),
                     child: ListView.separated(
                       shrinkWrap: true,
-                      itemCount: pendingListController.bulkApprovalCount_list.length,
+                      itemCount:
+                          pendingListController.bulkApprovalCount_list.length,
                       itemBuilder: (BuildContext context, int index) {
                         return ListTile(
                           onTap: () {
                             Get.back();
-                            pendingListController
-                                .getBulkActiveTasks(pendingListController.bulkApprovalCount_list[index].processname.toString());
-                            Get.dialog(showBulkApproval_DetailDialog(context, pendingListController));
+                            pendingListController.getBulkActiveTasks(
+                                pendingListController
+                                    .bulkApprovalCount_list[index].processname
+                                    .toString());
+                            Get.dialog(showBulkApproval_DetailDialog(
+                                context, pendingListController));
                           },
-                          title: WidgetBulkAppr_CountItem(pendingListController.bulkApprovalCount_list[index]),
+                          title: WidgetBulkAppr_CountItem(pendingListController
+                              .bulkApprovalCount_list[index]),
                         );
                       },
                       separatorBuilder: (context, index) {
@@ -450,12 +527,15 @@ Widget WidgetBulkAppr_CountItem(var bulkApprovalCountModel) {
             height: 30,
             width: 30,
             padding: EdgeInsets.all(0),
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(50), color: Colors.red, boxShadow: [
-              BoxShadow(
-                color: Colors.grey,
-                offset: Offset(1, 1),
-              )
-            ]),
+            decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(50),
+                color: Colors.red,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey,
+                    offset: Offset(1, 1),
+                  )
+                ]),
             child: Center(
                 child: Text(
               bulkApprovalCountModel.pendingapprovals.toString(),
@@ -468,7 +548,8 @@ Widget WidgetBulkAppr_CountItem(var bulkApprovalCountModel) {
   );
 }
 
-Widget showBulkApproval_DetailDialog(BuildContext context, PendingListController pendingListController) {
+Widget showBulkApproval_DetailDialog(
+    BuildContext context, PendingListController pendingListController) {
   return Obx(() => Dialog(
         child: Padding(
           padding: EdgeInsets.only(left: 20, right: 20, top: 15, bottom: 20),
@@ -480,16 +561,21 @@ Widget showBulkApproval_DetailDialog(BuildContext context, PendingListController
                   child: CheckboxListTile(
                     title: Text(
                       "Bulk Approval ",
-                      style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
                     ),
                     value: pendingListController.isBulkAppr_SelectAll.value,
                     controlAffinity: ListTileControlAffinity.trailing,
                     onChanged: (bool? value) {
-                      pendingListController.selectAll_BulkApproveList_item(value);
+                      pendingListController
+                          .selectAll_BulkApproveList_item(value);
                     },
                   ),
                 ),
-                Container(margin: EdgeInsets.only(top: 10), height: 1, color: Colors.grey.withOpacity(0.6)),
+                Container(
+                    margin: EdgeInsets.only(top: 10),
+                    height: 1,
+                    color: Colors.grey.withOpacity(0.6)),
                 SizedBox(height: 20),
                 ConstrainedBox(
                   constraints: new BoxConstraints(
@@ -497,18 +583,25 @@ Widget showBulkApproval_DetailDialog(BuildContext context, PendingListController
                   ),
                   child: ListView.separated(
                     shrinkWrap: true,
-                    itemCount: pendingListController.bulkApproval_activeList.length,
+                    itemCount:
+                        pendingListController.bulkApproval_activeList.length,
                     itemBuilder: (BuildContext context, int index) {
                       return CheckboxListTile(
-                        value: pendingListController.bulkApproval_activeList[index].bulkApprove_isSelected.value,
+                        value: pendingListController
+                            .bulkApproval_activeList[index]
+                            .bulkApprove_isSelected
+                            .value,
                         controlAffinity: ListTileControlAffinity.trailing,
                         contentPadding: EdgeInsets.zero,
                         dense: true,
                         onChanged: (value) {
-                          pendingListController.onChange_BulkApprItem(index, value);
+                          pendingListController.onChange_BulkApprItem(
+                              index, value);
                         },
                         title: widgetBulkApproval_ListItem(
-                            pendingListController, pendingListController.bulkApproval_activeList[index]),
+                            pendingListController,
+                            pendingListController
+                                .bulkApproval_activeList[index]),
                       );
                     },
                     separatorBuilder: (context, index) {
@@ -526,7 +619,8 @@ Widget showBulkApproval_DetailDialog(BuildContext context, PendingListController
                   margin: EdgeInsets.only(top: 10),
                   child: TextField(
                     decoration: InputDecoration(
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10)),
                         hintText: "Enter Comments",
                         labelText: "Enter Comments",
                         filled: true,
@@ -556,7 +650,8 @@ Widget showBulkApproval_DetailDialog(BuildContext context, PendingListController
       ));
 }
 
-Widget widgetBulkApproval_ListItem(PendingListController pendingListController, itemModel) {
+Widget widgetBulkApproval_ListItem(
+    PendingListController pendingListController, itemModel) {
   return Container(
     padding: EdgeInsets.only(top: 5, bottom: 5),
     child: Column(
@@ -569,7 +664,10 @@ Widget widgetBulkApproval_ListItem(PendingListController pendingListController, 
               child: Text(
                 itemModel.displaytitle.toString(),
                 style: GoogleFonts.roboto(
-                    textStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: HexColor('#495057'))),
+                    textStyle: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: HexColor('#495057'))),
                 textAlign: TextAlign.left,
                 maxLines: 2,
                 // selectable: true,

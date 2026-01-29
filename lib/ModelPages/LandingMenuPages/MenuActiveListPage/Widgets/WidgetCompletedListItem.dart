@@ -1,5 +1,5 @@
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuActiveListPage/Controllers/CompletedListController.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuActiveListPage/Models/PendingListModel.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuActiveListPage/Controllers/CompletedListController.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuActiveListPage/Models/PendingListModel.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -28,12 +28,15 @@ class WidgetCompletedListItem extends StatelessWidget {
                   height: 30,
                   width: 30,
                   padding: EdgeInsets.all(5),
-                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(50), color: Colors.white, boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey,
-                      offset: Offset(1, 1),
-                    )
-                  ]),
+                  decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(50),
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey,
+                          offset: Offset(1, 1),
+                        )
+                      ]),
                   child: CircleAvatar(
                     backgroundImage: AssetImage(
                       'assets/images/add_circle.png',
@@ -46,7 +49,9 @@ class WidgetCompletedListItem extends StatelessWidget {
                   child: Container(
                     height: 10,
                     width: 10,
-                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(50), color: Colors.green),
+                    decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(50),
+                        color: Colors.green),
                   ),
                 )
               ],
@@ -64,7 +69,10 @@ class WidgetCompletedListItem extends StatelessWidget {
                       child: Text(
                         completedActiveListModel.displaytitle.toString(),
                         style: GoogleFonts.roboto(
-                            textStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: HexColor('#495057'))),
+                            textStyle: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: HexColor('#495057'))),
                         // mode: TextScrollMode.endless,
                         // velocity: Velocity(pixelsPerSecond: Offset(30, 0)),
                         // delayBefore: Duration(milliseconds: 1500),
@@ -101,7 +109,10 @@ class WidgetCompletedListItem extends StatelessWidget {
                     SizedBox(
                       width: 5,
                     ),
-                    Text(completedActiveListModel.fromuser.toString().capitalize!,
+                    Text(
+                        completedActiveListModel.fromuser
+                            .toString()
+                            .capitalize!,
                         style: GoogleFonts.roboto(
                           textStyle: TextStyle(
                             fontSize: 14,
@@ -116,7 +127,9 @@ class WidgetCompletedListItem extends StatelessWidget {
                   children: [
                     Icon(Icons.calendar_today_outlined, size: 16),
                     SizedBox(width: 10),
-                    Text(completedListController.getDateValue(completedActiveListModel.eventdatetime),
+                    Text(
+                        completedListController.getDateValue(
+                            completedActiveListModel.eventdatetime),
                         style: GoogleFonts.roboto(
                           textStyle: TextStyle(
                             fontSize: 12,
@@ -127,7 +140,9 @@ class WidgetCompletedListItem extends StatelessWidget {
                     Expanded(child: Text("")),
                     Icon(Icons.access_time, size: 16),
                     SizedBox(width: 10),
-                    Text(completedListController.getTimeValue(completedActiveListModel.eventdatetime),
+                    Text(
+                        completedListController.getTimeValue(
+                            completedActiveListModel.eventdatetime),
                         style: GoogleFonts.roboto(
                           textStyle: TextStyle(
                             fontSize: 12,

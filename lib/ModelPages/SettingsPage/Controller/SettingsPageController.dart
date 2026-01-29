@@ -1,5 +1,5 @@
-import 'package:axpertflutter/Constants/AppStorage.dart';
-import 'package:axpertflutter/Utils/LogServices/LogService.dart';
+import 'package:ubbottleapp/Constants/AppStorage.dart';
+import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -13,11 +13,13 @@ class SettingsPageController extends GetxController {
     getLogStatusDetails();
   }
   getNotifyStatusDetails() async {
-    notificationOnOffValue.value = await appStorage.retrieveValue(AppStorage.isShowNotifyEnabled);
+    notificationOnOffValue.value =
+        await appStorage.retrieveValue(AppStorage.isShowNotifyEnabled);
   }
 
   void getLogStatusDetails() async {
-    logOnOffValue.value = await appStorage.retrieveValue(AppStorage.isLogEnabled);
+    logOnOffValue.value =
+        await appStorage.retrieveValue(AppStorage.isLogEnabled);
   }
 
   setNotifyValue(value) async {

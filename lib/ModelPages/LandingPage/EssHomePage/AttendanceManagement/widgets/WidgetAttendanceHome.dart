@@ -1,7 +1,7 @@
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/AttendanceManagement/controller/AttendanceController.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/AttendanceManagement/widgets/WidgetTabAttendance.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/AttendanceManagement/widgets/WidgetTabInOutHub.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/AttendanceManagement/widgets/WidgetTabLeavesHub.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/AttendanceManagement/controller/AttendanceController.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/AttendanceManagement/widgets/WidgetTabAttendance.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/AttendanceManagement/widgets/WidgetTabInOutHub.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/AttendanceManagement/widgets/WidgetTabLeavesHub.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 

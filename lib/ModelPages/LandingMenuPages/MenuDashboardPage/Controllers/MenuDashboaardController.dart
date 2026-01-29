@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'dart:ui';
 
-import 'package:axpertflutter/Constants/AppStorage.dart';
-import 'package:axpertflutter/Constants/CommonMethods.dart';
-import 'package:axpertflutter/Constants/Const.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuDashboardPage/Models/ChartCardModel.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/UpdatedHomePage/Widgets/UpdatedWidgets11.4/WidgetBannerCard.dart';
-import 'package:axpertflutter/Utils/LogServices/LogService.dart';
-import 'package:axpertflutter/Utils/ServerConnections/ServerConnections.dart';
+import 'package:ubbottleapp/Constants/AppStorage.dart';
+import 'package:ubbottleapp/Constants/CommonMethods.dart';
+import 'package:ubbottleapp/Constants/Const.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuDashboardPage/Models/ChartCardModel.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/UpdatedHomePage/Widgets/UpdatedWidgets11.4/WidgetBannerCard.dart';
+import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
+import 'package:ubbottleapp/Utils/ServerConnections/ServerConnections.dart';
 import 'package:get/get.dart';
 
 import '../../../../Constants/MyColors.dart';
@@ -25,16 +25,13 @@ class MenuDashboardController extends GetxController {
   RxList<ChartCardModel> chartList = <ChartCardModel>[].obs;
   var dashBoardWidgetList = [].obs;
 
-
   MenuDashboardController() {
     fetchDataFromServer();
     print('Session: ${appStorage.retrieveValue(AppStorage.SESSIONID)}');
     print('Token: ${appStorage.retrieveValue(AppStorage.TOKEN)}');
   }
 
-  init(){
-
-  }
+  init() {}
 
   fetchDataFromServer() async {
     LoadingScreen.show();
@@ -45,13 +42,14 @@ class MenuDashboardController extends GetxController {
       "HomePageCards": false,
       "RefreshData": false,
       "IsMobile": true
-     /* "AppName": appStorage.retrieveValue(AppStorage.PROJECT_NAME),
+      /* "AppName": appStorage.retrieveValue(AppStorage.PROJECT_NAME),
       "Roles": "default",
       "UserName": appStorage.retrieveValue(AppStorage.USER_NAME),
       "AxSessionId": "jbxqzz5tie2y3yujshe3k1x5",
       "GlobalParams": ServerConnections.SAMPLE_GET_CARDS_WITH_DATA_GLOBAL_PARAMS*/
     };
-    var resp = await serverConnections.postToServer(url: url, body: jsonEncode(getCardsBody), isBearer: true);
+    var resp = await serverConnections.postToServer(
+        url: url, body: jsonEncode(getCardsBody), isBearer: true);
     /*var dBody = {'ARMSessionId': appStorage.retrieveValue(AppStorage.SESSIONID)};
     var url = Const.getFullARMUrl(ServerConnections.API_GET_DASHBOARD_DATA);
     var resp = await serverConnections.postToServer(url: url, body: jsonEncode(dBody), isBearer: true);*/
@@ -64,7 +62,8 @@ class MenuDashboardController extends GetxController {
         _UpdateDataLists(cards);
         for (var card in cards) {
           //cards
-          if (card['cardtype'].toString().toLowerCase() == "chart" || card['cardtype'].toString().toLowerCase() == "kpi") {
+          if (card['cardtype'].toString().toLowerCase() == "chart" ||
+              card['cardtype'].toString().toLowerCase() == "kpi") {
             switch (card['charttype'].toString().toLowerCase()) {
               case 'bar':
               case 'stacked-bar':
@@ -85,7 +84,8 @@ class MenuDashboardController extends GetxController {
                     bar.add(bmodel);
                   }
                   if (validate(bar))
-                    chartList.add(ChartCardModel(card['cardname'], card['cardtype'], card['charttype'], bar,
+                    chartList.add(ChartCardModel(card['cardname'],
+                        card['cardtype'], card['charttype'], bar,
                         cardbgclr: card['cardbgclr'] ?? "null"));
                 } catch (e) {
                   LogService.writeLog(message: "[ERROR] $e");
@@ -102,7 +102,8 @@ class MenuDashboardController extends GetxController {
 
   _UpdateDataLists(List dataList) {
     // _clearDataLists();
-    List<UpdatedHomeCardDataModel> cardDataList = dataList.map((e) => UpdatedHomeCardDataModel.fromJson(e)).toList();
+    List<UpdatedHomeCardDataModel> cardDataList =
+        dataList.map((e) => UpdatedHomeCardDataModel.fromJson(e)).toList();
 
     for (var i in cardDataList) {
       if (i.carddata != null) {
@@ -146,24 +147,29 @@ class MenuDashboardController extends GetxController {
         case "KPI LIST":
           if (data.cardname?.toUpperCase() == "KPI LIST") {
             // kpiSliderCardData.add(data);
-            dashBoardWidgetList.add(WidgetKPIPanelSlider1(cardData: data.carddata));
+            dashBoardWidgetList
+                .add(WidgetKPIPanelSlider1(cardData: data.carddata));
           } else {
             // kpiListCardData.add(data);
-            List<Color> colors = List.generate(data.carddata.length, (index) => MyColors.getRandomColor());
+            List<Color> colors = List.generate(
+                data.carddata.length, (index) => MyColors.getRandomColor());
             dashBoardWidgetList.add(KPICardsPanel(card: data, colors: colors));
           }
 
           break;
         case "MENU ICONS":
           // menuIconsData.add(data);
-          List<Color> colors = List.generate(data.carddata.length, (index) => MyColors.getRandomColor());
+          List<Color> colors = List.generate(
+              data.carddata.length, (index) => MyColors.getRandomColor());
           dashBoardWidgetList.add(MenuIconsPanel(card: data, colors: colors));
 
           break;
         case "ACTIVITY LIST":
           // activityListData.add(data);
-          List<Color> colors = List.generate(data.carddata.length, (index) => MyColors.getRandomColor());
-          dashBoardWidgetList.add(ActivityListPanel(colors: colors, activityListData: data));
+          List<Color> colors = List.generate(
+              data.carddata.length, (index) => MyColors.getRandomColor());
+          dashBoardWidgetList
+              .add(ActivityListPanel(colors: colors, activityListData: data));
 
           break;
         default:

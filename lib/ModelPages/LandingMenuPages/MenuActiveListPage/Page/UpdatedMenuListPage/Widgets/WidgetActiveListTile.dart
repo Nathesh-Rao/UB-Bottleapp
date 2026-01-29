@@ -1,5 +1,5 @@
-import 'package:axpertflutter/Constants/Extensions.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuActiveListPage/Controllers/UpdatedActiveTaskListController/ActiveTaskListController.dart';
+import 'package:ubbottleapp/Constants/Extensions.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuActiveListPage/Controllers/UpdatedActiveTaskListController/ActiveTaskListController.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
@@ -14,7 +14,9 @@ class WidgetActiveLisTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final ActiveTaskListController activeTaskListController = Get.find();
     var style = GoogleFonts.poppins();
-    var color = model.cstatus?.toLowerCase() == "active" ? Color(0xff9898FF) : Color(0xff319F43);
+    var color = model.cstatus?.toLowerCase() == "active"
+        ? Color(0xff9898FF)
+        : Color(0xff319F43);
 
     return ListTile(
       contentPadding: EdgeInsets.only(left: 0, right: 10, top: 5),
@@ -31,21 +33,26 @@ class WidgetActiveLisTile extends StatelessWidget {
             margin: EdgeInsets.only(
               right: 25,
             ),
-            color: model.cstatus?.toLowerCase() == "active" ? Color(0xff9898FF) : null,
+            color: model.cstatus?.toLowerCase() == "active"
+                ? Color(0xff9898FF)
+                : null,
             width: 5,
           ),
           CircleAvatar(
             radius: 23,
             backgroundColor: color.withAlpha(70),
             child: Icon(
-              model.cstatus?.toLowerCase() == "active" ? Icons.file_open_rounded : Icons.done,
+              model.cstatus?.toLowerCase() == "active"
+                  ? Icons.file_open_rounded
+                  : Icons.done,
               color: color,
             ),
           ),
         ],
       ),
       title: activeTaskListController.highlightedText(
-          model.displaytitle.toString(), style.copyWith(fontSize: 14, fontWeight: FontWeight.w600),
+          model.displaytitle.toString(),
+          style.copyWith(fontSize: 14, fontWeight: FontWeight.w600),
           isTitle: true),
       subtitle: Column(
         mainAxisSize: MainAxisSize.min,
@@ -80,7 +87,8 @@ class WidgetActiveLisTile extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
           children: activeTaskListController.formatDateTimeSpan(
-            activeTaskListController.formatToDayTime(model.eventdatetime.toString()),
+            activeTaskListController
+                .formatToDayTime(model.eventdatetime.toString()),
           ),
         ),
       ),
@@ -191,10 +199,15 @@ class WidgetActiveLisTile extends StatelessWidget {
 
   _tileInfoWidget(String label, Color color) {
     return Container(
-      decoration: BoxDecoration(color: color.withAlpha(50), borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(
+          color: color.withAlpha(50), borderRadius: BorderRadius.circular(20)),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-        child: Text(label, style: GoogleFonts.poppins(fontSize: 10, color: color.darken(0.5), fontWeight: FontWeight.w500)),
+        child: Text(label,
+            style: GoogleFonts.poppins(
+                fontSize: 10,
+                color: color.darken(0.5),
+                fontWeight: FontWeight.w500)),
       ),
     );
   }

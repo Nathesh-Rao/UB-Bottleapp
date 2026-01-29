@@ -1,15 +1,15 @@
-import 'package:axpertflutter/Constants/CommonMethods.dart';
-import 'package:axpertflutter/Constants/MyColors.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/UpdatedHomePage/Widgets/UpdatedWidgets11.4/WidgetBannerCard.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/UpdatedHomePage/Widgets/UpdatedWidgets11.4/WidgetKPIList.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/UpdatedHomePage/Widgets/UpdatedWidgets11.4/WidgetNewsCard.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/UpdatedHomePage/Widgets/UpdatedWidgets11.4/WidgetMenuIcons.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/UpdatedHomePage/Widgets/UpdatedWidgets11.4/WidgetTaskList.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/Controller/LandingPageController.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/Widgets/WidgetBannerSliding.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/Widgets/WidgetSlidingNotification.dart';
-import 'package:axpertflutter/Utils/LogServices/LogService.dart';
+import 'package:ubbottleapp/Constants/CommonMethods.dart';
+import 'package:ubbottleapp/Constants/MyColors.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/UpdatedHomePage/Widgets/UpdatedWidgets11.4/WidgetBannerCard.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/UpdatedHomePage/Widgets/UpdatedWidgets11.4/WidgetKPIList.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/UpdatedHomePage/Widgets/UpdatedWidgets11.4/WidgetNewsCard.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/UpdatedHomePage/Widgets/UpdatedWidgets11.4/WidgetMenuIcons.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/UpdatedHomePage/Widgets/UpdatedWidgets11.4/WidgetTaskList.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/Controller/LandingPageController.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/Widgets/WidgetBannerSliding.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/Widgets/WidgetSlidingNotification.dart';
+import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -39,7 +39,8 @@ class UpdatedHomePage extends StatelessWidget {
           headerSliverBuilder: (context, innerBoxIsScrolled) => [
                 SliverToBoxAdapter(
                   child: ClipRRect(
-                    borderRadius: BorderRadius.only(bottomLeft: Radius.circular(50)),
+                    borderRadius:
+                        BorderRadius.only(bottomLeft: Radius.circular(50)),
                     child: Container(
                       // margin: EdgeInsets.only(left: 10, right: 10),
                       decoration: BoxDecoration(
@@ -58,9 +59,7 @@ class UpdatedHomePage extends StatelessWidget {
                   ),
                 ),
               ],
-
           body: SingleChildScrollView(
-
             child: Column(
               children: [
                 _buildLoadingIndicator(),
@@ -115,15 +114,15 @@ class UpdatedHomePage extends StatelessWidget {
   }
 
   Widget _buildLoadingIndicator() {
-    return  Obx(
-          () => menuHomePageController.isLoading.value
+    return Obx(
+      () => menuHomePageController.isLoading.value
           ? Padding(
-        padding: EdgeInsets.only(top: 1),
-        child: LinearProgressIndicator(
-          minHeight: 1,
-          borderRadius: BorderRadius.circular(100),
-        ),
-      )
+              padding: EdgeInsets.only(top: 1),
+              child: LinearProgressIndicator(
+                minHeight: 1,
+                borderRadius: BorderRadius.circular(100),
+              ),
+            )
           : SizedBox.shrink(),
     );
   }

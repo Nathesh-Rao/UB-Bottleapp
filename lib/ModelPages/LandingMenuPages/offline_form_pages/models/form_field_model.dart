@@ -1,4 +1,4 @@
-import 'package:axpertflutter/ModelPages/LandingMenuPages/offline_form_pages/models/data_source_model.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/data_source_model.dart';
 
 class OfflineFormFieldModel {
   final int order;
@@ -65,8 +65,14 @@ class OfflineFormFieldModel {
       datasource: json['datasource'],
       isCamera: (json['is_camera'] ?? 'F') == 'T',
       isGallery: (json['is_gallery'] ?? 'F') == 'T',
-      options: (json['options'] as List<dynamic>?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [],
-      dependencies: (json["dep_field"] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+      options: (json['options'] as List<dynamic>?)
+              ?.map((e) => Map<String, dynamic>.from(e))
+              .toList() ??
+          [],
+      dependencies: (json["dep_field"] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
     );
   }
 }

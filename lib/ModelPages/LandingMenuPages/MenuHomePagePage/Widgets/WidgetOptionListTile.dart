@@ -1,5 +1,5 @@
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/Models/CardOptionModel.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/Models/CardOptionModel.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,13 +16,15 @@ class WidgetOptionListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 60,
-      decoration: BoxDecoration(border: Border(bottom: BorderSide(width: 1, color: Colors.grey))),
+      decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(width: 1, color: Colors.grey))),
       child: Padding(
         padding: EdgeInsets.only(left: 10, right: 10),
         child: Row(
           children: [
             Visibility(
-                visible: cardOptionModel.cardicon.toString() == "" ? false : true,
+                visible:
+                    cardOptionModel.cardicon.toString() == "" ? false : true,
                 child: Icon(showIcons(cardOptionModel.cardicon.toString()))),
             Expanded(
               child: Center(
@@ -30,7 +32,9 @@ class WidgetOptionListTile extends StatelessWidget {
                   padding: const EdgeInsets.only(right: 5.0),
                   child: Text(
                     cardOptionModel.caption,
-                    style: GoogleFonts.roboto(textStyle: TextStyle(fontSize: 14, color: HexColor("#444444"))),
+                    style: GoogleFonts.roboto(
+                        textStyle: TextStyle(
+                            fontSize: 14, color: HexColor("#444444"))),
                   ),
                 ),
               ),
@@ -40,7 +44,8 @@ class WidgetOptionListTile extends StatelessWidget {
                     child: TextButton(
                         onPressed: () {
                           Get.back();
-                          menuHomePageController.openBtnAction("button", cardOptionModel.link);
+                          menuHomePageController.openBtnAction(
+                              "button", cardOptionModel.link);
                         },
                         child: Text(
                           cardOptionModel.text,

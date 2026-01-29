@@ -1,12 +1,13 @@
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuCalendarPage/Controllers/MenuCalendarPageController.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/Widgets/WidgetSlidingNotification.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuCalendarPage/Controllers/MenuCalendarPageController.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/Widgets/WidgetSlidingNotification.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
 class MenuCalendarPage extends StatelessWidget {
   MenuCalendarPage({super.key});
-  final MenuCalendarPageController menuCalendarPageController = Get.put(MenuCalendarPageController());
+  final MenuCalendarPageController menuCalendarPageController =
+      Get.put(MenuCalendarPageController());
 
   @override
   Widget build(BuildContext context) {
@@ -113,8 +114,10 @@ class MenuCalendarPage extends StatelessWidget {
                 agendaItemHeight: 4,
                 monthCellStyle: MonthCellStyle(
                     textStyle: TextStyle(color: Colors.black, fontSize: 20),
-                    trailingDatesTextStyle: TextStyle(color: Colors.grey.withOpacity(0.4)),
-                    leadingDatesTextStyle: TextStyle(color: Colors.grey.withOpacity(0.4))),
+                    trailingDatesTextStyle:
+                        TextStyle(color: Colors.grey.withOpacity(0.4)),
+                    leadingDatesTextStyle:
+                        TextStyle(color: Colors.grey.withOpacity(0.4))),
               ),
               controller: menuCalendarPageController.calendarController,
             ),

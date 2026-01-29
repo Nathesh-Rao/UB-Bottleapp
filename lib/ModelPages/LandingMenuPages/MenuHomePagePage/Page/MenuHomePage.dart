@@ -1,14 +1,15 @@
-import 'package:axpertflutter/Constants/CommonMethods.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/Widgets/WidgetCard.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/Widgets/WidgetNoDataFound.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/Widgets/WidgetSlidingNotification.dart';
+import 'package:ubbottleapp/Constants/CommonMethods.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/Widgets/WidgetCard.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/Widgets/WidgetNoDataFound.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/Widgets/WidgetSlidingNotification.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 class MenuHomePage extends StatelessWidget {
   MenuHomePage({super.key});
-  final MenuHomePageController menuHomePageController = Get.put(MenuHomePageController());
+  final MenuHomePageController menuHomePageController =
+      Get.put(MenuHomePageController());
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +17,10 @@ class MenuHomePage extends StatelessWidget {
       children: [
         WidgetSlidingNotificationPanel(),
         Obx(() => Visibility(
-            visible: (menuHomePageController.listOfOptionCards.length == 0 && !menuHomePageController.isLoading.value) ? true : false,
+            visible: (menuHomePageController.listOfOptionCards.length == 0 &&
+                    !menuHomePageController.isLoading.value)
+                ? true
+                : false,
             child: WidgetNoDataFound())),
         Expanded(
           child: Obx(() => Padding(
@@ -30,13 +34,17 @@ class MenuHomePage extends StatelessWidget {
                             mainAxisSpacing: 20,
                             crossAxisCount: 2,
                             childAspectRatio: isTablet() ? 1.5 : 2.8),
-                        itemCount: menuHomePageController.listOfOptionCards.length,
+                        itemCount:
+                            menuHomePageController.listOfOptionCards.length,
                         itemBuilder: (context, index) {
                           return GestureDetector(
                             onTap: () {
-                              captionOnTapFunction(menuHomePageController.listOfOptionCards[index]);
+                              captionOnTapFunction(menuHomePageController
+                                  .listOfOptionCards[index]);
                             },
-                            child: Container(child: WidgetCard(menuHomePageController.listOfOptionCards[index])),
+                            child: Container(
+                                child: WidgetCard(menuHomePageController
+                                    .listOfOptionCards[index])),
                           );
                         },
                       ),

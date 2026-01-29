@@ -1,4 +1,4 @@
-import 'package:axpertflutter/Constants/MyColors.dart';
+import 'package:ubbottleapp/Constants/MyColors.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -19,7 +19,8 @@ class WidgetActiveListBulkApprovalDialog extends StatelessWidget {
           },
           child: Dialog(
             child: Padding(
-              padding: EdgeInsets.only(left: 20, right: 20, top: 15, bottom: 20),
+              padding:
+                  EdgeInsets.only(left: 20, right: 20, top: 15, bottom: 20),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -27,16 +28,21 @@ class WidgetActiveListBulkApprovalDialog extends StatelessWidget {
                     Center(
                       child: Text(
                         "Bulk Approve",
-                        style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 25, fontWeight: FontWeight.bold),
                       ),
                     ),
-                    Container(margin: EdgeInsets.only(top: 10), height: 1, color: Colors.grey.withOpacity(0.6)),
+                    Container(
+                        margin: EdgeInsets.only(top: 10),
+                        height: 1,
+                        color: Colors.grey.withOpacity(0.6)),
                     SizedBox(height: 20),
                     ConstrainedBox(
                       constraints: new BoxConstraints(
                         maxHeight: 300.0,
                       ),
-                      child: pendingListController.bulkApprovalCount_list.isEmpty
+                      child: pendingListController
+                              .bulkApprovalCount_list.isEmpty
                           ? ListTile(
                               leading: Icon(
                                 Icons.do_not_disturb_on_total_silence_rounded,
@@ -52,14 +58,19 @@ class WidgetActiveListBulkApprovalDialog extends StatelessWidget {
                             )
                           : ListView.separated(
                               shrinkWrap: true,
-                              itemCount: pendingListController.bulkApprovalCount_list.length,
+                              itemCount: pendingListController
+                                  .bulkApprovalCount_list.length,
                               itemBuilder: (BuildContext context, int index) {
                                 return ListTile(
                                   onTap: () {
                                     Get.back();
                                     pendingListController.getBulkActiveTasks(
-                                        pendingListController.bulkApprovalCount_list[index].processname.toString());
-                                    Get.dialog(showBulkApproval_DetailDialog(context, pendingListController));
+                                        pendingListController
+                                            .bulkApprovalCount_list[index]
+                                            .processname
+                                            .toString());
+                                    Get.dialog(showBulkApproval_DetailDialog(
+                                        context, pendingListController));
                                   },
 
                                   leading: Image.asset(
@@ -67,7 +78,11 @@ class WidgetActiveListBulkApprovalDialog extends StatelessWidget {
                                     width: 25,
                                   ),
 
-                                  title: Text(pendingListController.bulkApprovalCount_list[index].processname.toString(),
+                                  title: Text(
+                                      pendingListController
+                                          .bulkApprovalCount_list[index]
+                                          .processname
+                                          .toString(),
                                       style: GoogleFonts.roboto(
                                         textStyle: TextStyle(
                                           fontSize: 16,
@@ -79,8 +94,14 @@ class WidgetActiveListBulkApprovalDialog extends StatelessWidget {
                                     backgroundColor: MyColors.red,
                                     radius: 13,
                                     child: Text(
-                                      pendingListController.bulkApprovalCount_list[index].pendingapprovals.toString(),
-                                      style: GoogleFonts.urbanist(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.white),
+                                      pendingListController
+                                          .bulkApprovalCount_list[index]
+                                          .pendingapprovals
+                                          .toString(),
+                                      style: GoogleFonts.urbanist(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14,
+                                          color: Colors.white),
                                     ),
                                   ),
                                   // title: WidgetBulkAppr_CountItem(pendingListController.bulkApprovalCount_list[index]),
@@ -120,7 +141,8 @@ class WidgetActiveListBulkApprovalDialog extends StatelessWidget {
         ));
   }
 
-  Widget showBulkApproval_DetailDialog(BuildContext context, PendingListController pendingListController) {
+  Widget showBulkApproval_DetailDialog(
+      BuildContext context, PendingListController pendingListController) {
     ActiveTaskListController activeTaskListController = Get.find();
 
     return Obx(() => Dialog(
@@ -134,16 +156,21 @@ class WidgetActiveListBulkApprovalDialog extends StatelessWidget {
                     child: CheckboxListTile(
                       title: Text(
                         "Bulk Approval ",
-                        style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 25, fontWeight: FontWeight.bold),
                       ),
                       value: pendingListController.isBulkAppr_SelectAll.value,
                       controlAffinity: ListTileControlAffinity.trailing,
                       onChanged: (bool? value) {
-                        pendingListController.selectAll_BulkApproveList_item(value);
+                        pendingListController
+                            .selectAll_BulkApproveList_item(value);
                       },
                     ),
                   ),
-                  Container(margin: EdgeInsets.only(top: 10), height: 1, color: Colors.grey.withOpacity(0.6)),
+                  Container(
+                      margin: EdgeInsets.only(top: 10),
+                      height: 1,
+                      color: Colors.grey.withOpacity(0.6)),
                   SizedBox(height: 20),
                   ConstrainedBox(
                     constraints: new BoxConstraints(
@@ -151,18 +178,25 @@ class WidgetActiveListBulkApprovalDialog extends StatelessWidget {
                     ),
                     child: ListView.separated(
                       shrinkWrap: true,
-                      itemCount: pendingListController.bulkApproval_activeList.length,
+                      itemCount:
+                          pendingListController.bulkApproval_activeList.length,
                       itemBuilder: (BuildContext context, int index) {
                         return CheckboxListTile(
-                          value: pendingListController.bulkApproval_activeList[index].bulkApprove_isSelected.value,
+                          value: pendingListController
+                              .bulkApproval_activeList[index]
+                              .bulkApprove_isSelected
+                              .value,
                           controlAffinity: ListTileControlAffinity.trailing,
                           contentPadding: EdgeInsets.zero,
                           dense: true,
                           onChanged: (value) {
-                            pendingListController.onChange_BulkApprItem(index, value);
+                            pendingListController.onChange_BulkApprItem(
+                                index, value);
                           },
                           title: widgetBulkApproval_ListItem(
-                              pendingListController, pendingListController.bulkApproval_activeList[index]),
+                              pendingListController,
+                              pendingListController
+                                  .bulkApproval_activeList[index]),
                         );
                       },
                       separatorBuilder: (context, index) {
@@ -181,7 +215,8 @@ class WidgetActiveListBulkApprovalDialog extends StatelessWidget {
                     child: TextField(
                       controller: pendingListController.bulkCommentController,
                       decoration: InputDecoration(
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10)),
                           hintText: "Enter Comments",
                           labelText: "Enter Comments",
                           filled: true,
@@ -213,7 +248,8 @@ class WidgetActiveListBulkApprovalDialog extends StatelessWidget {
         ));
   }
 
-  Widget widgetBulkApproval_ListItem(PendingListController pendingListController, itemModel) {
+  Widget widgetBulkApproval_ListItem(
+      PendingListController pendingListController, itemModel) {
     return Container(
       padding: EdgeInsets.only(top: 5, bottom: 5),
       child: Column(
@@ -226,7 +262,10 @@ class WidgetActiveListBulkApprovalDialog extends StatelessWidget {
                 child: Text(
                   itemModel.displaytitle.toString(),
                   style: GoogleFonts.roboto(
-                      textStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: HexColor('#495057'))),
+                      textStyle: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: HexColor('#495057'))),
                   textAlign: TextAlign.left,
                   maxLines: 2,
                   // selectable: true,

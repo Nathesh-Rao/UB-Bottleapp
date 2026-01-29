@@ -1,7 +1,7 @@
 import 'dart:math';
 
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/UpdatedHomePage/Models/KPIListCardModel.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/UpdatedHomePage/Models/KPIListCardModel.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -23,7 +23,8 @@ class WidgetKPIPanelSlider extends StatelessWidget {
         if (menuHomePageController.kpiSliderCardData.isNotEmpty) {
           var kpiList = menuHomePageController.kpiSliderCardData.first;
 
-          kpicardData = kpiList.carddata.map((e) => KpiListModel.fromJson(e)).toList();
+          kpicardData =
+              kpiList.carddata.map((e) => KpiListModel.fromJson(e)).toList();
         }
         // LogService.writeLog(message: "kpiList => ${kpicardData.length}");
 
@@ -195,9 +196,11 @@ class WidgetKPIPanelSliderItem extends StatelessWidget {
   }
 
 // Faded circle widget------------------------------------>
-  _widgetKPIItemBGElement(BuildContext context, {double right = -20, double top = -15}) {
+  _widgetKPIItemBGElement(BuildContext context,
+      {double right = -20, double top = -15}) {
     double randomDouble = 0.3 + (0.9 - 0.3) * Random().nextDouble();
-    final double baseSize = (MediaQuery.of(context).size.height * .15) / 5 + (randomDouble * 10);
+    final double baseSize =
+        (MediaQuery.of(context).size.height * .15) / 5 + (randomDouble * 10);
     return Positioned(
       right: right,
       top: top,

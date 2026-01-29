@@ -1,13 +1,13 @@
 import 'dart:collection';
 import 'dart:convert';
 
-import 'package:axpertflutter/Constants/AppStorage.dart';
-import 'package:axpertflutter/Constants/Routes.dart';
-import 'package:axpertflutter/Constants/Const.dart';
-import 'package:axpertflutter/ModelPages/InApplicationWebView/controller/webview_controller.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuMorePage/Models/MenuItemModel.dart';
-import 'package:axpertflutter/Utils/ServerConnections/InternetConnectivity.dart';
-import 'package:axpertflutter/Utils/ServerConnections/ServerConnections.dart';
+import 'package:ubbottleapp/Constants/AppStorage.dart';
+import 'package:ubbottleapp/Constants/Routes.dart';
+import 'package:ubbottleapp/Constants/Const.dart';
+import 'package:ubbottleapp/ModelPages/InApplicationWebView/controller/webview_controller.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuMorePage/Models/MenuItemModel.dart';
+import 'package:ubbottleapp/Utils/ServerConnections/InternetConnectivity.dart';
+import 'package:ubbottleapp/Utils/ServerConnections/ServerConnections.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -61,8 +61,11 @@ class MenuMorePageController extends GetxController {
 
   getMenuList() async {
     var mUrl = Const.getFullARMUrl(ServerConnections.API_GET_MENU);
-    var conectBody = {'ARMSessionId': appStorage.retrieveValue(AppStorage.SESSIONID)};
-    var menuResp = await serverConnections.postToServer(url: mUrl, body: jsonEncode(conectBody), isBearer: true);
+    var conectBody = {
+      'ARMSessionId': appStorage.retrieveValue(AppStorage.SESSIONID)
+    };
+    var menuResp = await serverConnections.postToServer(
+        url: mUrl, body: jsonEncode(conectBody), isBearer: true);
     if (menuResp != "") {
       print("menuResp ${menuResp}");
       var menuJson = jsonDecode(menuResp);
@@ -73,7 +76,11 @@ class MenuMorePageController extends GetxController {
         }
       }
     }
-    menuListMain..sort((a, b) => a.rootnode.toString().toLowerCase().compareTo(b.rootnode.toString().toLowerCase()));
+    menuListMain
+      ..sort((a, b) => a.rootnode
+          .toString()
+          .toLowerCase()
+          .compareTo(b.rootnode.toString().toLowerCase()));
     reOrganise(menuListMain, firstCall: true);
   }
 
@@ -87,13 +94,21 @@ class MenuMorePageController extends GetxController {
       List<MenuItemModel> list = [];
       list = headingWiseData[rootNode] ?? [];
       list.add(item);
-      list..sort((a, b) => a.caption.toString().toLowerCase().compareTo(b.caption.toString().toLowerCase()));
+      list
+        ..sort((a, b) => a.caption
+            .toString()
+            .toLowerCase()
+            .compareTo(b.caption.toString().toLowerCase()));
       headingWiseData[rootNode] = list;
       if (firstCall) {
         List<MenuItemModel> list2 = [];
         list2 = finalHeadingWiseData[rootNode] ?? [];
         list2.add(item);
-        list2..sort((a, b) => a.caption.toString().toLowerCase().compareTo(b.caption.toString().toLowerCase()));
+        list2
+          ..sort((a, b) => a.caption
+              .toString()
+              .toLowerCase()
+              .compareTo(b.caption.toString().toLowerCase()));
         finalHeadingWiseData[rootNode] = list2;
       }
     }
@@ -117,7 +132,10 @@ class MenuMorePageController extends GetxController {
     else {
       needRefresh.value = true;
       var newList = menuListMain.where((oldValue) {
-        return oldValue.caption.toString().toLowerCase().contains(value.toString().toLowerCase());
+        return oldValue.caption
+            .toString()
+            .toLowerCase()
+            .contains(value.toString().toLowerCase());
       });
       // print("new list: " + newList.length.toString());
       reOrganise(newList);
@@ -156,7 +174,9 @@ class MenuMorePageController extends GetxController {
       iconName = iconName.replaceAll("|material-icons", "");
       return materialIcons[iconName];
     } else {
-      switch (subMenu.pagetype.trim() != "" ? subMenu.pagetype.trim().toUpperCase()[0] : subMenu.pagetype.trim()) {
+      switch (subMenu.pagetype.trim() != ""
+          ? subMenu.pagetype.trim().toUpperCase()[0]
+          : subMenu.pagetype.trim()) {
         case "T":
           return Icons.assignment;
         case "I":
@@ -191,8 +211,11 @@ class MenuMorePageController extends GetxController {
   void getMenuList_v2() async {
     print("getMenuList_v2_called");
     var mUrl = Const.getFullARMUrl(ServerConnections.API_GET_MENU_V2);
-    var conectBody = {'ARMSessionId': appStorage.retrieveValue(AppStorage.SESSIONID)};
-    var menuResp = await serverConnections.postToServer(url: mUrl, body: jsonEncode(conectBody), isBearer: true);
+    var conectBody = {
+      'ARMSessionId': appStorage.retrieveValue(AppStorage.SESSIONID)
+    };
+    var menuResp = await serverConnections.postToServer(
+        url: mUrl, body: jsonEncode(conectBody), isBearer: true);
     if (menuResp != "") {
       print("menuResp ${menuResp}");
       var menuJson = jsonDecode(menuResp);
@@ -224,7 +247,8 @@ class MenuMorePageController extends GetxController {
     var keysToRemove = <String>[];
 
     //To get the parent tree reverse the Map
-    final reverseM = LinkedHashMap.fromEntries(map_menulist.entries.toList().reversed);
+    final reverseM =
+        LinkedHashMap.fromEntries(map_menulist.entries.toList().reversed);
     reverseM.forEach((key, value) {
       try {
         MenuItemNewmModel md = value;
@@ -242,7 +266,8 @@ class MenuMorePageController extends GetxController {
     keysToRemove.forEach((key) => reverseM.remove(key));
 
     // Once again reverse the Map to get the actual order.
-    final map_finalList = LinkedHashMap.fromEntries(reverseM.entries.toList().reversed);
+    final map_finalList =
+        LinkedHashMap.fromEntries(reverseM.entries.toList().reversed);
 
     // Add the Map value to List
     List<MenuItemNewmModel> newList = [];
@@ -262,7 +287,11 @@ class MenuMorePageController extends GetxController {
 
   filter_search(value) {
     return menuListMain_new.where((oldValue) {
-      return oldValue.url != "" && oldValue.caption.toString().toLowerCase().contains(value.toString().toLowerCase());
+      return oldValue.url != "" &&
+          oldValue.caption
+              .toString()
+              .toLowerCase()
+              .contains(value.toString().toLowerCase());
     }).toList();
   }
 

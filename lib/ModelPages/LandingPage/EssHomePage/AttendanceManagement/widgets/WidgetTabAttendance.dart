@@ -1,7 +1,7 @@
 import 'package:animate_do/animate_do.dart';
-import 'package:axpertflutter/Constants/MyColors.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/AttendanceManagement/models/AttendanceDataModel.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/AttendanceManagement/models/AttendanceReportModel.dart';
+import 'package:ubbottleapp/Constants/MyColors.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/AttendanceManagement/models/AttendanceDataModel.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/AttendanceManagement/models/AttendanceReportModel.dart';
 import 'package:bottom_picker/bottom_picker.dart';
 import 'package:bottom_picker/resources/arrays.dart';
 import 'package:flutter/cupertino.dart';
@@ -30,11 +30,16 @@ class WidgetTabAttendance extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(left: 15, right: 15, top: 15),
             child: Row(
-              children: [Text("Attendance", style: style), Spacer(), _yearPickerWidget(context)],
+              children: [
+                Text("Attendance", style: style),
+                Spacer(),
+                _yearPickerWidget(context)
+              ],
             ),
           ),
           SizedBox(height: 15),
-          Obx(() => _attendanceListView(value: attendanceController.selectedMonthIndex.value)),
+          Obx(() => _attendanceListView(
+              value: attendanceController.selectedMonthIndex.value)),
           SizedBox(height: 10),
           Expanded(
             child: Container(
@@ -57,7 +62,8 @@ class WidgetTabAttendance extends StatelessWidget {
               child: Column(
                 children: [
                   Container(
-                    decoration: BoxDecoration(gradient: MyColors.subBGGradientHorizontal),
+                    decoration: BoxDecoration(
+                        gradient: MyColors.subBGGradientHorizontal),
                     padding: EdgeInsets.symmetric(horizontal: 15),
                     height: 42,
                     child: Row(
@@ -66,14 +72,20 @@ class WidgetTabAttendance extends StatelessWidget {
                         Expanded(
                           child: Text(
                             "Date",
-                            style: style.copyWith(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white),
+                            style: style.copyWith(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white),
                             textAlign: TextAlign.start,
                           ),
                         ),
                         Expanded(
                           child: Text(
                             "Clock In",
-                            style: style.copyWith(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white),
+                            style: style.copyWith(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white),
                             textAlign: TextAlign.start,
                           ),
                         ),
@@ -81,14 +93,20 @@ class WidgetTabAttendance extends StatelessWidget {
                         Expanded(
                           child: Text(
                             "Clock Out",
-                            style: style.copyWith(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white),
+                            style: style.copyWith(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white),
                             textAlign: TextAlign.start,
                           ),
                         ),
                         Expanded(
                           child: Text(
                             "Working Hrs",
-                            style: style.copyWith(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white),
+                            style: style.copyWith(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white),
                             textAlign: TextAlign.end,
                           ),
                         ),
@@ -98,7 +116,8 @@ class WidgetTabAttendance extends StatelessWidget {
                   Expanded(
                     child: Obx(
                       () {
-                        if (attendanceController.isAttendanceReportLoading.value) {
+                        if (attendanceController
+                            .isAttendanceReportLoading.value) {
                           // return Center(
                           //   child: CircularProgressIndicator(),
                           // );
@@ -129,7 +148,10 @@ class WidgetTabAttendance extends StatelessWidget {
                                   child: Text(
                                     "${attendanceController.months[attendanceController.selectedMonthIndex.value]}\n${attendanceController.selectedYear.value}",
                                     textAlign: TextAlign.center,
-                                    style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w500, color: MyColors.text1),
+                                    style: GoogleFonts.poppins(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w500,
+                                        color: MyColors.text1),
                                   )
                                   // ),
                                   ),
@@ -164,8 +186,12 @@ class WidgetTabAttendance extends StatelessWidget {
                           child: SingleChildScrollView(
                             physics: BouncingScrollPhysics(),
                             child: Column(
-                              children: List.generate(attendanceController.attendanceReportList.length,
-                                  (index) => _attendanceListTile(attendanceController.attendanceReportList[index])),
+                              children: List.generate(
+                                  attendanceController
+                                      .attendanceReportList.length,
+                                  (index) => _attendanceListTile(
+                                      attendanceController
+                                          .attendanceReportList[index])),
                             ),
                           ),
                         );
@@ -182,11 +208,15 @@ class WidgetTabAttendance extends StatelessWidget {
   }
 
   Widget _attendanceListTile(AttendanceReportModel data) {
-    var style = GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.black);
+    var style = GoogleFonts.poppins(
+        fontSize: 12, fontWeight: FontWeight.w500, color: Colors.black);
 
     return Container(
-      decoration:
-          BoxDecoration(color: Colors.white, border: Border(bottom: BorderSide(color: _getTileWidgetBorderColor(data.status)))),
+      decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border(
+              bottom:
+                  BorderSide(color: _getTileWidgetBorderColor(data.status)))),
       padding: EdgeInsets.symmetric(horizontal: 15),
       height: 52,
       child: Row(
@@ -209,7 +239,10 @@ class WidgetTabAttendance extends StatelessWidget {
                       ),
                       Text(
                         "📍Location",
-                        style: style.copyWith(fontSize: 8, fontWeight: FontWeight.w700, color: Color(0xff919191)),
+                        style: style.copyWith(
+                            fontSize: 8,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xff919191)),
                         textAlign: TextAlign.start,
                       ),
                     ],
@@ -236,7 +269,10 @@ class WidgetTabAttendance extends StatelessWidget {
                       ),
                       Text(
                         "📍Location",
-                        style: style.copyWith(fontSize: 8, fontWeight: FontWeight.w700, color: Color(0xff919191)),
+                        style: style.copyWith(
+                            fontSize: 8,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xff919191)),
                         textAlign: TextAlign.start,
                       ),
                     ],
@@ -264,7 +300,9 @@ class WidgetTabAttendance extends StatelessWidget {
           clipBehavior: Clip.hardEdge,
           height: 30,
           width: 30,
-          decoration: BoxDecoration(color: color.withOpacity(0.28), borderRadius: BorderRadius.circular(5)),
+          decoration: BoxDecoration(
+              color: color.withOpacity(0.28),
+              borderRadius: BorderRadius.circular(5)),
           child: Column(
             children: [
               Expanded(
@@ -299,7 +337,8 @@ class WidgetTabAttendance extends StatelessWidget {
   }
 
   bool _statusCheck(String status) {
-    if (status.toLowerCase().contains("active") || status.toLowerCase().contains("half")) {
+    if (status.toLowerCase().contains("active") ||
+        status.toLowerCase().contains("half")) {
       return true;
     }
 
@@ -345,7 +384,8 @@ class WidgetTabAttendance extends StatelessWidget {
               style: style.copyWith(
                 fontSize: 18,
                 color: value == index ? MyColors.baseBlue : MyColors.text1,
-                fontWeight: value == index ? FontWeight.w600 : FontWeight.normal,
+                fontWeight:
+                    value == index ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
           ),
@@ -361,7 +401,8 @@ class WidgetTabAttendance extends StatelessWidget {
       () => GestureDetector(
         onTap: () {
           BottomPicker(
-            items: List.generate(attendanceController.years.length, (index) => Text(attendanceController.years[index])),
+            items: List.generate(attendanceController.years.length,
+                (index) => Text(attendanceController.years[index])),
             pickerTitle: Text(
               "Select Year",
               style: style.copyWith(

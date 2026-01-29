@@ -1,5 +1,5 @@
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuMorePage/Models/MenuItemModel.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/Controller/LandingPageController.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuMorePage/Models/MenuItemModel.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/Controller/LandingPageController.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -16,7 +16,10 @@ class WidgetDrawer extends StatelessWidget {
             backgroundColor: Colors.white,
             child: SafeArea(
               child: ListView(
-                children: ListTile.divideTiles(context: context, tiles: landingPageController.getDrawerTileList()).toList(),
+                children: ListTile.divideTiles(
+                        context: context,
+                        tiles: landingPageController.getDrawerTileList())
+                    .toList(),
               ),
             ),
           ),
@@ -27,7 +30,8 @@ class WidgetDrawer extends StatelessWidget {
 class getClipped extends CustomClipper<RRect> {
   @override
   getClip(Size size) {
-    return RRect.fromLTRBAndCorners(0, 0, size.width, size.height, bottomRight: Radius.circular(40));
+    return RRect.fromLTRBAndCorners(0, 0, size.width, size.height,
+        bottomRight: Radius.circular(40));
   }
 
   @override

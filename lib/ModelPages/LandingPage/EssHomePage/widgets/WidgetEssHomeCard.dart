@@ -1,6 +1,6 @@
 import 'dart:developer';
 
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/controller/EssController.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/controller/EssController.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -41,8 +41,10 @@ class WidgetEssHomecard extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 10),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(controller.bannerWidgets.length, (index) {
-                    var isSelected = index == controller.bannerCurrentIndex.value;
+                  children:
+                      List.generate(controller.bannerWidgets.length, (index) {
+                    var isSelected =
+                        index == controller.bannerCurrentIndex.value;
 
                     return AnimatedContainer(
                       duration: const Duration(milliseconds: 300),

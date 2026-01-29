@@ -1,6 +1,6 @@
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/UpdatedHomePage/Models/TaskListModel.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/UpdatedHomePage/Models/UpdatedHomeCardDataModel.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/UpdatedHomePage/Models/TaskListModel.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/UpdatedHomePage/Models/UpdatedHomeCardDataModel.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -24,7 +24,9 @@ class _WidgetTaskListState extends State<WidgetTaskList> {
         visible: menuHomePageController.taskListData.isNotEmpty,
         child: Column(
           children: List.generate(
-              menuHomePageController.taskListData.length, (index) => TaskListPanel(taskListData: menuHomePageController.taskListData[index])),
+              menuHomePageController.taskListData.length,
+              (index) => TaskListPanel(
+                  taskListData: menuHomePageController.taskListData[index])),
         ),
       ),
     );
@@ -57,9 +59,12 @@ class _TaskListPanelState extends State<TaskListPanel> {
       isSeeMore = !isSeeMore;
       if (isSeeMore) {
         // bHeight = bHeight2;
-        bHeight = (widget.taskListData.carddata.length > 10 ? bHeight2 : _getHeight_card(widget.taskListData.carddata.length));
+        bHeight = (widget.taskListData.carddata.length > 10
+            ? bHeight2
+            : _getHeight_card(widget.taskListData.carddata.length));
       } else {
-        scrollController.animateTo(scrollController.position.minScrollExtent, duration: Duration(milliseconds: 300), curve: Curves.decelerate);
+        scrollController.animateTo(scrollController.position.minScrollExtent,
+            duration: Duration(milliseconds: 300), curve: Curves.decelerate);
         bHeight = bHeight1;
       }
     });
@@ -106,8 +111,11 @@ class _TaskListPanelState extends State<TaskListPanel> {
           height: bHeight,
           child: Container(
               height: bHeight,
-              decoration:
-                  BoxDecoration(color: Colors.white, borderRadius: BorderRadius.only(topRight: Radius.circular(25), topLeft: Radius.circular(25))),
+              decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                      topRight: Radius.circular(25),
+                      topLeft: Radius.circular(25))),
               child: Column(children: [
                 InkWell(
                   onTap: () {
@@ -157,7 +165,8 @@ class _TaskListPanelState extends State<TaskListPanel> {
                                 decelerationRate: ScrollDecelerationRate.fast,
                               )
                             : NeverScrollableScrollPhysics(),
-                        itemBuilder: (context, index) => _tileWidget(widget.taskListData.carddata[index]),
+                        itemBuilder: (context, index) =>
+                            _tileWidget(widget.taskListData.carddata[index]),
                         separatorBuilder: (context, index) => Divider(),
                       )),
                 isSeeMoreVisible
@@ -181,7 +190,9 @@ class _TaskListPanelState extends State<TaskListPanel> {
                                         color: MyColors.blue1,
                                       )),
                                   Icon(
-                                    isSeeMore ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                                    isSeeMore
+                                        ? Icons.keyboard_arrow_up_rounded
+                                        : Icons.keyboard_arrow_down_rounded,
                                     color: MyColors.blue1,
                                     size: 17,
                                   )
@@ -199,7 +210,9 @@ class _TaskListPanelState extends State<TaskListPanel> {
   Widget _tileWidget(cardData) {
     var taskData = TaskListModel.fromJson(cardData);
 
-    var isCompleted = taskData.cstatus != null ? taskData.cstatus!.toLowerCase().contains("completed") : false;
+    var isCompleted = taskData.cstatus != null
+        ? taskData.cstatus!.toLowerCase().contains("completed")
+        : false;
     return ListTile(
       onTap: () {
         // menuHomePageController.captionOnTapFunctionNew(taskData.tasktype);
@@ -228,7 +241,9 @@ class _TaskListPanelState extends State<TaskListPanel> {
         ),
       ),
       trailing: Text(
-        taskData.eventdatetime != null ? taskData.eventdatetime!.split(" ")[0] : '',
+        taskData.eventdatetime != null
+            ? taskData.eventdatetime!.split(" ")[0]
+            : '',
         style: GoogleFonts.urbanist(
           fontWeight: FontWeight.w600,
           fontSize: 10,

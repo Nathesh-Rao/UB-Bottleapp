@@ -1,13 +1,11 @@
 import 'dart:async';
 
-import 'package:axpertflutter/Constants/MyColors.dart';
-import 'package:axpertflutter/Utils/LogServices/LogService.dart';
+import 'package:ubbottleapp/Constants/MyColors.dart';
+import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../Controllers/AddConnectionController.dart';
-
-
 
 class QRCodeScanner extends StatefulWidget {
   const QRCodeScanner({super.key});
@@ -58,8 +56,12 @@ class _QRCodeScannerState extends State<QRCodeScanner> {
               ),
               SizedBox(height: 20),
               Container(
-                height: MediaQuery.of(context).size.height * 0.3 > 300 ? 300 : MediaQuery.of(context).size.height * 0.3,
-                width: MediaQuery.of(context).size.width * 0.7 > 300 ? 300 : MediaQuery.of(context).size.width * 0.7,
+                height: MediaQuery.of(context).size.height * 0.3 > 300
+                    ? 300
+                    : MediaQuery.of(context).size.height * 0.3,
+                width: MediaQuery.of(context).size.width * 0.7 > 300
+                    ? 300
+                    : MediaQuery.of(context).size.width * 0.7,
                 child: _buildQrView(context),
               ),
               SizedBox(height: 20),
@@ -68,7 +70,9 @@ class _QRCodeScannerState extends State<QRCodeScanner> {
                 children: [
                   Visibility(
                     visible: !projectController.doesDeviceHasFlash(),
-                    child: IconButton(onPressed: null, icon: Icon(Icons.no_flash, color: MyColors.blue2)),
+                    child: IconButton(
+                        onPressed: null,
+                        icon: Icon(Icons.no_flash, color: MyColors.blue2)),
                   ),
                   Visibility(
                     visible: projectController.doesDeviceHasFlash(),
@@ -93,7 +97,8 @@ class _QRCodeScannerState extends State<QRCodeScanner> {
                       },
                       icon: Obx(() => !projectController.isPlayPauseOn.value
                           ? Icon(Icons.pause, color: MyColors.blue2)
-                          : Icon(Icons.play_arrow_sharp, color: MyColors.blue2))),
+                          : Icon(Icons.play_arrow_sharp,
+                              color: MyColors.blue2))),
                   IconButton(
                       onPressed: () {
                         projectController.scannerController!.switchCamera();
@@ -141,7 +146,9 @@ class _QRCodeScannerState extends State<QRCodeScanner> {
       projectController.scannerController!.pause();
       var data = barcodeRawValue.toString();
       if (data == "" || !projectController.validateQRData(data)) {
-        LogService.writeLog(message: "[ERROR] QRCodeScanner\nScope: _onQRViewCreated\ndata is null");
+        LogService.writeLog(
+            message:
+                "[ERROR] QRCodeScanner\nScope: _onQRViewCreated\ndata is null");
         Get.snackbar("Invalid!", "Please choose a valid QR Code",
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Colors.red,

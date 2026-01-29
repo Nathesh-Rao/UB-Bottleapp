@@ -1,9 +1,9 @@
-import 'package:axpertflutter/Constants/CommonMethods.dart';
-import 'package:axpertflutter/Constants/MyColors.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuMorePage/Controllers/MenuMorePageController.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuMorePage/Models/MenuItemModel.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/Controller/LandingPageController.dart';
+import 'package:ubbottleapp/Constants/CommonMethods.dart';
+import 'package:ubbottleapp/Constants/MyColors.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuMorePage/Controllers/MenuMorePageController.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuMorePage/Models/MenuItemModel.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/Controller/LandingPageController.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:get/get.dart';
@@ -26,17 +26,23 @@ class WidgetTopHeaderSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Obx(() => Column(
-               crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Visibility(
-                    visible: menuHomePageController.client_info_companyTitle.value != "",
+                    visible:
+                        menuHomePageController.client_info_companyTitle.value !=
+                            "",
                     child: Padding(
                       padding: EdgeInsets.only(left: 20),
                       child: Container(
                         padding: EdgeInsets.only(top: 2),
                         child: Text(
                           menuHomePageController.client_info_companyTitle.value,
-                          style: GoogleFonts.poppins(textStyle: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700)),
+                          style: GoogleFonts.poppins(
+                              textStyle: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700)),
                         ),
                       ),
                     ),
@@ -52,7 +58,11 @@ class WidgetTopHeaderSection extends StatelessWidget {
                             textStyle: TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
-                                fontWeight: menuHomePageController.client_info_companyTitle.value != "" ? FontWeight.w500 : FontWeight.w700)),
+                                fontWeight: menuHomePageController
+                                            .client_info_companyTitle.value !=
+                                        ""
+                                    ? FontWeight.w500
+                                    : FontWeight.w700)),
                       ),
                     ),
                   )
@@ -71,7 +81,8 @@ class WidgetTopHeaderSection extends StatelessWidget {
           Container(
               width: double.maxFinite,
               margin: EdgeInsets.only(top: 15, right: 20, left: 20, bottom: 20),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(
+                  color: Colors.white, borderRadius: BorderRadius.circular(10)),
               child: TypeAheadField<MenuItemNewmModel>(
                 controller: menuMorePageController.searchController,
                 itemBuilder: (context, item) {
@@ -82,7 +93,8 @@ class WidgetTopHeaderSection extends StatelessWidget {
                     title: SubstringHighlight(
                       text: item.caption,
                       term: menuMorePageController.searchController.text,
-                      textStyleHighlight: TextStyle(fontWeight: FontWeight.w700),
+                      textStyleHighlight:
+                          TextStyle(fontWeight: FontWeight.w700),
                     ), //Text(item.caption),
                   );
                 },
@@ -119,7 +131,8 @@ class WidgetTopHeaderSection extends StatelessWidget {
                       prefixIcon: Icon(
                         Icons.search_outlined,
                       ),
-                      suffixIcon: menuMorePageController.getSuffixIcon_searchBar(),
+                      suffixIcon:
+                          menuMorePageController.getSuffixIcon_searchBar(),
                       focusedBorder: OutlineInputBorder(
                         borderSide: const BorderSide(color: MyColors.blue1),
                         borderRadius: BorderRadius.circular(10),

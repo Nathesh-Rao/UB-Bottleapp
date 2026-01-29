@@ -1,17 +1,17 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:axpertflutter/Constants/CommonMethods.dart';
-import 'package:axpertflutter/Constants/MyColors.dart';
-import 'package:axpertflutter/Constants/Routes.dart';
-import 'package:axpertflutter/Constants/Const.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_module.dart';
-import 'package:axpertflutter/Services/LocationServiceManager/LocationServiceManager.dart';
-import 'package:axpertflutter/Utils/FirebaseHandler/FirebaseMessagesHandler.dart';
-import 'package:axpertflutter/Utils/LogServices/LogService.dart';
-import 'package:axpertflutter/Utils/ServerConnections/InternetConnectivity.dart';
-import 'package:axpertflutter/Utils/Utility/initial_bindings.dart';
-import 'package:axpertflutter/firebase_options.dart';
+import 'package:ubbottleapp/Constants/CommonMethods.dart';
+import 'package:ubbottleapp/Constants/MyColors.dart';
+import 'package:ubbottleapp/Constants/Routes.dart';
+import 'package:ubbottleapp/Constants/Const.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_module.dart';
+import 'package:ubbottleapp/Services/LocationServiceManager/LocationServiceManager.dart';
+import 'package:ubbottleapp/Utils/FirebaseHandler/FirebaseMessagesHandler.dart';
+import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
+import 'package:ubbottleapp/Utils/ServerConnections/InternetConnectivity.dart';
+import 'package:ubbottleapp/Utils/Utility/initial_bindings.dart';
+import 'package:ubbottleapp/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -57,7 +57,7 @@ Future<void> main() async {
   await CommonMethods.requestLocationPermission();
   await GetStorage.init();
   await FlutterDownloader.initialize(debug: true);
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await Firebase.initializeApp();
   // await initPlatformState();
   //
   // await fetchData();

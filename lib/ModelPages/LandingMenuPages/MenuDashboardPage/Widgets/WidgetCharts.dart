@@ -1,7 +1,7 @@
-import 'package:axpertflutter/Constants/AppStorage.dart';
-import 'package:axpertflutter/Constants/Const.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuDashboardPage/Models/ChartCardModel.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
+import 'package:ubbottleapp/Constants/AppStorage.dart';
+import 'package:ubbottleapp/Constants/Const.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuDashboardPage/Models/ChartCardModel.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,14 +16,19 @@ class WidgetCharts extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(6),
       decoration: BoxDecoration(
-          color: Colors.white, border: Border.all(width: 2, color: HexColor('EDF0F8')), borderRadius: BorderRadius.circular(10)),
+          color: Colors.white,
+          border: Border.all(width: 2, color: HexColor('EDF0F8')),
+          borderRadius: BorderRadius.circular(10)),
       child: Theme(
         data: ThemeData().copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           initiallyExpanded: true,
           title: Text(cardModel.cardname,
-              style:
-                  GoogleFonts.nunito(textStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: HexColor('495057')))),
+              style: GoogleFonts.nunito(
+                  textStyle: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: HexColor('495057')))),
           children: [
             SizedBox(height: 3),
             Container(height: 2, color: HexColor('EDF0F8')),
@@ -105,14 +110,20 @@ Widget getKpi(ChartCardModel cardModel) {
 
 Widget getColumnChart(ChartCardModel cardModel) {
   return SfCartesianChart(
-    primaryXAxis: CategoryAxis(labelIntersectAction: AxisLabelIntersectAction.rotate45),
+    primaryXAxis:
+        CategoryAxis(labelIntersectAction: AxisLabelIntersectAction.rotate45),
 
     // primaryYAxis: NumericAxis(minimum: 0, maximum: 40, interval: 10),
-    legend: Legend(isVisible: true, isResponsive: true, toggleSeriesVisibility: true, position: LegendPosition.top),
+    legend: Legend(
+        isVisible: true,
+        isResponsive: true,
+        toggleSeriesVisibility: true,
+        position: LegendPosition.top),
     series: <CartesianSeries<dynamic, String>>[
       ColumnSeries(
           onPointTap: (pointInteractionDetails) {
-            openWebPage(cardModel.dataList[pointInteractionDetails.pointIndex!]);
+            openWebPage(
+                cardModel.dataList[pointInteractionDetails.pointIndex!]);
           },
           dataSource: cardModel.dataList,
           xValueMapper: (datum, index) => datum.x_axis,
@@ -125,15 +136,21 @@ Widget getColumnChart(ChartCardModel cardModel) {
 Widget getStackedColumnChart(ChartCardModel cardModel) {
   List<List<ChartData>> newList = getExtractedData(cardModel.dataList);
   return SfCartesianChart(
-    primaryXAxis: CategoryAxis(labelIntersectAction: AxisLabelIntersectAction.rotate45),
+    primaryXAxis:
+        CategoryAxis(labelIntersectAction: AxisLabelIntersectAction.rotate45),
 
     // primaryYAxis: NumericAxis(minimum: 0, maximum: 40, interval: 10),
-    legend: Legend(isVisible: true, isResponsive: true, toggleSeriesVisibility: true, position: LegendPosition.top),
+    legend: Legend(
+        isVisible: true,
+        isResponsive: true,
+        toggleSeriesVisibility: true,
+        position: LegendPosition.top),
     series: <CartesianSeries<dynamic, String>>[
       for (var item in newList)
         StackedColumnSeries(
             onPointTap: (pointInteractionDetails) {
-              openWebPage(cardModel.dataList[pointInteractionDetails.pointIndex!]);
+              openWebPage(
+                  cardModel.dataList[pointInteractionDetails.pointIndex!]);
             },
             dataSource: item,
             xValueMapper: (datum, index) => datum.x_axis,
@@ -145,7 +162,8 @@ Widget getStackedColumnChart(ChartCardModel cardModel) {
 
 Widget getPercentageColumnChart(ChartCardModel cardModel) {
   return SfCartesianChart(
-    primaryXAxis: CategoryAxis(labelIntersectAction: AxisLabelIntersectAction.rotate45),
+    primaryXAxis:
+        CategoryAxis(labelIntersectAction: AxisLabelIntersectAction.rotate45),
     primaryYAxis: CategoryAxis(
       maximum: 100,
       minimum: 0,
@@ -153,11 +171,16 @@ Widget getPercentageColumnChart(ChartCardModel cardModel) {
     ),
 
     // primaryYAxis: NumericAxis(minimum: 0, maximum: 40, interval: 10),
-    legend: Legend(isVisible: true, isResponsive: true, toggleSeriesVisibility: true, position: LegendPosition.top),
+    legend: Legend(
+        isVisible: true,
+        isResponsive: true,
+        toggleSeriesVisibility: true,
+        position: LegendPosition.top),
     series: <CartesianSeries<dynamic, String>>[
       ColumnSeries(
           onPointTap: (pointInteractionDetails) {
-            openWebPage(cardModel.dataList[pointInteractionDetails.pointIndex!]);
+            openWebPage(
+                cardModel.dataList[pointInteractionDetails.pointIndex!]);
           },
           isTrackVisible: true,
           trackColor: Colors.grey.withOpacity(0.4),
@@ -173,18 +196,26 @@ Widget getPercentageColumnChart(ChartCardModel cardModel) {
 Widget getLineChart(ChartCardModel cardModel) {
   return SfCartesianChart(
     enableAxisAnimation: true,
-    primaryXAxis: CategoryAxis(labelIntersectAction: AxisLabelIntersectAction.rotate45),
+    primaryXAxis:
+        CategoryAxis(labelIntersectAction: AxisLabelIntersectAction.rotate45),
     tooltipBehavior: TooltipBehavior(enable: true),
     // primaryYAxis: NumericAxis(minimum: 0, maximum: 40, interval: 10),
-    legend: Legend(isVisible: true, isResponsive: true, toggleSeriesVisibility: true, position: LegendPosition.top),
+    legend: Legend(
+        isVisible: true,
+        isResponsive: true,
+        toggleSeriesVisibility: true,
+        position: LegendPosition.top),
     series: <CartesianSeries<dynamic, String>>[
       LineSeries(
           onPointTap: (pointInteractionDetails) {
-            openWebPage(cardModel.dataList[pointInteractionDetails.pointIndex!]);
+            openWebPage(
+                cardModel.dataList[pointInteractionDetails.pointIndex!]);
           },
           markerSettings: MarkerSettings(isVisible: true),
           enableTooltip: true,
-          name: cardModel.dataList[0].data_label == "" ? "Data" : cardModel.dataList[0].data_label,
+          name: cardModel.dataList[0].data_label == ""
+              ? "Data"
+              : cardModel.dataList[0].data_label,
           dataSource: cardModel.dataList,
           xValueMapper: (datum, index) => datum.x_axis,
           yValueMapper: (datum, index) => double.parse(datum.value),
@@ -221,16 +252,24 @@ Widget getPieChart(ChartCardModel cardModel) {
 
 Widget getBarChart(ChartCardModel cardModel) {
   return SfCartesianChart(
-    primaryXAxis: CategoryAxis(labelIntersectAction: AxisLabelIntersectAction.rotate45),
+    primaryXAxis:
+        CategoryAxis(labelIntersectAction: AxisLabelIntersectAction.rotate45),
 
     // primaryYAxis: NumericAxis(minimum: 0, maximum: 40, interval: 10),
-    legend: Legend(isVisible: true, isResponsive: true, toggleSeriesVisibility: true, position: LegendPosition.top),
+    legend: Legend(
+        isVisible: true,
+        isResponsive: true,
+        toggleSeriesVisibility: true,
+        position: LegendPosition.top),
     series: <CartesianSeries<dynamic, String>>[
       BarSeries(
           onPointTap: (pointInteractionDetails) {
-            openWebPage(cardModel.dataList[pointInteractionDetails.pointIndex!]);
+            openWebPage(
+                cardModel.dataList[pointInteractionDetails.pointIndex!]);
           },
-          name: cardModel.dataList[0].data_label == '' ? " Data" : cardModel.dataList[0].data_label,
+          name: cardModel.dataList[0].data_label == ''
+              ? " Data"
+              : cardModel.dataList[0].data_label,
           dataSource: cardModel.dataList,
           color: Colors.green.shade800,
           xValueMapper: (datum, index) => datum.x_axis,
@@ -243,17 +282,25 @@ Widget getBarChart(ChartCardModel cardModel) {
 Widget getStackedBarChart(ChartCardModel cardModel) {
   List<List<ChartData>> newList = getExtractedData(cardModel.dataList);
   return SfCartesianChart(
-    primaryXAxis: CategoryAxis(labelIntersectAction: AxisLabelIntersectAction.rotate45),
+    primaryXAxis:
+        CategoryAxis(labelIntersectAction: AxisLabelIntersectAction.rotate45),
 
     // primaryYAxis: NumericAxis(minimum: 0, maximum: 40, interval: 10),
-    legend: Legend(isVisible: true, isResponsive: true, toggleSeriesVisibility: true, position: LegendPosition.top),
+    legend: Legend(
+        isVisible: true,
+        isResponsive: true,
+        toggleSeriesVisibility: true,
+        position: LegendPosition.top),
     series: <CartesianSeries<dynamic, String>>[
       for (var item in newList)
         StackedBarSeries(
             onPointTap: (pointInteractionDetails) {
-              openWebPage(cardModel.dataList[pointInteractionDetails.pointIndex!]);
+              openWebPage(
+                  cardModel.dataList[pointInteractionDetails.pointIndex!]);
             },
-            name: cardModel.dataList[0].data_label == '' ? " Data" : cardModel.dataList[0].data_label,
+            name: cardModel.dataList[0].data_label == ''
+                ? " Data"
+                : cardModel.dataList[0].data_label,
             dataSource: item,
             color: Colors.green.shade800,
             xValueMapper: (datum, index) => datum.x_axis,
@@ -301,7 +348,8 @@ Widget getSemiDonutChart(ChartCardModel cardModel) {
     series: <CircularSeries>[
       DoughnutSeries(
           onPointTap: (pointInteractionDetails) {
-            openWebPage(cardModel.dataList[pointInteractionDetails.pointIndex!]);
+            openWebPage(
+                cardModel.dataList[pointInteractionDetails.pointIndex!]);
           },
           dataLabelSettings: DataLabelSettings(isVisible: true),
           dataSource: cardModel.dataList,

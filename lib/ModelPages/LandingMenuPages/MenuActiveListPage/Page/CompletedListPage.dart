@@ -1,12 +1,12 @@
-import 'package:axpertflutter/Constants/Routes.dart';
-import 'package:axpertflutter/Constants/Const.dart';
-import 'package:axpertflutter/ModelPages/InApplicationWebView/controller/webview_controller.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuActiveListPage/Controllers/CompletedListController.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuActiveListPage/Controllers/ListItemDetailsController.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuActiveListPage/Page/PendingListPage.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuActiveListPage/Widgets/WidgetCompletedListItem.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuActiveListPage/Widgets/WidgetDottedSeparator.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/Widgets/WidgetNoDataFound.dart';
+import 'package:ubbottleapp/Constants/Routes.dart';
+import 'package:ubbottleapp/Constants/Const.dart';
+import 'package:ubbottleapp/ModelPages/InApplicationWebView/controller/webview_controller.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuActiveListPage/Controllers/CompletedListController.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuActiveListPage/Controllers/ListItemDetailsController.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuActiveListPage/Page/PendingListPage.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuActiveListPage/Widgets/WidgetCompletedListItem.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuActiveListPage/Widgets/WidgetDottedSeparator.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/Widgets/WidgetNoDataFound.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:hexcolor/hexcolor.dart';
@@ -16,7 +16,8 @@ import '../../../../Constants/CommonMethods.dart';
 class CompletedListPage extends StatelessWidget {
   CompletedListPage({super.key});
 
-  final CompletedListController completedListController = Get.put(CompletedListController());
+  final CompletedListController completedListController =
+      Get.put(CompletedListController());
   final webViewController = Get.find<WebViewController>();
 
   @override
@@ -30,7 +31,8 @@ class CompletedListPage extends StatelessWidget {
     });
   }
 
-  reBuild(CompletedListController completedListController, BuildContext context) {
+  reBuild(
+      CompletedListController completedListController, BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -45,18 +47,23 @@ class CompletedListPage extends StatelessWidget {
                   controller: completedListController.searchController,
                   onChanged: completedListController.filterList,
                   decoration: InputDecoration(
-                      prefixIcon: completedListController.searchController.text.toString() == ""
+                      prefixIcon: completedListController.searchController.text
+                                  .toString() ==
+                              ""
                           ? GestureDetector(child: Icon(Icons.search))
                           : GestureDetector(
                               onTap: () {
                                 completedListController.clearCalled();
                               },
-                              child: Icon(Icons.clear, color: HexColor("#8E8E8EA3")),
+                              child: Icon(Icons.clear,
+                                  color: HexColor("#8E8E8EA3")),
                             ),
                       isDense: true,
                       contentPadding: EdgeInsets.zero,
                       hintText: "Search",
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(width: 1))),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(width: 1))),
                 ),
               ),
               // SizedBox(width: 6),
@@ -93,20 +100,27 @@ class CompletedListPage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 child: GestureDetector(
                   onTap: () {
-                    Get.dialog(showFilterDialog(context, completedListController));
+                    Get.dialog(
+                        showFilterDialog(context, completedListController));
                   },
                   child: Container(
                     height: 35,
                     width: 30,
                     decoration: BoxDecoration(
-                        color: completedListController.selectedIconNumber.value == 4 ? HexColor('0E72FD') : Colors.white,
+                        color:
+                            completedListController.selectedIconNumber.value ==
+                                    4
+                                ? HexColor('0E72FD')
+                                : Colors.white,
                         borderRadius: BorderRadius.circular(10)),
                     child: Center(
                       child: Icon(
                         Icons.filter_alt,
-                        color: completedListController.selectedIconNumber.value == 4
-                            ? Colors.white
-                            : HexColor('848D9C').withOpacity(0.7),
+                        color:
+                            completedListController.selectedIconNumber.value ==
+                                    4
+                                ? Colors.white
+                                : HexColor('848D9C').withOpacity(0.7),
                         size: 28,
                       ),
                     ),
@@ -127,12 +141,18 @@ class CompletedListPage extends StatelessWidget {
                       height: 35,
                       width: 30,
                       decoration: BoxDecoration(
-                          color: completedListController.selectedIconNumber.value == 5 ? HexColor('0E72FD') : Colors.white,
+                          color: completedListController
+                                      .selectedIconNumber.value ==
+                                  5
+                              ? HexColor('0E72FD')
+                              : Colors.white,
                           borderRadius: BorderRadius.circular(10)),
                       child: Center(
                         child: Icon(
                           Icons.checklist,
-                          color: completedListController.selectedIconNumber.value == 5
+                          color: completedListController
+                                      .selectedIconNumber.value ==
+                                  5
                               ? Colors.white
                               : HexColor('848D9C').withOpacity(0.7),
                           size: 28,
@@ -147,9 +167,11 @@ class CompletedListPage extends StatelessWidget {
         ),
         // SizedBox(height: 10),
         Visibility(
-            visible: (completedListController.completed_activeList.length == 0 && !completedListController.isLoading.value)
-                ? true
-                : false,
+            visible:
+                (completedListController.completed_activeList.length == 0 &&
+                        !completedListController.isLoading.value)
+                    ? true
+                    : false,
             child: WidgetNoDataFound()),
 
         Visibility(
@@ -159,19 +181,30 @@ class CompletedListPage extends StatelessWidget {
                   itemBuilder: (context, index) {
                     return ListTile(
                       onTap: () {
-                        print(completedListController.completed_activeList[index].toJson());
-                        switch (completedListController.completed_activeList[index].tasktype.toString().toUpperCase()) {
+                        print(completedListController
+                            .completed_activeList[index]
+                            .toJson());
+                        switch (completedListController
+                            .completed_activeList[index].tasktype
+                            .toString()
+                            .toUpperCase()) {
                           case "MAKE":
-                            var URL =
-                                CommonMethods.activeList_CreateURL_MAKE(completedListController.completed_activeList[index]);
+                            var URL = CommonMethods.activeList_CreateURL_MAKE(
+                                completedListController
+                                    .completed_activeList[index]);
                             if (!URL.isEmpty)
                               // Get.toNamed(Routes.InApplicationWebViewer, arguments: [Const.getFullWebUrl(URL)]);
-                              webViewController.openWebView(url: Const.getFullWebUrl(URL));
+                              webViewController.openWebView(
+                                  url: Const.getFullWebUrl(URL));
                             break;
                           case "CHECK":
                           case "APPROVE":
-                            ListItemDetailsController listItemDetailsController = Get.put(ListItemDetailsController());
-                            listItemDetailsController.openModel = completedListController.completed_activeList[index];
+                            ListItemDetailsController
+                                listItemDetailsController =
+                                Get.put(ListItemDetailsController());
+                            listItemDetailsController.openModel =
+                                completedListController
+                                    .completed_activeList[index];
                             Get.toNamed(Routes.ProjectListingPageDetails);
                             break;
 
@@ -179,17 +212,21 @@ class CompletedListPage extends StatelessWidget {
                           case "NULL":
                           case "CACHED SAVE":
                             var URL =
-                                CommonMethods.activeList_CreateURL_MESSAGE(completedListController.completed_activeList[index]);
+                                CommonMethods.activeList_CreateURL_MESSAGE(
+                                    completedListController
+                                        .completed_activeList[index]);
                             if (!URL.isEmpty)
                               // Get.toNamed(Routes.InApplicationWebViewer, arguments: [Const.getFullWebUrl(URL)]);
-                              webViewController.openWebView(url: Const.getFullWebUrl(URL));
+                              webViewController.openWebView(
+                                  url: Const.getFullWebUrl(URL));
 
                             break;
                           default:
                             break;
                         }
                       },
-                      title: WidgetCompletedListItem(completedListController.completed_activeList[index]),
+                      title: WidgetCompletedListItem(
+                          completedListController.completed_activeList[index]),
                     );
                     // return GestureDetector(
                     //     onTap: () {
@@ -203,7 +240,8 @@ class CompletedListPage extends StatelessWidget {
                       child: WidgetDottedSeparator(),
                     );
                   },
-                  itemCount: completedListController.completed_activeList.length)),
+                  itemCount:
+                      completedListController.completed_activeList.length)),
         )
       ],
     );

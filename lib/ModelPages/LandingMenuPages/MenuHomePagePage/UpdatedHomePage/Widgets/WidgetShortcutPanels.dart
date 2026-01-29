@@ -1,5 +1,5 @@
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/Models/CardModel.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/Models/CardModel.dart';
 import '../Widgets/WidgetQuickAccessGridItem.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
@@ -22,7 +22,8 @@ class WidgetShortcutPanel extends StatelessWidget {
                 shrinkWrap: true,
                 // physics: NeverScrollableScrollPhysics(),
                 scrollDirection: Axis.horizontal,
-                itemCount: menuHomePageController.listOfshortcutCardItems.length,
+                itemCount:
+                    menuHomePageController.listOfshortcutCardItems.length,
                 padding: EdgeInsets.only(top: 0, bottom: 5),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 1, // number of items in each row
@@ -32,9 +33,12 @@ class WidgetShortcutPanel extends StatelessWidget {
                 itemBuilder: (context, index) {
                   return GestureDetector(
                       onTap: () {
-                        captionOnTapFunction(CardModel(stransid: menuHomePageController.listOfshortcutCardItems[index].url));
+                        captionOnTapFunction(CardModel(
+                            stransid: menuHomePageController
+                                .listOfshortcutCardItems[index].url));
                       },
-                      child: WidgetQuickAccessGridItems(menuHomePageController.listOfshortcutCardItems[index]));
+                      child: WidgetQuickAccessGridItems(menuHomePageController
+                          .listOfshortcutCardItems[index]));
                 },
               ),
             ),

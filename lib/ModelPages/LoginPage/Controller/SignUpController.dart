@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:axpertflutter/Constants/CommonMethods.dart';
-import 'package:axpertflutter/Constants/Const.dart';
-import 'package:axpertflutter/Utils/ServerConnections/ServerConnections.dart';
+import 'package:ubbottleapp/Constants/CommonMethods.dart';
+import 'package:ubbottleapp/Constants/Const.dart';
+import 'package:ubbottleapp/Utils/ServerConnections/ServerConnections.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -70,7 +70,9 @@ class SignUpController extends GetxController {
       String val = item["usergroup"].toString();
       userTypeList.add(CommonMethods.capitalize(val));
     }
-    userTypeList..sort((a, b) => a.toString().toLowerCase().compareTo(b.toString().toLowerCase()));
+    userTypeList
+      ..sort((a, b) =>
+          a.toString().toLowerCase().compareTo(b.toString().toLowerCase()));
     userTypeList.remove("Power");
     ddSelectedValue.value = userTypeList[0];
     dropDownItemChanged(ddSelectedValue);
@@ -126,9 +128,10 @@ class SignUpController extends GetxController {
   }
 
   validateForm() {
-    errUserId.value =
-        errUserName.value = errUserPass.value = errUserConPass.value = errUserEmail.value = errUserMobile.value = '';
-    Pattern pattern = r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~]).{7,}$';
+    errUserId.value = errUserName.value = errUserPass.value =
+        errUserConPass.value = errUserEmail.value = errUserMobile.value = '';
+    Pattern pattern =
+        r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~]).{7,}$';
     RegExp regex = RegExp(pattern.toString());
 
     if (ddSelectedValue.toLowerCase() == "internal") {
@@ -141,7 +144,8 @@ class SignUpController extends GetxController {
         return false;
       }
       if (!regex.hasMatch(userPassController.text)) {
-        errUserPass.value = "Password should contain upper,lower,digit and Special character";
+        errUserPass.value =
+            "Password should contain upper,lower,digit and Special character";
         return false;
       }
       if (userPassController.text.length <= 7) {
@@ -152,7 +156,8 @@ class SignUpController extends GetxController {
         errUserConPass.value = "Enter Confirm Password";
         return false;
       }
-      if (userConfirmPassController.text.trim() != userPassController.text.trim()) {
+      if (userConfirmPassController.text.trim() !=
+          userPassController.text.trim()) {
         errUserConPass.value = "Password and Confirm Password should match";
         return false;
       }
@@ -166,7 +171,8 @@ class SignUpController extends GetxController {
         return false;
       }
       if (!regex.hasMatch(userPassController.text)) {
-        errUserPass.value = "Password should contain upper,lower,digit and Special character";
+        errUserPass.value =
+            "Password should contain upper,lower,digit and Special character";
         return false;
       }
       if (userPassController.text.length <= 7) {
@@ -177,7 +183,8 @@ class SignUpController extends GetxController {
         errUserConPass.value = "Enter Confirm Password";
         return false;
       }
-      if (userConfirmPassController.text.trim() != userPassController.text.trim()) {
+      if (userConfirmPassController.text.trim() !=
+          userPassController.text.trim()) {
         errUserConPass.value = "Password and Confirm Password should match";
         return false;
       }
@@ -203,11 +210,13 @@ class SignUpController extends GetxController {
 
   void registerButtonCalled() async {
     if (validateForm()) {
-      LogService.writeLog(message: "[-] SignUpController : Signup process started");
+      LogService.writeLog(
+          message: "[-] SignUpController : Signup process started");
       LoadingScreen.show();
       var body = getJsonBody();
       var url = Const.getFullARMUrl(ServerConnections.API_ADDUSER);
-      var responses = await serverConnections.postToServer(url: url, body: body);
+      var responses =
+          await serverConnections.postToServer(url: url, body: body);
       try {
         if (responses != "") {
           var jsonResponse = jsonDecode(responses);
@@ -219,11 +228,15 @@ class SignUpController extends GetxController {
             startTimer();
           } else {
             Get.snackbar("Alert!", jsonResponse["result"]["message"],
-                snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red, colorText: Colors.white);
+                snackPosition: SnackPosition.BOTTOM,
+                backgroundColor: Colors.red,
+                colorText: Colors.white);
           }
         }
       } catch (e) {
-        LogService.writeLog(message: "[ERROR] SignUpController\nScope: registerButtonCalled()\nError: $e");
+        LogService.writeLog(
+            message:
+                "[ERROR] SignUpController\nScope: registerButtonCalled()\nError: $e");
 
         //error
       } finally {
@@ -242,7 +255,8 @@ class SignUpController extends GetxController {
         errOtp.value = "You exceeds the maximum limit.\nPlease try again later";
       }
     } catch (e) {
-      LogService.writeLog(message: "[ERROR] SignUpController\nScope: reSendOTP()\nError: $e");
+      LogService.writeLog(
+          message: "[ERROR] SignUpController\nScope: reSendOTP()\nError: $e");
 
       errOtp.value = "You exceeds the maximum limit.\nPlease try again later";
     }
@@ -264,7 +278,9 @@ class SignUpController extends GetxController {
       "mobile": userMobileController.text.trim(),
       "usergroup": ddSelectedValue.toLowerCase(),
     };
-    return ddSelectedValue.toLowerCase() == "internal" ? jsonEncode(iBody) : jsonEncode(eBody);
+    return ddSelectedValue.toLowerCase() == "internal"
+        ? jsonEncode(iBody)
+        : jsonEncode(eBody);
   }
 
   void verifyOtp() async {
@@ -274,7 +290,8 @@ class SignUpController extends GetxController {
       'otp': enteredPin.value,
     };
     var url = Const.getFullARMUrl(ServerConnections.API_OTP_VALIDATE_USER);
-    var responses = await serverConnections.postToServer(url: url, body: jsonEncode(otpBody));
+    var responses = await serverConnections.postToServer(
+        url: url, body: jsonEncode(otpBody));
 
     if (responses != "") {
       var jsonResp = jsonDecode(responses);
@@ -293,7 +310,9 @@ class SignUpController extends GetxController {
       }
     } else {
       Get.snackbar("Alert!", "Some error occured",
-          snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red, colorText: Colors.white);
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white);
     }
     reSendOtpCount++;
     LoadingScreen.dismiss();

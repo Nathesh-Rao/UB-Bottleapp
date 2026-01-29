@@ -1,5 +1,5 @@
-import 'package:axpertflutter/Constants/MyColors.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/Controller/LandingPageController.dart';
+import 'package:ubbottleapp/Constants/MyColors.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/Controller/LandingPageController.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -31,18 +31,23 @@ class WidgetBannerSlidingPanel extends StatelessWidget {
                 child: Stack(
                   children: [
                     CarouselSlider(
-                      items: landingPageController.list_bannerItem.cast<Widget>().toList(),
-                      carouselController: landingPageController.carouselController_banner,
+                      items: landingPageController.list_bannerItem
+                          .cast<Widget>()
+                          .toList(),
+                      carouselController:
+                          landingPageController.carouselController_banner,
                       options: CarouselOptions(
-                        initialPage: landingPageController.carouselBannerIndex.value,
+                        initialPage:
+                            landingPageController.carouselBannerIndex.value,
                         height: double.maxFinite,
                         autoPlay: true,
-                        autoPlayInterval:  Duration(seconds: 10),
+                        autoPlayInterval: Duration(seconds: 10),
                         enlargeCenterPage: true,
                         viewportFraction: 1,
                         enlargeStrategy: CenterPageEnlargeStrategy.height,
                         onPageChanged: (index, reason) {
-                          landingPageController.carouselBannerIndex.value = index;
+                          landingPageController.carouselBannerIndex.value =
+                              index;
                         },
                       ),
                     ),
@@ -50,17 +55,30 @@ class WidgetBannerSlidingPanel extends StatelessWidget {
                       alignment: Alignment.bottomCenter,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: landingPageController.list_bannerItem.asMap().entries.map((entry) {
+                        children: landingPageController.list_bannerItem
+                            .asMap()
+                            .entries
+                            .map((entry) {
                           return GestureDetector(
-                            onTap: () => landingPageController.carouselController_banner.animateToPage(entry.key),
+                            onTap: () => landingPageController
+                                .carouselController_banner
+                                .animateToPage(entry.key),
                             child: Container(
                               width: 10.0,
                               height: 10.0,
-                              margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+                              margin: EdgeInsets.symmetric(
+                                  vertical: 8.0, horizontal: 4.0),
                               decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : HexColor("133884"))
-                                      .withOpacity(landingPageController.carouselBannerIndex.value == entry.key ? 0.9 : 0.1)),
+                                  color: (Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? Colors.white
+                                          : HexColor("133884"))
+                                      .withOpacity(landingPageController
+                                                  .carouselBannerIndex.value ==
+                                              entry.key
+                                          ? 0.9
+                                          : 0.1)),
                             ),
                           );
                         }).toList(),

@@ -1,5 +1,5 @@
-import 'package:axpertflutter/Constants/GlobalVariableController.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/offline_form_pages/controller/offline_form_controller.dart';
+import 'package:ubbottleapp/Constants/GlobalVariableController.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/controller/offline_form_controller.dart';
 import 'package:get/get.dart';
 
 class InitialBindings extends Bindings {

@@ -1,7 +1,7 @@
-import 'package:axpertflutter/Constants/CommonMethods.dart';
-import 'package:axpertflutter/Constants/MyColors.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/Models/GridDashboardModel.dart';
+import 'package:ubbottleapp/Constants/CommonMethods.dart';
+import 'package:ubbottleapp/Constants/MyColors.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/Models/GridDashboardModel.dart';
 import 'package:flutter/material.dart';
 import 'package:badges/badges.dart' as badge;
 import 'package:get/get.dart';
@@ -17,7 +17,9 @@ class WidgetQuickAccessGridItems extends StatelessWidget {
       child: AspectRatio(
         aspectRatio: 1 / 1,
         child: Container(
-          decoration: BoxDecoration(border: Border.all(width: 1, color: Colors.white.withOpacity(0.1))),
+          decoration: BoxDecoration(
+              border:
+                  Border.all(width: 1, color: Colors.white.withOpacity(0.1))),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -28,7 +30,8 @@ class WidgetQuickAccessGridItems extends StatelessWidget {
                   badgeStyle: badge.BadgeStyle(
                       shape: badge.BadgeShape.circle,
                       elevation: 10,
-                      padding: EdgeInsets.only(left: 8,right: 8,top: 4,bottom: 4),
+                      padding:
+                          EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
                       badgeColor: Colors.white,
                       borderSide: BorderSide(width: 1, color: MyColors.blue2)),
                   badgeContent: Text(
@@ -37,7 +40,9 @@ class WidgetQuickAccessGridItems extends StatelessWidget {
                   ),
                   child: Container(
                     padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(30)),
+                    decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(30)),
                     child: Icon(
                       menuHomePageController.generateIcon(model),
                       color: MyColors.blue2,
@@ -76,8 +81,11 @@ class WidgetQuickAccessGridItems extends StatelessWidget {
                 child: Text(
                   CommonMethods.capitalize(model.caption),
                   maxLines: 2,
-                  style:
-                      GoogleFonts.poppins(textStyle: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 11)),
+                  style: GoogleFonts.poppins(
+                      textStyle: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 11)),
                 ),
               ),
             ],

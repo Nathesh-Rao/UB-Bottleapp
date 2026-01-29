@@ -1,6 +1,6 @@
-import 'package:axpertflutter/Constants/MyColors.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/AttendanceManagement/controller/AttendanceController.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/AttendanceManagement/widgets/WidgetAttendanceTopBar.dart';
+import 'package:ubbottleapp/Constants/MyColors.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/AttendanceManagement/controller/AttendanceController.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/AttendanceManagement/widgets/WidgetAttendanceTopBar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -9,9 +9,11 @@ import 'package:google_fonts/google_fonts.dart';
 class AttendanceAppBar extends StatelessWidget implements PreferredSizeWidget {
   AttendanceAppBar({super.key});
 
-  final AttendanceController attendanceController = Get.find<AttendanceController>();
+  final AttendanceController attendanceController =
+      Get.find<AttendanceController>();
   @override
-  Size get preferredSize => Size(double.infinity, attendanceController.appbarHeight);
+  Size get preferredSize =>
+      Size(double.infinity, attendanceController.appbarHeight);
   @override
   Widget build(BuildContext context) {
     var topPadding = MediaQuery.of(context).padding;
@@ -41,7 +43,8 @@ class AttendanceAppBar extends StatelessWidget implements PreferredSizeWidget {
               Spacer(),
               _topBarWidget(),
               Spacer(flex: 2),
-              _userInfoWidget(username: "Amrithanath", companyName: "Agile Labs"),
+              _userInfoWidget(
+                  username: "Amrithanath", companyName: "Agile Labs"),
               Spacer(flex: 2),
               WidgetAttendanceTopBar()
             ],
@@ -75,7 +78,8 @@ class AttendanceAppBar extends StatelessWidget implements PreferredSizeWidget {
                 radius: 23,
                 child: CircleAvatar(
                   // backgroundColor: Colors.white,
-                  backgroundImage: AssetImage("assets/images/profilesample.jpg"),
+                  backgroundImage:
+                      AssetImage("assets/images/profilesample.jpg"),
                   radius: 28,
                 ),
               ),

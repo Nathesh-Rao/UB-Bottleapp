@@ -1,6 +1,6 @@
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/UpdatedHomePage/Models/BannerCardModel.dart';
-import 'package:axpertflutter/Utils/LogServices/LogService.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/UpdatedHomePage/Models/BannerCardModel.dart';
+import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
@@ -30,8 +30,11 @@ class WidgetBannerCard extends StatelessWidget {
                   height: Get.height * 0.24,
                   child: CarouselSlider(
                     items: List.generate(
-                        menuHomePageController.bannerCardData[0].carddata.length,
-                        (index) => _bannerCard(menuHomePageController.bannerCardData[0].carddata[index],
+                        menuHomePageController
+                            .bannerCardData[0].carddata.length,
+                        (index) => _bannerCard(
+                            menuHomePageController
+                                .bannerCardData[0].carddata[index],
                             menuHomePageController.bannerCardData[0].cardname)),
                     carouselController: bannerController,
                     options: CarouselOptions(
@@ -51,8 +54,11 @@ class WidgetBannerCard extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 10),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(menuHomePageController.bannerCardData[0].carddata.length, (index) {
-                      var isSelected = index == menuHomePageController.bannerIndex.value;
+                    children: List.generate(
+                        menuHomePageController
+                            .bannerCardData[0].carddata.length, (index) {
+                      var isSelected =
+                          index == menuHomePageController.bannerIndex.value;
 
                       return AnimatedContainer(
                         duration: const Duration(milliseconds: 300),
@@ -60,7 +66,8 @@ class WidgetBannerCard extends StatelessWidget {
                         height: isSelected ? 10 : 8,
                         width: isSelected ? 10 : 8,
                         decoration: BoxDecoration(
-                          color: isSelected ? Colors.black : Colors.grey.shade300,
+                          color:
+                              isSelected ? Colors.black : Colors.grey.shade300,
                           shape: BoxShape.circle,
                         ),
                       );
@@ -204,7 +211,9 @@ class WidgetBannerCard1 extends StatelessWidget {
                 height: Get.height * 0.24,
                 child: CarouselSlider(
                   items: List.generate(
-                      cardModel.carddata.length, (index) => _bannerCard(cardModel.carddata[index], cardModel.cardname)),
+                      cardModel.carddata.length,
+                      (index) => _bannerCard(
+                          cardModel.carddata[index], cardModel.cardname)),
                   carouselController: bannerController,
                   options: CarouselOptions(
                     height: double.maxFinite,

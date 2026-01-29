@@ -1,8 +1,8 @@
 import 'dart:convert';
 
-import 'package:axpertflutter/Constants/Const.dart';
-import 'package:axpertflutter/Utils/ServerConnections/EncryptionRules.dart';
-import 'package:axpertflutter/Utils/ServerConnections/ServerConnections.dart';
+import 'package:ubbottleapp/Constants/Const.dart';
+import 'package:ubbottleapp/Utils/ServerConnections/EncryptionRules.dart';
+import 'package:ubbottleapp/Utils/ServerConnections/ServerConnections.dart';
 
 class ExecuteApi {
   static const String SECRETKEY_HomePage = "1965065173127450";

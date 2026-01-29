@@ -1,7 +1,7 @@
 import 'dart:developer';
 
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/AttendanceManagement/controller/AttendanceController.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/AttendanceManagement/widgets/WidgetAttendanceHome.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/AttendanceManagement/controller/AttendanceController.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/AttendanceManagement/widgets/WidgetAttendanceHome.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 

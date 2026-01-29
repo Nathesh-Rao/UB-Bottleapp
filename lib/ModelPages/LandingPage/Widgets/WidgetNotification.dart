@@ -1,4 +1,4 @@
-import 'package:axpertflutter/ModelPages/LandingPage/Models/FirebaseMessageModel.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/Models/FirebaseMessageModel.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -25,13 +25,16 @@ class WidgetNotification extends StatelessWidget {
                 children: [
                   Text(
                     model.title,
-                    style: GoogleFonts.roboto(textStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                    style: GoogleFonts.roboto(
+                        textStyle: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.bold)),
                   ),
                   SizedBox(height: 15),
                   Text(
                     model.body,
                     maxLines: 3,
-                    style: GoogleFonts.roboto(textStyle: TextStyle(fontSize: 12)),
+                    style:
+                        GoogleFonts.roboto(textStyle: TextStyle(fontSize: 12)),
                   ),
                 ],
               ),

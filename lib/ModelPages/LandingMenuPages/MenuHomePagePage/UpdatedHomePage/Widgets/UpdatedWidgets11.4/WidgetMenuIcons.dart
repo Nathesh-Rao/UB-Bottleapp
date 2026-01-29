@@ -1,10 +1,10 @@
 import 'dart:developer';
 import 'dart:math';
 
-import 'package:axpertflutter/Constants/MyColors.dart';
-import 'package:axpertflutter/Constants/Extensions.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/UpdatedHomePage/Models/MenuIconsModel.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/UpdatedHomePage/Models/UpdatedHomeCardDataModel.dart';
+import 'package:ubbottleapp/Constants/MyColors.dart';
+import 'package:ubbottleapp/Constants/Extensions.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/UpdatedHomePage/Models/MenuIconsModel.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/UpdatedHomePage/Models/UpdatedHomeCardDataModel.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -32,8 +32,11 @@ class _WidgetMenuIconsState extends State<WidgetMenuIcons> {
     return Obx(() => Visibility(
           visible: menuHomePageController.menuIconsData.isNotEmpty,
           child: Column(
-            children: List.generate(menuHomePageController.menuIconsData.length, (index) {
-              List<Color> colors = List.generate(menuHomePageController.menuIconsData[index].carddata.length, (index) => MyColors.getRandomColor());
+            children: List.generate(menuHomePageController.menuIconsData.length,
+                (index) {
+              List<Color> colors = List.generate(
+                  menuHomePageController.menuIconsData[index].carddata.length,
+                  (index) => MyColors.getRandomColor());
               return MenuIconsPanel(
                 card: menuHomePageController.menuIconsData[index],
                 colors: colors,
@@ -73,7 +76,8 @@ class _MenuIconsPanelState extends State<MenuIconsPanel> {
   }
 
   void _getCardHeight() {
-    final RenderBox? renderBox = _cardKey.currentContext?.findRenderObject() as RenderBox?;
+    final RenderBox? renderBox =
+        _cardKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox != null) {
       setState(() {
         card_heightBeforeExpand = renderBox.size.height + 20;
@@ -87,9 +91,12 @@ class _MenuIconsPanelState extends State<MenuIconsPanel> {
       isSeeMore = !isSeeMore;
       if (isSeeMore) {
         // bHeight = bHeight2;
-        card_height = (widget.card.carddata.length > 10 ? card_heightAfterExpand : _getHeight_card(widget.card.carddata.length));
+        card_height = (widget.card.carddata.length > 10
+            ? card_heightAfterExpand
+            : _getHeight_card(widget.card.carddata.length));
       } else {
-        scrollController.animateTo(scrollController.position.minScrollExtent, duration: Duration(milliseconds: 300), curve: Curves.decelerate);
+        scrollController.animateTo(scrollController.position.minScrollExtent,
+            duration: Duration(milliseconds: 300), curve: Curves.decelerate);
         // bHeight = bHeight1;
         card_height = card_heightBeforeExpand;
       }
@@ -106,7 +113,8 @@ class _MenuIconsPanelState extends State<MenuIconsPanel> {
         )).then((_) {
       setState(() {
         if (isSeeMore) {
-          scrollController.animateTo(scrollController.position.minScrollExtent, duration: Duration(milliseconds: 300), curve: Curves.decelerate);
+          scrollController.animateTo(scrollController.position.minScrollExtent,
+              duration: Duration(milliseconds: 300), curve: Curves.decelerate);
           isSeeMore = !isSeeMore;
           // bHeight = bHeight1;
           card_height = card_heightBeforeExpand;
@@ -197,7 +205,8 @@ class _MenuIconsPanelState extends State<MenuIconsPanel> {
                 itemCount: widget.card.carddata.length,
                 // Number of items
                 itemBuilder: (context, index) {
-                  return _gridTile(widget.card.carddata[index], widget.colors[index]);
+                  return _gridTile(
+                      widget.card.carddata[index], widget.colors[index]);
                 },
               ),
             ),
@@ -231,7 +240,9 @@ class _MenuIconsPanelState extends State<MenuIconsPanel> {
                                     color: MyColors.blue1,
                                   )),
                               Icon(
-                                isSeeMore ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                                isSeeMore
+                                    ? Icons.keyboard_arrow_up_rounded
+                                    : Icons.keyboard_arrow_down_rounded,
                                 color: MyColors.blue1,
                                 size: 17,
                               )
@@ -244,7 +255,8 @@ class _MenuIconsPanelState extends State<MenuIconsPanel> {
                               padding: const EdgeInsets.all(10),
                               child: InkWell(
                                 onTap: () {
-                                  _onClickSeeAll(widget.card.carddata, cardName: widget.card.cardname ?? "");
+                                  _onClickSeeAll(widget.card.carddata,
+                                      cardName: widget.card.cardname ?? "");
                                 },
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -299,11 +311,19 @@ class _MenuIconsPanelState extends State<MenuIconsPanel> {
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: CachedNetworkImage(
-                    imageUrl: Const.getFullWebUrl("images/homepageicon/") + menuIconData.name.toString() + '.png',
-                    errorWidget: (context, url, error) => //Image.network(Const.getFullProjectUrl('images/homepageicon/default.png')),
+                    imageUrl: Const.getFullWebUrl("images/homepageicon/") +
+                        menuIconData.name.toString() +
+                        '.png',
+                    errorWidget: (context, url,
+                            error) => //Image.network(Const.getFullProjectUrl('images/homepageicon/default.png')),
                         Text(
-                      menuIconData.name != null ? menuIconData.name!.getInitials() : "0",
-                      style: GoogleFonts.urbanist(fontSize: 18, fontWeight: FontWeight.w700, color: color.darken(0.4)),
+                      menuIconData.name != null
+                          ? menuIconData.name!.getInitials()
+                          : "0",
+                      style: GoogleFonts.urbanist(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: color.darken(0.4)),
                     ),
                   ),
                 ),
@@ -330,7 +350,8 @@ class _MenuIconsPanelState extends State<MenuIconsPanel> {
 }
 
 class QuickLinksBottomSheet extends StatelessWidget {
-  QuickLinksBottomSheet(this.menuIconsData, {super.key, required this.cardName, required this.colors});
+  QuickLinksBottomSheet(this.menuIconsData,
+      {super.key, required this.cardName, required this.colors});
 
   final dynamic menuIconsData;
   final String cardName;
@@ -341,7 +362,10 @@ class QuickLinksBottomSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: menuIconsData.length > 9 ? Get.height * 0.75 : Get.height / 2.5,
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.only(topRight: Radius.circular(25), topLeft: Radius.circular(25))),
+      decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+              topRight: Radius.circular(25), topLeft: Radius.circular(25))),
       child: Column(
         children: [
           Padding(
@@ -414,10 +438,17 @@ class QuickLinksBottomSheet extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: CachedNetworkImage(
-                    imageUrl: Const.getFullWebUrl("images/homepageicon/") + menuIconData.name.toString() + '.png',
+                    imageUrl: Const.getFullWebUrl("images/homepageicon/") +
+                        menuIconData.name.toString() +
+                        '.png',
                     errorWidget: (context, url, error) => Text(
-                      menuIconData.name != null ? menuIconData.name!.getInitials() : "0",
-                      style: GoogleFonts.urbanist(fontSize: 18, fontWeight: FontWeight.w700, color: color.darken(0.4)),
+                      menuIconData.name != null
+                          ? menuIconData.name!.getInitials()
+                          : "0",
+                      style: GoogleFonts.urbanist(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: color.darken(0.4)),
                     ),
                   ),
                 ),

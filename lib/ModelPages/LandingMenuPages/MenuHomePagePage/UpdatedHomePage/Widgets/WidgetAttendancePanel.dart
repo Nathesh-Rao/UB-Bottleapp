@@ -1,5 +1,5 @@
-import 'package:axpertflutter/Constants/MyColors.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
+import 'package:ubbottleapp/Constants/MyColors.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:timeline_tile/timeline_tile.dart';
@@ -25,7 +25,8 @@ class WidgetAttendancePanel extends StatelessWidget {
                     children: [
                       Text(
                         "Attendance",
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.w900),
                       ),
                       Row(
                         children: [
@@ -34,7 +35,8 @@ class WidgetAttendancePanel extends StatelessWidget {
                             child: Container(
                               decoration: BoxDecoration(
                                   color: Colors.white,
-                                  border: Border.all(width: 1, color: MyColors.blue2),
+                                  border: Border.all(
+                                      width: 1, color: MyColors.blue2),
                                   borderRadius: BorderRadius.circular(20)),
                               child: Padding(
                                 padding: EdgeInsets.all(10),
@@ -55,7 +57,8 @@ class WidgetAttendancePanel extends StatelessWidget {
                               child: Container(
                                 decoration: BoxDecoration(
                                     color: MyColors.blue2,
-                                    border: Border.all(width: 1, color: MyColors.blue2),
+                                    border: Border.all(
+                                        width: 1, color: MyColors.blue2),
                                     borderRadius: BorderRadius.circular(20)),
                                 child: Padding(
                                   padding: EdgeInsets.all(10),
@@ -68,7 +71,8 @@ class WidgetAttendancePanel extends StatelessWidget {
                             ),
                           ),
                           Visibility(
-                            visible: menuHomePageController.isShowPunchOut.value,
+                            visible:
+                                menuHomePageController.isShowPunchOut.value,
                             child: GestureDetector(
                               onTap: () {
                                 menuHomePageController.onClick_PunchOut();
@@ -76,7 +80,8 @@ class WidgetAttendancePanel extends StatelessWidget {
                               child: Container(
                                 decoration: BoxDecoration(
                                     color: MyColors.blue2,
-                                    border: Border.all(width: 1, color: MyColors.blue2),
+                                    border: Border.all(
+                                        width: 1, color: MyColors.blue2),
                                     borderRadius: BorderRadius.circular(20)),
                                 child: Padding(
                                   padding: EdgeInsets.all(10),
@@ -96,7 +101,8 @@ class WidgetAttendancePanel extends StatelessWidget {
                   Container(
                     decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(width: 1, color: MyColors.grey.withOpacity(0.3)),
+                        border: Border.all(
+                            width: 1, color: MyColors.grey.withOpacity(0.3)),
                         color: Colors.white),
                     child: Padding(
                       padding: EdgeInsets.only(top: 20, bottom: 20),
@@ -114,7 +120,9 @@ class WidgetAttendancePanel extends StatelessWidget {
                                 children: [
                                   Text(
                                     "Shift Timing",
-                                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700),
                                   ),
                                   SizedBox(height: 5),
                                   Container(
@@ -126,17 +134,20 @@ class WidgetAttendancePanel extends StatelessWidget {
                                         color: MyColors.green,
                                         width: 6,
                                       ),
-                                      afterLineStyle: LineStyle(color: Colors.grey, thickness: 1),
+                                      afterLineStyle: LineStyle(
+                                          color: Colors.grey, thickness: 1),
                                       endChild: Container(
                                           padding: EdgeInsets.only(left: 20),
                                           child: Align(
                                               alignment: Alignment.centerLeft,
-                                              child: Text(menuHomePageController.shift_start_time.value))),
+                                              child: Text(menuHomePageController
+                                                  .shift_start_time.value))),
                                       isFirst: true,
                                     ),
                                   ),
                                   Container(
-                                      constraints: BoxConstraints(maxWidth: 100),
+                                      constraints:
+                                          BoxConstraints(maxWidth: 100),
                                       child: TimelineTile(
                                         axis: TimelineAxis.vertical,
                                         alignment: TimelineAlign.start,
@@ -144,74 +155,98 @@ class WidgetAttendancePanel extends StatelessWidget {
                                           color: MyColors.red,
                                           width: 6,
                                         ),
-                                        beforeLineStyle: LineStyle(color: Colors.grey, thickness: 1),
+                                        beforeLineStyle: LineStyle(
+                                            color: Colors.grey, thickness: 1),
                                         endChild: Container(
                                             height: 30,
                                             padding: EdgeInsets.only(left: 20),
                                             child: Align(
                                                 alignment: Alignment.centerLeft,
-                                                child: Text(menuHomePageController.shift_end_time.value))),
+                                                child: Text(
+                                                    menuHomePageController
+                                                        .shift_end_time
+                                                        .value))),
                                         isLast: true,
                                       )),
                                 ],
                               ),
                             ],
                           ),
-                          Container(width: 1, height: 70, color: Colors.grey.withOpacity(0.5)),
-                          Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                            Text(
-                              "Last Login",
-                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-                            ),
-                            SizedBox(height: 5),
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                          Container(
+                              width: 1,
+                              height: 70,
+                              color: Colors.grey.withOpacity(0.5)),
+                          Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: EdgeInsets.all(1),
-                                      decoration: BoxDecoration(
-                                          color: Colors.grey.shade50,
-                                          borderRadius: BorderRadius.circular(50),
-                                          border: Border.all(width: 1, color: Colors.black.withOpacity(0.1))),
-                                      child: Icon(
-                                        Icons.person,
-                                        color: MyColors.blue2.withOpacity(0.5),
-                                        size: 18,
-                                      ),
-                                    ),
-                                    SizedBox(width: 8),
-                                    Text(menuHomePageController.last_login_date.value +
-                                        " - " +
-                                        menuHomePageController.last_login_time.value),
-                                  ],
+                                Text(
+                                  "Last Login",
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700),
                                 ),
-                                SizedBox(height: 3),
-                                Row(
+                                SizedBox(height: 5),
+                                Column(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Container(
-                                      padding: EdgeInsets.all(1),
-                                      decoration: BoxDecoration(
-                                          color: Colors.grey.shade50,
-                                          borderRadius: BorderRadius.circular(50),
-                                          border: Border.all(width: 1, color: Colors.black.withOpacity(0.1))),
-                                      child: Icon(
-                                        Icons.location_on,
-                                        color: MyColors.blue2.withOpacity(0.5),
-                                        size: 18,
-                                      ),
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: EdgeInsets.all(1),
+                                          decoration: BoxDecoration(
+                                              color: Colors.grey.shade50,
+                                              borderRadius:
+                                                  BorderRadius.circular(50),
+                                              border: Border.all(
+                                                  width: 1,
+                                                  color: Colors.black
+                                                      .withOpacity(0.1))),
+                                          child: Icon(
+                                            Icons.person,
+                                            color:
+                                                MyColors.blue2.withOpacity(0.5),
+                                            size: 18,
+                                          ),
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(menuHomePageController
+                                                .last_login_date.value +
+                                            " - " +
+                                            menuHomePageController
+                                                .last_login_time.value),
+                                      ],
                                     ),
-                                    SizedBox(width: 8),
-                                    Text(
-                                      menuHomePageController.last_login_location.value,
-                                    )
+                                    SizedBox(height: 3),
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: EdgeInsets.all(1),
+                                          decoration: BoxDecoration(
+                                              color: Colors.grey.shade50,
+                                              borderRadius:
+                                                  BorderRadius.circular(50),
+                                              border: Border.all(
+                                                  width: 1,
+                                                  color: Colors.black
+                                                      .withOpacity(0.1))),
+                                          child: Icon(
+                                            Icons.location_on,
+                                            color:
+                                                MyColors.blue2.withOpacity(0.5),
+                                            size: 18,
+                                          ),
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          menuHomePageController
+                                              .last_login_location.value,
+                                        )
+                                      ],
+                                    ),
                                   ],
-                                ),
-                              ],
-                            )
-                          ]),
+                                )
+                              ]),
                         ],
                       ),
                     ),

@@ -1,4 +1,4 @@
-package com.agile.axpertflutter_android
+package com.agile.ub_bottleapp
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

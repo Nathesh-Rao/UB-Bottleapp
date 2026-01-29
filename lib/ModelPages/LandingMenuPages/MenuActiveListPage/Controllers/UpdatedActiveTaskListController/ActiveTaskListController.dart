@@ -1,9 +1,9 @@
 import 'dart:convert';
 
-import 'package:axpertflutter/Constants/GlobalVariableController.dart';
-import 'package:axpertflutter/ModelPages/InApplicationWebView/controller/webview_controller.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuActiveListPage/Models/UpdatedActiveTaskListModel/ActiveTaskListModel.dart';
-import 'package:axpertflutter/Utils/LogServices/LogService.dart';
+import 'package:ubbottleapp/Constants/GlobalVariableController.dart';
+import 'package:ubbottleapp/ModelPages/InApplicationWebView/controller/webview_controller.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuActiveListPage/Models/UpdatedActiveTaskListModel/ActiveTaskListModel.dart';
+import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_expanded_tile/flutter_expanded_tile.dart';
 import 'package:get/get.dart';
@@ -20,7 +20,8 @@ import '../ListItemDetailsController.dart';
 
 class ActiveTaskListController extends GetxController {
   //----
-  ListItemDetailsController listItemDetailsController = Get.put(ListItemDetailsController());
+  ListItemDetailsController listItemDetailsController =
+      Get.put(ListItemDetailsController());
   final globalVariableController = Get.find<GlobalVariableController>();
   // PendingListController
   ServerConnections serverConnections = ServerConnections();
@@ -58,19 +59,22 @@ class ActiveTaskListController extends GetxController {
   void onInit() {
     taskListScrollController = ScrollController();
     taskListScrollController.addListener(() {
-      if (taskListScrollController.position.pixels >= taskListScrollController.position.minScrollExtent + 100) {
+      if (taskListScrollController.position.pixels >=
+          taskListScrollController.position.minScrollExtent + 100) {
         isRefreshable.value = false;
       } else {
         isRefreshable.value = true;
       }
 
-      if (taskListScrollController.position.pixels >= taskListScrollController.position.maxScrollExtent &&
+      if (taskListScrollController.position.pixels >=
+              taskListScrollController.position.maxScrollExtent &&
           !isListLoading.value &&
           hasMoreData.value) {
         fetchActiveTaskLists();
       }
 
-      if (taskListScrollController.position.pixels >= taskListScrollController.position.maxScrollExtent - 100 &&
+      if (taskListScrollController.position.pixels >=
+              taskListScrollController.position.maxScrollExtent - 100 &&
           !hasMoreData.value) {
         showFetchInfo.value = true;
       } else {
@@ -119,7 +123,8 @@ class ActiveTaskListController extends GetxController {
     isListLoading.value = true;
     activeTempList = [];
     prepAPI(pageNo: pageNumber, pageSize: pageSize);
-    var resp = await serverConnections.postToServer(url: url, body: jsonEncode(body), isBearer: true);
+    var resp = await serverConnections.postToServer(
+        url: url, body: jsonEncode(body), isBearer: true);
 
     if (resp != "") {
       var jsonResp = jsonDecode(resp);
@@ -128,7 +133,8 @@ class ActiveTaskListController extends GetxController {
         var activeList = jsonResp['result']['tasks'];
 
         for (var item in activeList) {
-          ActiveTaskListModel activeListModel = ActiveTaskListModel.fromJson(item);
+          ActiveTaskListModel activeListModel =
+              ActiveTaskListModel.fromJson(item);
           activeTempList.add(activeListModel);
         }
       }
@@ -139,7 +145,9 @@ class ActiveTaskListController extends GetxController {
           activeTaskList.clear();
           activeTaskMap.value = {};
         }
-        LogService.writeLog(message: "PageNumber: $pageNumber, PageSize: $pageSize, currentLength: ${activeTaskList.length}");
+        LogService.writeLog(
+            message:
+                "PageNumber: $pageNumber, PageSize: $pageSize, currentLength: ${activeTaskList.length}");
 
         activeTaskList.addAll(activeTempList);
         //-----------------------------------------
@@ -176,9 +184,17 @@ class ActiveTaskListController extends GetxController {
     var filteredList = activeTaskList.where((t) => _filterTasks(t)).toList();
     for (var t in filteredList) {
       if (taskSearchText.value.isEmpty ||
-          t.displaytitle.toString().toLowerCase().contains(taskSearchText.value.toString().toLowerCase()) ||
-          t.displaycontent.toString().toLowerCase().contains(taskSearchText.value.toString().toLowerCase())) {
-        activeTaskMap.putIfAbsent(categorizeDate(t.eventdatetime.toString()), () => []).add(t);
+          t.displaytitle
+              .toString()
+              .toLowerCase()
+              .contains(taskSearchText.value.toString().toLowerCase()) ||
+          t.displaycontent
+              .toString()
+              .toLowerCase()
+              .contains(taskSearchText.value.toString().toLowerCase())) {
+        activeTaskMap
+            .putIfAbsent(categorizeDate(t.eventdatetime.toString()), () => [])
+            .add(t);
       }
     }
   }
@@ -189,19 +205,25 @@ class ActiveTaskListController extends GetxController {
     String startDate = dateFromController.text.trim();
     String endDate = dateToController.text.trim();
 
-    if (processName.isEmpty && fromUser.isEmpty && startDate.isEmpty && endDate.isEmpty) {
+    if (processName.isEmpty &&
+        fromUser.isEmpty &&
+        startDate.isEmpty &&
+        endDate.isEmpty) {
       isFilterOn.value = false;
       return true;
     } else {
       isFilterOn.value = true;
     }
 
-    bool matchesProcess = processName.isEmpty || task.processname.toString().toLowerCase().contains(processName);
-    bool matchesUser = fromUser.isEmpty || task.fromuser.toString().toLowerCase().contains(fromUser);
+    bool matchesProcess = processName.isEmpty ||
+        task.processname.toString().toLowerCase().contains(processName);
+    bool matchesUser = fromUser.isEmpty ||
+        task.fromuser.toString().toLowerCase().contains(fromUser);
     bool matchesDate = true;
 
     if (startDate.isNotEmpty && endDate.isNotEmpty) {
-      DateTime taskDate = DateFormat("dd/MM/yyyy HH:mm:ss").parse(task.eventdatetime.toString());
+      DateTime taskDate = DateFormat("dd/MM/yyyy HH:mm:ss")
+          .parse(task.eventdatetime.toString());
       DateTime start = DateFormat("dd-MMM-yyyy").parse(startDate);
       DateTime end = DateFormat("dd-MMM-yyyy").parse(endDate);
       matchesDate = taskDate.isAfter(start) && taskDate.isBefore(end);
@@ -244,11 +266,13 @@ class ActiveTaskListController extends GetxController {
       return "Yesterday";
     } else if (inputDate.isAfter(startOfWeek)) {
       return "This Week";
-    } else if (inputDate.isAfter(lastWeekStart) && inputDate.isBefore(lastWeekEnd)) {
+    } else if (inputDate.isAfter(lastWeekStart) &&
+        inputDate.isBefore(lastWeekEnd)) {
       return "Last Week";
     } else if (inputDate.isAfter(startOfMonth)) {
       return "This Month";
-    } else if (inputDate.isAfter(lastMonthStart) && inputDate.isBefore(lastMonthEnd)) {
+    } else if (inputDate.isAfter(lastMonthStart) &&
+        inputDate.isBefore(lastMonthEnd)) {
       return "Last Month";
     } else {
       return DateFormat('MMM yyyy').format(inputDate);
@@ -297,7 +321,8 @@ class ActiveTaskListController extends GetxController {
         maxLines: isTitle ? 1 : 2,
       );
 
-    final index = text.toLowerCase().indexOf(taskSearchText.value.toLowerCase());
+    final index =
+        text.toLowerCase().indexOf(taskSearchText.value.toLowerCase());
     if (index == -1)
       return Text(
         text,
@@ -335,7 +360,8 @@ class ActiveTaskListController extends GetxController {
       case "MAKE":
         var URL = CommonMethods.activeList_CreateURL_MAKE(pendingModel);
         // if (!URL.isEmpty) Get.toNamed(Routes.InApplicationWebViewer, arguments: [Const.getFullWebUrl(URL)]);
-        if (!URL.isEmpty) webViewController.openWebView(url: Const.getFullWebUrl(URL));
+        if (!URL.isEmpty)
+          webViewController.openWebView(url: Const.getFullWebUrl(URL));
         break;
       // break;
       case "CHECK":
@@ -354,7 +380,8 @@ class ActiveTaskListController extends GetxController {
       case "NULL":
       case "CACHED SAVE":
         var URL = CommonMethods.activeList_CreateURL_MESSAGE(pendingModel);
-        if (!URL.isEmpty)  webViewController.openWebView(url: Const.getFullWebUrl(URL));
+        if (!URL.isEmpty)
+          webViewController.openWebView(url: Const.getFullWebUrl(URL));
         pageNumber--;
         _parseTaskMap();
         // Get.toNamed(Routes.InApplicationWebViewer, arguments: [Const.getFullWebUrl(URL)])?.then((_) {
@@ -373,7 +400,8 @@ class ActiveTaskListController extends GetxController {
   }
 
   removeFilter() {
-    processNameController.text = fromUserController.text = dateFromController.text = dateToController.text = '';
+    processNameController.text = fromUserController.text =
+        dateFromController.text = dateToController.text = '';
     errDateFrom.value = errDateTo.value = '';
 
     _parseTaskMap();
@@ -387,7 +415,8 @@ class ActiveTaskListController extends GetxController {
           },
           child: Dialog(
             child: Padding(
-              padding: EdgeInsets.only(left: 20, right: 20, top: 15, bottom: 20),
+              padding:
+                  EdgeInsets.only(left: 20, right: 20, top: 15, bottom: 20),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -395,10 +424,14 @@ class ActiveTaskListController extends GetxController {
                     Center(
                       child: Text(
                         "Filter results",
-                        style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 25, fontWeight: FontWeight.bold),
                       ),
                     ),
-                    Container(margin: EdgeInsets.only(top: 10), height: 1, color: Colors.grey.withOpacity(0.6)),
+                    Container(
+                        margin: EdgeInsets.only(top: 10),
+                        height: 1,
+                        color: Colors.grey.withOpacity(0.6)),
                     SizedBox(height: 20),
                     TextField(
                       controller: processNameController,
@@ -414,13 +447,17 @@ class ActiveTaskListController extends GetxController {
                               child: Container(
                                 child: Text("X"),
                               )),
-                          border: OutlineInputBorder(borderSide: BorderSide(width: 1), borderRadius: BorderRadius.circular(10)),
+                          border: OutlineInputBorder(
+                              borderSide: BorderSide(width: 1),
+                              borderRadius: BorderRadius.circular(10)),
                           hintText: "Process Name "),
                     ),
                     Center(
                         child: Padding(
                             padding: EdgeInsets.only(top: 10, bottom: 10),
-                            child: Text("OR", style: TextStyle(fontWeight: FontWeight.bold)))),
+                            child: Text("OR",
+                                style:
+                                    TextStyle(fontWeight: FontWeight.bold)))),
                     TextField(
                       controller: fromUserController,
                       decoration: InputDecoration(
@@ -434,13 +471,17 @@ class ActiveTaskListController extends GetxController {
                               child: Container(
                                 child: Text("X"),
                               )),
-                          border: OutlineInputBorder(borderSide: BorderSide(width: 1), borderRadius: BorderRadius.circular(10)),
+                          border: OutlineInputBorder(
+                              borderSide: BorderSide(width: 1),
+                              borderRadius: BorderRadius.circular(10)),
                           hintText: "From User "),
                     ),
                     Center(
                         child: Padding(
                             padding: EdgeInsets.only(top: 10, bottom: 10),
-                            child: Text("OR", style: TextStyle(fontWeight: FontWeight.bold)))),
+                            child: Text("OR",
+                                style:
+                                    TextStyle(fontWeight: FontWeight.bold)))),
                     TextField(
                       controller: dateFromController,
                       textAlign: TextAlign.center,
@@ -454,7 +495,9 @@ class ActiveTaskListController extends GetxController {
                               child: Container(
                                 child: Text("X"),
                               )),
-                          border: OutlineInputBorder(borderSide: BorderSide(width: 1), borderRadius: BorderRadius.circular(10)),
+                          border: OutlineInputBorder(
+                              borderSide: BorderSide(width: 1),
+                              borderRadius: BorderRadius.circular(10)),
                           errorText: errText(errDateFrom.value),
                           hintText: "From Date: DD-MMM-YYYY "),
                       canRequestFocus: false,
@@ -477,7 +520,9 @@ class ActiveTaskListController extends GetxController {
                               child: Container(
                                 child: Text("X"),
                               )),
-                          border: OutlineInputBorder(borderSide: BorderSide(width: 1), borderRadius: BorderRadius.circular(10)),
+                          border: OutlineInputBorder(
+                              borderSide: BorderSide(width: 1),
+                              borderRadius: BorderRadius.circular(10)),
                           errorText: errText(errDateTo.value),
                           hintText: "To Date: DD-MMM-YYYY"),
                       canRequestFocus: false,
@@ -526,11 +571,30 @@ class ActiveTaskListController extends GetxController {
 
   void selectDate(BuildContext context, TextEditingController text) async {
     FocusManager.instance.primaryFocus?.unfocus();
-    const months = <String>['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    final DateTime? picked =
-        await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime(1990), lastDate: DateTime.now());
+    const months = <String>[
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    final DateTime? picked = await showDatePicker(
+        context: context,
+        initialDate: DateTime.now(),
+        firstDate: DateTime(1990),
+        lastDate: DateTime.now());
     if (picked != null)
-      text.text =
-          picked.day.toString().padLeft(2, '0') + "-" + months[picked.month - 1] + "-" + picked.year.toString().padLeft(2, '0');
+      text.text = picked.day.toString().padLeft(2, '0') +
+          "-" +
+          months[picked.month - 1] +
+          "-" +
+          picked.year.toString().padLeft(2, '0');
   }
 }

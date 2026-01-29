@@ -1,10 +1,10 @@
 import 'dart:convert';
 
-import 'package:axpertflutter/Constants/MyColors.dart';
-import 'package:axpertflutter/Constants/Routes.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/Controller/LandingPageController.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/Widgets/WidgetDisplayProfileDetails.dart';
+import 'package:ubbottleapp/Constants/MyColors.dart';
+import 'package:ubbottleapp/Constants/Routes.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/Controller/LandingPageController.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/Widgets/WidgetDisplayProfileDetails.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 

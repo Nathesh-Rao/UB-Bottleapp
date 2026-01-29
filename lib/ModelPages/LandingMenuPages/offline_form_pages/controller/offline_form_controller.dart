@@ -1,18 +1,20 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
-import 'package:axpertflutter/Constants/AppStorage.dart';
-import 'package:axpertflutter/Constants/Const.dart';
-import 'package:axpertflutter/ModelPages/InApplicationWebView/controller/webview_controller.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_constants.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_module.dart';
-import 'package:axpertflutter/Utils/LogServices/LogService.dart';
-import 'package:axpertflutter/Utils/ServerConnections/InternetConnectivity.dart';
+import 'package:ubbottleapp/Constants/AppStorage.dart';
+import 'package:ubbottleapp/Constants/Const.dart';
+import 'package:ubbottleapp/ModelPages/InApplicationWebView/controller/webview_controller.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_constants.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_module.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/sync_progress_model.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/widgets/sync_progress_dialog.dart';
+import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
+import 'package:ubbottleapp/Utils/ServerConnections/InternetConnectivity.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:axpertflutter/Constants/Routes.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/offline_form_pages/models/form_field_model.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/offline_form_pages/models/form_page_model.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/offline_form_pages/models/offline_attachment_model.dart';
+import 'package:ubbottleapp/Constants/Routes.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/form_field_model.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/form_page_model.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/offline_attachment_model.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -1063,43 +1065,43 @@ class OfflineFormController extends GetxController {
   Future<void> actionPushPending() async {
     const tag = "[OFFLINE_ACTION_PUSH_PENDING]";
 
-    // 1. Check Internet
     if (!await _isInternetAvailable()) {
       _showNeedInternetDialog();
       return;
     }
 
-    // 2. Beautiful Confirmation
     final ok = await _confirm(
       title: "Upload Pending Data",
       message:
           "This will upload all locally saved records to the server.\n\nAre you sure you want to continue?",
       okText: "Upload Now",
       icon: Icons.cloud_upload_rounded,
-      confirmColor: const Color(0xFF2563EB), // Blue
+      confirmColor: const Color(0xFF2563EB),
     );
     if (!ok) return;
-
+    final progressModel = SyncProgressModel(initialTitle: "Uploading Data");
+    Get.dialog(
+      SyncProgressDialog(progressModel: progressModel),
+      barrierDismissible: false,
+    );
     try {
-      // 3. Show Progress
-      _showSyncProgressDialog(); // Reuse the dialog from previous step
-      syncStatusText.value = "Uploading queued submissions...";
+      // _showSyncProgressDialog();
+      // syncStatusText.value = "Uploading queued submissions...";
 
-      // Artificial delay for UX (optional)
       await Future.delayed(const Duration(milliseconds: 800));
 
-      // 4. Execute Logic
-      final resultMsg =
-          await OfflineDbModule.processPendingQueue(isInternetAvailable: true);
+      final resultMsg = await OfflineDbModule.processPendingQueue(
+        isInternetAvailable: true,
+        progress: progressModel,
+      );
 
-      Get.back(); // Close Progress Dialog
+      // Get.back();
 
-      // 5. Show Result
-      _showSimpleSuccessDialog(title: "Upload Complete", message: resultMsg);
+      // _showSimpleSuccessDialog(title: "Upload Complete", message: resultMsg);
       refreshPendingCount();
       LogService.writeLog(message: "$tag[DONE] $resultMsg");
     } catch (e, st) {
-      Get.back(); // Ensure dialog closes
+      // Get.back(); // Ensure dialog closes
       LogService.writeLog(message: "$tag[FAILED] $e");
       refreshPendingCount();
       Get.snackbar(
@@ -1111,6 +1113,8 @@ class OfflineFormController extends GetxController {
       );
     } finally {
       isLoading.value = false;
+      // Get.back();
+      progressModel.complete();
     }
   }
 
@@ -1522,8 +1526,6 @@ class OfflineFormController extends GetxController {
       isLoading.value = false;
     }
   }
-
-
 
   Future<void> onReportCardClick(String transId) async {
     WebViewController webViewController = Get.find();

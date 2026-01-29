@@ -1,9 +1,9 @@
 import 'package:auto_size_text/auto_size_text.dart';
-import 'package:axpertflutter/Constants/AppStorage.dart';
-import 'package:axpertflutter/Constants/Const.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/Models/CardModel.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/Widgets/WidgetOptionListTile.dart';
+import 'package:ubbottleapp/Constants/AppStorage.dart';
+import 'package:ubbottleapp/Constants/Const.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/Models/CardModel.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/Widgets/WidgetOptionListTile.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -25,7 +25,8 @@ class WidgetCard extends StatelessWidget {
       // margin: EdgeInsets.all(10),
       height: 50,
       decoration: BoxDecoration(
-          color: HexColor(menuHomePageController.getCardBackgroundColor(cardModel.colorcode.trim())), // ?? "ffffff"),
+          color: HexColor(menuHomePageController.getCardBackgroundColor(
+              cardModel.colorcode.trim())), // ?? "ffffff"),
           borderRadius: BorderRadius.circular(10),
           // boxShadow: [BoxShadow(color: Colors.grey.shade400, blurRadius: 7)] ,
           border: Border.all(width: 1, color: Colors.grey.withOpacity(0.4))),
@@ -40,15 +41,22 @@ class WidgetCard extends StatelessWidget {
                 Align(
                   alignment: Alignment.topLeft,
                   child: CachedNetworkImage(
-                    imageUrl: Const.getFullWebUrl("images/homepageicon/") + cardModel.caption + '.png',
-                    errorWidget: (context, url, error) => Image.network(Const.getFullWebUrl(
-                        'images/homepageicon/default.png')), //'CustomPages/icons/homepageicon/default.png'
+                    imageUrl: Const.getFullWebUrl("images/homepageicon/") +
+                        cardModel.caption +
+                        '.png',
+                    errorWidget: (context, url, error) => Image.network(
+                        Const.getFullWebUrl(
+                            'images/homepageicon/default.png')), //'CustomPages/icons/homepageicon/default.png'
                     width: 40,
                   ),
                 ),
                 Visibility(
                   visible:
-                      menuHomePageController.actionData[cardModel.caption] == null && cardModel.moreoption.isEmpty ? false : true,
+                      menuHomePageController.actionData[cardModel.caption] ==
+                                  null &&
+                              cardModel.moreoption.isEmpty
+                          ? false
+                          : true,
                   child: Align(
                       alignment: Alignment.topRight,
                       child: IconButton(
@@ -58,7 +66,9 @@ class WidgetCard extends StatelessWidget {
                 ),
               ],
             ),
-            menuHomePageController.actionData[cardModel.caption] == null ? SizedBox(height: 10) : SizedBox(height: 4),
+            menuHomePageController.actionData[cardModel.caption] == null
+                ? SizedBox(height: 10)
+                : SizedBox(height: 4),
             Padding(
               padding: const EdgeInsets.only(top: 5, bottom: 2, right: 5),
               child: AutoSizeText(
@@ -66,7 +76,10 @@ class WidgetCard extends StatelessWidget {
                 maxLines: 2,
                 textAlign: TextAlign.left,
                 style: GoogleFonts.roboto(
-                    textStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: HexColor("#444444"))),
+                    textStyle: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: HexColor("#444444"))),
               ),
             ),
           ],
@@ -82,13 +95,16 @@ class WidgetCard extends StatelessWidget {
     }
     //ends
     List optionLists =
-        menuHomePageController.actionData[cardModel.caption] == null ? [] : menuHomePageController.actionData[cardModel.caption];
+        menuHomePageController.actionData[cardModel.caption] == null
+            ? []
+            : menuHomePageController.actionData[cardModel.caption];
     if (!optionLists.isEmpty || !cardModel.moreoption.isEmpty) {
       Get.dialog(Dialog(
         backgroundColor: Colors.transparent,
         child: SingleChildScrollView(
           child: Container(
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+            decoration: BoxDecoration(
+                color: Colors.white, borderRadius: BorderRadius.circular(20)),
             // margin: EdgeInsets.only(left: 10, right: 10),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -97,7 +113,9 @@ class WidgetCard extends StatelessWidget {
               children: [
                 Container(
                   height: 50,
-                  decoration: BoxDecoration(border: Border(bottom: BorderSide(width: 1, color: Colors.grey))),
+                  decoration: BoxDecoration(
+                      border: Border(
+                          bottom: BorderSide(width: 1, color: Colors.grey))),
                   child: Center(
                     child: Text(
                       cardModel.caption,
@@ -119,7 +137,9 @@ class WidgetCard extends StatelessWidget {
                 //     itemCount: optionLists.length),
                 Container(
                   height: 50,
-                  decoration: BoxDecoration(border: Border(top: BorderSide(width: 1, color: Colors.grey))),
+                  decoration: BoxDecoration(
+                      border: Border(
+                          top: BorderSide(width: 1, color: Colors.grey))),
                   child: cardModel.moreoption.toString() == ""
                       ? null
                       : SingleChildScrollView(
@@ -170,9 +190,12 @@ class WidgetCard extends StatelessWidget {
       var btnType = "", btnName = "", btnOpen = "", btnexeJs = "";
       btnType = singleList[1];
       //if (singleList.indexOf("button") >= 0) btnType = singleList[singleList.indexOf("button") - 1];
-      if (singleList.indexOf("open") >= 0) btnOpen = singleList[singleList.indexOf("open") + 1];
-      if (singleList.indexOf("title") >= 0) btnName = singleList[singleList.indexOf("title") + 1];
-      if (singleList.indexOf("exejs") >= 0) btnexeJs = singleList[singleList.indexOf("exejs") + 1];
+      if (singleList.indexOf("open") >= 0)
+        btnOpen = singleList[singleList.indexOf("open") + 1];
+      if (singleList.indexOf("title") >= 0)
+        btnName = singleList[singleList.indexOf("title") + 1];
+      if (singleList.indexOf("exejs") >= 0)
+        btnexeJs = singleList[singleList.indexOf("exejs") + 1];
 
       btnName = btnName.replaceAll('^', ' ');
       btnName = btnName.replaceAll('\"', '');
@@ -184,9 +207,13 @@ class WidgetCard extends StatelessWidget {
           widget = ElevatedButton(
               style: !menuHomePageController.isShowPunchIn.value
                   ? ButtonStyle(
-                      padding: MaterialStateProperty.all(EdgeInsets.only(left: 5, right: 5, top: 5, bottom: 5)),
-                      backgroundColor: MaterialStateColor.resolveWith((states) => Colors.grey))
-                  : ButtonStyle(padding: MaterialStateProperty.all(EdgeInsets.only(left: 5, right: 5, top: 5, bottom: 5))),
+                      padding: MaterialStateProperty.all(EdgeInsets.only(
+                          left: 5, right: 5, top: 5, bottom: 5)),
+                      backgroundColor: MaterialStateColor.resolveWith(
+                          (states) => Colors.grey))
+                  : ButtonStyle(
+                      padding: MaterialStateProperty.all(EdgeInsets.only(
+                          left: 5, right: 5, top: 5, bottom: 5))),
               onPressed: menuHomePageController.isShowPunchIn.value
                   ? () {
                       menuHomePageController.onClick_PunchIn();
@@ -202,9 +229,13 @@ class WidgetCard extends StatelessWidget {
             widget = ElevatedButton(
                 style: !menuHomePageController.isShowPunchOut.value
                     ? ButtonStyle(
-                        padding: MaterialStateProperty.all(EdgeInsets.only(left: 5, right: 5, top: 5, bottom: 5)),
-                        backgroundColor: MaterialStateColor.resolveWith((states) => Colors.grey))
-                    : ButtonStyle(padding: MaterialStateProperty.all(EdgeInsets.only(left: 5, right: 5, top: 5, bottom: 5))),
+                        padding: MaterialStateProperty.all(EdgeInsets.only(
+                            left: 5, right: 5, top: 5, bottom: 5)),
+                        backgroundColor: MaterialStateColor.resolveWith(
+                            (states) => Colors.grey))
+                    : ButtonStyle(
+                        padding: MaterialStateProperty.all(EdgeInsets.only(
+                            left: 5, right: 5, top: 5, bottom: 5))),
                 onPressed: menuHomePageController.isShowPunchOut.value
                     ? () {
                         menuHomePageController.onClick_PunchOut();
@@ -219,9 +250,13 @@ class WidgetCard extends StatelessWidget {
             widget = ElevatedButton(
                 style: btnOpen == ""
                     ? ButtonStyle(
-                        padding: MaterialStateProperty.all(EdgeInsets.only(left: 5, right: 5, top: 5, bottom: 5)),
-                        backgroundColor: MaterialStateColor.resolveWith((states) => Colors.grey))
-                    : ButtonStyle(padding: MaterialStateProperty.all(EdgeInsets.only(left: 5, right: 5, top: 5, bottom: 5))),
+                        padding: MaterialStateProperty.all(EdgeInsets.only(
+                            left: 5, right: 5, top: 5, bottom: 5)),
+                        backgroundColor: MaterialStateColor.resolveWith(
+                            (states) => Colors.grey))
+                    : ButtonStyle(
+                        padding: MaterialStateProperty.all(EdgeInsets.only(
+                            left: 5, right: 5, top: 5, bottom: 5))),
                 onPressed: () {
                   if (btnOpen != "") Get.back();
                   menuHomePageController.openBtnAction(btnType, btnOpen);

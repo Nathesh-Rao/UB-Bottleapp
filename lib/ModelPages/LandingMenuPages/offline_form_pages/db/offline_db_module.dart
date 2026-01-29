@@ -2,13 +2,14 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
-import 'package:axpertflutter/Constants/AppStorage.dart';
-import 'package:axpertflutter/Constants/Const.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/offline_form_pages/models/data_source_model.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/offline_form_pages/models/form_page_model.dart';
-import 'package:axpertflutter/Utils/LogServices/LogService.dart';
-import 'package:axpertflutter/Utils/ServerConnections/ExecuteApi.dart';
-import 'package:axpertflutter/Utils/ServerConnections/ServerConnections.dart';
+import 'package:ubbottleapp/Constants/AppStorage.dart';
+import 'package:ubbottleapp/Constants/Const.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/data_source_model.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/form_page_model.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/sync_progress_model.dart';
+import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
+import 'package:ubbottleapp/Utils/ServerConnections/ExecuteApi.dart';
+import 'package:ubbottleapp/Utils/ServerConnections/ServerConnections.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -143,6 +144,74 @@ class OfflineDbModule {
     );
   }
 
+  // static Future<void> fetchAndStoreAllDatasourcesForAllForms(
+  //   List<Map<String, dynamic>> pages,
+  // ) async {
+  //   final scope = await _getLastOfflineUserScope();
+  //   if (scope == null) return;
+
+  //   final username = scope['username']!;
+  //   final projectName = scope['projectName']!;
+
+  //   final sessionId = AppStorage().retrieveValue(AppStorage.SESSIONID) ?? "";
+
+  //   for (final page in pages) {
+  //     final transId = page['transid']?.toString();
+  //     if (transId == null || transId.isEmpty) continue;
+
+  //     final Set<String> dsSet = {};
+
+  //     final fields = page['fields'] as List<dynamic>? ?? [];
+  //     for (final f in fields) {
+  //       final ds = f['datasource'];
+  //       if (ds != null && ds.toString().trim().isNotEmpty) {
+  //         dsSet.add(ds.toString().trim());
+  //       }
+  //     }
+
+  //     // Fetch datasources for THIS transId
+  //     for (final ds in dsSet) {
+  //       // Check cache (scoped by transId)
+  //       final exists = await _database.query(
+  //         OfflineDBConstants.TABLE_DATASOURCE_DATA,
+  //         where: '''
+  //         ${OfflineDBConstants.COL_USERNAME} = ? AND
+  //         ${OfflineDBConstants.COL_PROJECT_NAME} = ? AND
+  //         ${OfflineDBConstants.COL_TRANS_ID} = ? AND
+  //         ${OfflineDBConstants.COL_DATASOURCE_NAME} = ?
+  //       ''',
+  //         whereArgs: [username, projectName, transId, ds],
+  //         limit: 1,
+  //       );
+
+  //       if (exists.isNotEmpty) continue;
+
+  //       final res = await OfflineDatasources.fetchDatasource(
+  //         datasourceName: ds,
+  //         sessionId: sessionId,
+  //         username: username,
+  //         appName: projectName,
+  //         sqlParams: {"username": username},
+  //       );
+
+  //       debugPrint("fetchDatasource: $ds  => res => $res");
+  //       if (res == null || res.isEmpty) continue;
+
+  //       await _database.insert(
+  //         OfflineDBConstants.TABLE_DATASOURCE_DATA,
+  //         {
+  //           OfflineDBConstants.COL_USERNAME: username,
+  //           OfflineDBConstants.COL_PROJECT_NAME: projectName,
+  //           OfflineDBConstants.COL_TRANS_ID: transId,
+  //           OfflineDBConstants.COL_DATASOURCE_NAME: ds,
+  //           OfflineDBConstants.COL_RESPONSE_JSON: res,
+  //         },
+  //         conflictAlgorithm: ConflictAlgorithm.replace,
+  //       );
+  //     }
+  //   }
+  // }
+
   static Future<void> fetchAndStoreAllDatasourcesForAllForms(
     List<Map<String, dynamic>> pages,
   ) async {
@@ -151,28 +220,20 @@ class OfflineDbModule {
 
     final username = scope['username']!;
     final projectName = scope['projectName']!;
-
     final sessionId = AppStorage().retrieveValue(AppStorage.SESSIONID) ?? "";
 
     for (final page in pages) {
       final transId = page['transid']?.toString();
       if (transId == null || transId.isEmpty) continue;
 
-      final Set<String> dsSet = {};
+      final Set<String> dsSet = _getAllUniqueDatasourcesInPage(page);
 
-      final fields = page['fields'] as List<dynamic>? ?? [];
-      for (final f in fields) {
-        final ds = f['datasource'];
-        if (ds != null && ds.toString().trim().isNotEmpty) {
-          dsSet.add(ds.toString().trim());
-        }
-      }
+      if (dsSet.isEmpty) continue;
 
-      // Fetch datasources for THIS transId
       for (final ds in dsSet) {
-        // Check cache (scoped by transId)
         final exists = await _database.query(
           OfflineDBConstants.TABLE_DATASOURCE_DATA,
+          columns: [OfflineDBConstants.COL_ID], // Optimization: Select ID only
           where: '''
           ${OfflineDBConstants.COL_USERNAME} = ? AND
           ${OfflineDBConstants.COL_PROJECT_NAME} = ? AND
@@ -183,7 +244,9 @@ class OfflineDbModule {
           limit: 1,
         );
 
-        if (exists.isNotEmpty) continue;
+        if (exists.isNotEmpty) {
+          continue;
+        }
 
         final res = await OfflineDatasources.fetchDatasource(
           datasourceName: ds,
@@ -193,8 +256,10 @@ class OfflineDbModule {
           sqlParams: {"username": username},
         );
 
-        debugPrint("fetchDatasource: $ds  => res => $res");
-        if (res == null || res.isEmpty) continue;
+        if (res == null || res.isEmpty) {
+          LogService.writeLog(message: "[DS_FAIL] Empty response for $ds");
+          continue;
+        }
 
         await _database.insert(
           OfflineDBConstants.TABLE_DATASOURCE_DATA,
@@ -485,6 +550,51 @@ class OfflineDbModule {
         },
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
+    }
+  }
+
+// ---------------------------------------------------------------------------
+  // HELPER: Recursively Extract Datasources (Root Fields + Grid Fields)
+  // ---------------------------------------------------------------------------
+  static Set<String> _getAllUniqueDatasourcesInPage(Map<String, dynamic> page) {
+    final Set<String> dsSet = {};
+
+    if (page.containsKey('fields') && page['fields'] is List) {
+      for (var field in page['fields']) {
+        _addDatasourceFromField(field, dsSet);
+      }
+    }
+
+    if (page.containsKey('fillgrids')) {
+      final fillgrids = page['fillgrids'];
+
+      if (fillgrids is Map) {
+        if (fillgrids.containsKey('fields') && fillgrids['fields'] is List) {
+          for (var field in fillgrids['fields']) {
+            _addDatasourceFromField(field, dsSet);
+          }
+        }
+      } else if (fillgrids is List) {
+        for (var grid in fillgrids) {
+          if (grid is Map &&
+              grid.containsKey('fields') &&
+              grid['fields'] is List) {
+            for (var field in grid['fields']) {
+              _addDatasourceFromField(field, dsSet);
+            }
+          }
+        }
+      }
+    }
+
+    return dsSet;
+  }
+
+  static void _addDatasourceFromField(dynamic field, Set<String> dsSet) {
+    if (field is Map &&
+        field['datasource'] != null &&
+        field['datasource'].toString().trim().isNotEmpty) {
+      dsSet.add(field['datasource'].toString().trim());
     }
   }
 
@@ -877,10 +987,159 @@ class OfflineDbModule {
   //   return "Processed: $successCount success, $failCount failed";
   // }
 
+  // static Future<String> processPendingQueue({
+  //   required bool isInternetAvailable,
+  //   Function(int current, int total)? onProgress, // Optional UI callback
+  // }) async {
+  //   log("STARTED", name: "SUBMIT_RESPONSE");
+  //   if (!isInternetAvailable) return "No internet connection";
+
+  //   final scope = await _getLastOfflineUserScope();
+  //   if (scope == null) return "No user session found";
+
+  //   final username = scope['username']!;
+  //   final projectName = scope['projectName']!;
+
+  //   final String currentSessionId =
+  //       AppStorage().retrieveValue(AppStorage.SESSIONID) ?? "";
+  //   if (currentSessionId.isEmpty) return "No active session to sync";
+
+  //   // 1. Fetch ONLY IDs first (Lightweight)
+  //   final idRows = await _database.query(
+  //     OfflineDBConstants.TABLE_PENDING_REQUESTS,
+  //     columns: [OfflineDBConstants.COL_ID],
+  //     where: '''
+  //     ${OfflineDBConstants.COL_STATUS} IN (${OfflineDBConstants.STATUS_PENDING}, ${OfflineDBConstants.STATUS_ERROR})
+  //     AND ${OfflineDBConstants.COL_USERNAME} = ?
+  //     AND ${OfflineDBConstants.COL_PROJECT_NAME} = ?
+  //   ''',
+  //     whereArgs: [username, projectName],
+  //     orderBy: OfflineDBConstants.COL_CREATED_AT,
+  //   );
+
+  //   if (idRows.isEmpty) return "Queue is empty";
+
+  //   int successCount = 0;
+  //   int failCount = 0;
+  //   int total = idRows.length;
+
+  //   final ServerConnections serverConnections = ServerConnections();
+  //   final String url =
+  //       Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
+
+  //   // 2. Loop through IDs
+  //   for (int i = 0; i < total; i++) {
+  //     final row = idRows[i];
+  //     final id = row[OfflineDBConstants.COL_ID] as int;
+
+  //     // Update UI Progress
+  //     if (onProgress != null) onProgress(i + 1, total);
+
+  //     try {
+  //       // 3. SAFE READ: Use _readLargeString (Chunking)
+  //       // This handles both new small JSONs and old massive JSONs safely.
+  //       final bodyStr = await _readLargeString(
+  //         table: OfflineDBConstants.TABLE_PENDING_REQUESTS,
+  //         column: OfflineDBConstants.COL_REQUEST_JSON,
+  //         where: '${OfflineDBConstants.COL_ID} = ?',
+  //         whereArgs: [id],
+  //       );
+
+  //       if (bodyStr == null || bodyStr.isEmpty) {
+  //         LogService.writeLog(message: "[QUEUE_SKIP] ID: $id - Empty body");
+  //         continue;
+  //       }
+
+  //       // 4. Decode & Prep
+  //       final Map<String, dynamic> originalPayload = jsonDecode(bodyStr);
+  //       originalPayload['ARMSessionId'] = currentSessionId;
+
+  //       log(originalPayload.toString(), name: "SUBMIT_RESPONSE_BEFORE");
+  //       // 5. CONVERT PATHS -> BASE64 (The Magic Step)
+  //       // This reads local files and creates a temporary upload-ready map
+
+  //       final stopwatch1 = Stopwatch()..start();
+  //       final Map<String, dynamic> uploadPayload =
+  //           await _convertPayloadPathsToBase64(originalPayload);
+  //       stopwatch1.stop();
+  //       LogService.writeLog(
+  //         message:
+  //             "[B64_SPEED] ID: _convertPayloadPathsToBase64 - Took: ${stopwatch1.elapsed.inSeconds} s :: ${stopwatch1.elapsedMilliseconds} ms",
+  //       );
+  //       // log(jsonEncode(uploadPayload), name: "SUBMIT_RESPONSE_BODY");
+  //       // debugPrint(
+  //       //     "SUBMIT_RESPONSE_BODY ${jsonEncode(uploadPayload).toString()}");
+  //       // log(jsonEncode(uploadPayload), name: "[PAYLOAD_SPEED]");
+  //       // savePayloadForPostman(uploadPayload,
+  //       //     "${originalPayload['publickey']}${DateTime.now().millisecond}");
+  //       final stopwatch = Stopwatch()..start();
+  //       final dynamic res = await serverConnections.postToServer(
+  //         url: url,
+  //         body: jsonEncode(uploadPayload),
+  //         isBearer: true,
+  //       );
+  //       log(res, name: "SUBMIT_RESPONSE_RES");
+  //       stopwatch.stop();
+  //       LogService.writeLog(
+  //         message:
+  //             "[API_SPEED] ID: $id - Took: ${stopwatch.elapsed.inSeconds} s :: ${stopwatch.elapsedMilliseconds} ms",
+  //       );
+  //       // 7. CHECK SUCCESS
+  //       bool isSuccess = false;
+  //       String? errorMsg;
+
+  //       if (res != null && res.isNotEmpty) {
+  //         try {
+  //           final decoded = jsonDecode(res);
+  //           if (decoded is Map<String, dynamic> && decoded['success'] == true) {
+  //             isSuccess = true;
+  //           } else {
+  //             errorMsg = decoded['message'] ?? "Unknown Server Error";
+  //           }
+  //         } catch (e) {
+  //           errorMsg = "Parse Error: $e";
+  //         }
+  //       } else {
+  //         errorMsg = "Empty Response";
+  //       }
+
+  //       if (isSuccess) {
+  //         // 8. CLEANUP: Delete local files to free space
+  //         await _deletePayloadFiles(originalPayload);
+  //         successCount++;
+  //       } else {
+  //         failCount++;
+  //         LogService.writeLog(message: "[QUEUE_FAIL] ID: $id - $errorMsg");
+  //       }
+
+  //       // 9. UPDATE STATUS
+  //       await _database.update(
+  //         OfflineDBConstants.TABLE_PENDING_REQUESTS,
+  //         {
+  //           OfflineDBConstants.COL_STATUS: isSuccess
+  //               ? OfflineDBConstants.STATUS_SUCCESS
+  //               : OfflineDBConstants.STATUS_ERROR,
+  //         },
+  //         where: '${OfflineDBConstants.COL_ID} = ?',
+  //         whereArgs: [id],
+  //       );
+  //     } catch (e) {
+  //       failCount++;
+  //       log(e.toString(), name: "SUBMIT_RESPONSE_ERR");
+
+  //       LogService.writeLog(message: "[QUEUE_PROCESS_ERROR] ID: $id - $e");
+  //     }
+  //   }
+
+  //   return "Processed: $successCount success, $failCount failed";
+  // }
+
   static Future<String> processPendingQueue({
     required bool isInternetAvailable,
-    Function(int current, int total)? onProgress, // Optional UI callback
+    SyncProgressModel? progress,
   }) async {
+    final totalStopwatch = Stopwatch()..start();
+
     log("STARTED", name: "SUBMIT_RESPONSE");
     if (!isInternetAvailable) return "No internet connection";
 
@@ -894,40 +1153,43 @@ class OfflineDbModule {
         AppStorage().retrieveValue(AppStorage.SESSIONID) ?? "";
     if (currentSessionId.isEmpty) return "No active session to sync";
 
-    // 1. Fetch ONLY IDs first (Lightweight)
+    progress?.updateMessage("Checking pending queue...");
+
     final idRows = await _database.query(
       OfflineDBConstants.TABLE_PENDING_REQUESTS,
       columns: [OfflineDBConstants.COL_ID],
       where: '''
-      ${OfflineDBConstants.COL_STATUS} IN (${OfflineDBConstants.STATUS_PENDING}, ${OfflineDBConstants.STATUS_ERROR})
-      AND ${OfflineDBConstants.COL_USERNAME} = ?
-      AND ${OfflineDBConstants.COL_PROJECT_NAME} = ?
-    ''',
+    ${OfflineDBConstants.COL_STATUS} IN (${OfflineDBConstants.STATUS_PENDING}, ${OfflineDBConstants.STATUS_ERROR})
+    AND ${OfflineDBConstants.COL_USERNAME} = ?
+    AND ${OfflineDBConstants.COL_PROJECT_NAME} = ?
+  ''',
       whereArgs: [username, projectName],
       orderBy: OfflineDBConstants.COL_CREATED_AT,
     );
 
-    if (idRows.isEmpty) return "Queue is empty";
+    if (idRows.isEmpty) {
+      progress?.complete();
+      return "Queue is empty";
+    }
 
     int successCount = 0;
     int failCount = 0;
     int total = idRows.length;
 
+    progress?.init(
+        total: total, msg: "Found $total records. Starting upload...");
+
     final ServerConnections serverConnections = ServerConnections();
     final String url =
         Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
 
-    // 2. Loop through IDs
     for (int i = 0; i < total; i++) {
       final row = idRows[i];
       final id = row[OfflineDBConstants.COL_ID] as int;
 
-      // Update UI Progress
-      if (onProgress != null) onProgress(i + 1, total);
-
       try {
-        // 3. SAFE READ: Use _readLargeString (Chunking)
-        // This handles both new small JSONs and old massive JSONs safely.
+        progress?.updateMessage("Reading record ${i + 1} of $total...");
+
         final bodyStr = await _readLargeString(
           table: OfflineDBConstants.TABLE_PENDING_REQUESTS,
           column: OfflineDBConstants.COL_REQUEST_JSON,
@@ -937,44 +1199,41 @@ class OfflineDbModule {
 
         if (bodyStr == null || bodyStr.isEmpty) {
           LogService.writeLog(message: "[QUEUE_SKIP] ID: $id - Empty body");
+          progress?.increment(isSuccess: false);
           continue;
         }
 
-        // 4. Decode & Prep
         final Map<String, dynamic> originalPayload = jsonDecode(bodyStr);
         originalPayload['ARMSessionId'] = currentSessionId;
 
-        log(originalPayload.toString(), name: "SUBMIT_RESPONSE_BEFORE");
-        // 5. CONVERT PATHS -> BASE64 (The Magic Step)
-        // This reads local files and creates a temporary upload-ready map
+        progress?.updateMessage("Processing files for record ${i + 1}...");
 
         final stopwatch1 = Stopwatch()..start();
         final Map<String, dynamic> uploadPayload =
             await _convertPayloadPathsToBase64(originalPayload);
         stopwatch1.stop();
+
         LogService.writeLog(
           message:
-              "[B64_SPEED] ID: _convertPayloadPathsToBase64 - Took: ${stopwatch1.elapsed.inSeconds} s :: ${stopwatch1.elapsedMilliseconds} ms",
+              "[B64_SPEED] ID: _convertPayloadPathsToBase64 - Took: ${stopwatch1.elapsed.inSeconds}s",
         );
-        // log(jsonEncode(uploadPayload), name: "SUBMIT_RESPONSE_BODY");
-        // debugPrint(
-        //     "SUBMIT_RESPONSE_BODY ${jsonEncode(uploadPayload).toString()}");
-        // log(jsonEncode(uploadPayload), name: "[PAYLOAD_SPEED]");
-        // savePayloadForPostman(uploadPayload,
-        //     "${originalPayload['publickey']}${DateTime.now().millisecond}");
+
+        progress?.updateMessage(
+            "Uploading${_isAssetHelper(uploadPayload)}record ${i + 1}...");
+
         final stopwatch = Stopwatch()..start();
         final dynamic res = await serverConnections.postToServer(
           url: url,
           body: jsonEncode(uploadPayload),
           isBearer: true,
         );
-        log(res, name: "SUBMIT_RESPONSE_RES");
         stopwatch.stop();
+
         LogService.writeLog(
           message:
-              "[API_SPEED] ID: $id - Took: ${stopwatch.elapsed.inSeconds} s :: ${stopwatch.elapsedMilliseconds} ms",
+              "[API_SPEED] ID: $id - Took: ${stopwatch.elapsed.inSeconds}s",
         );
-        // 7. CHECK SUCCESS
+
         bool isSuccess = false;
         String? errorMsg;
 
@@ -994,7 +1253,6 @@ class OfflineDbModule {
         }
 
         if (isSuccess) {
-          // 8. CLEANUP: Delete local files to free space
           await _deletePayloadFiles(originalPayload);
           successCount++;
         } else {
@@ -1002,7 +1260,6 @@ class OfflineDbModule {
           LogService.writeLog(message: "[QUEUE_FAIL] ID: $id - $errorMsg");
         }
 
-        // 9. UPDATE STATUS
         await _database.update(
           OfflineDBConstants.TABLE_PENDING_REQUESTS,
           {
@@ -1013,15 +1270,37 @@ class OfflineDbModule {
           where: '${OfflineDBConstants.COL_ID} = ?',
           whereArgs: [id],
         );
+
+        progress?.increment(isSuccess: isSuccess);
       } catch (e) {
         failCount++;
-        log(e.toString(), name: "SUBMIT_RESPONSE_ERR");
+        progress?.increment(isSuccess: false);
 
+        log(e.toString(), name: "SUBMIT_RESPONSE_ERR");
         LogService.writeLog(message: "[QUEUE_PROCESS_ERROR] ID: $id - $e");
       }
     }
 
-    return "Processed: $successCount success, $failCount failed";
+    totalStopwatch.stop();
+    final duration = totalStopwatch.elapsed;
+    final timeString = "${duration.inMinutes}m ${duration.inSeconds % 60}s";
+
+    progress?.complete();
+    progress?.updateMessage("Completed in $timeString");
+
+    return "Processed: $successCount success, $failCount failed in $timeString";
+  }
+
+  static String _isAssetHelper(Map<String, dynamic> pl) {
+    String publicKey = pl["publickey"] ?? '';
+
+    if (publicKey.toLowerCase() == "inwardentry") {
+      return " Asset ";
+    } else if (publicKey.toLowerCase() == "inwardattach") {
+      return " Master ";
+    }
+
+    return ' ';
   }
 
   static Future<Map<String, dynamic>> _convertPayloadPathsToBase64(

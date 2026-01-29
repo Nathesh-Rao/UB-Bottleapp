@@ -1,4 +1,4 @@
-import 'package:axpertflutter/Constants/AppStorage.dart';
+import 'package:ubbottleapp/Constants/AppStorage.dart';
 
 class VersionUpdateClearOldData {
   static clearAllOldData() async {
@@ -8,10 +8,13 @@ class VersionUpdateClearOldData {
       AppStorage().remove('LastLoginData');
       AppStorage().remove('WillAuthenticate');
       // AppStorage().remove('WillAuthenticateForUser');
-      var nofi = AppStorage().retrieveValue(AppStorage.isShowNotifyEnabled) ?? null;
-      if (nofi == null) await AppStorage().storeValue(AppStorage.isShowNotifyEnabled, true);
+      var nofi =
+          AppStorage().retrieveValue(AppStorage.isShowNotifyEnabled) ?? null;
+      if (nofi == null)
+        await AppStorage().storeValue(AppStorage.isShowNotifyEnabled, true);
       var log = AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? null;
-      if (log == null) await AppStorage().storeValue(AppStorage.isShowNotifyEnabled, false);
+      if (log == null)
+        await AppStorage().storeValue(AppStorage.isShowNotifyEnabled, false);
     } catch (e) {}
   }
 }

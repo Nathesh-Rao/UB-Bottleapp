@@ -1,5 +1,5 @@
-import 'package:axpertflutter/Constants/AppStorage.dart';
-import 'package:axpertflutter/Constants/MyColors.dart';
+import 'package:ubbottleapp/Constants/AppStorage.dart';
+import 'package:ubbottleapp/Constants/MyColors.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -10,7 +10,7 @@ final globalVariableController = Get.find<GlobalVariableController>();
 class Const {
   static DateTime DEMO_END_DATE = DateTime(2025, 2, 8);
   static String APP_RELEASE_ID = "";
-  static String APP_RELEASE_DATE = "";//"_release031025";
+  static String APP_RELEASE_DATE = ""; //"_release031025";
   static String DEVICE_ID = "";
   static String GUID = "";
   static String APP_VERSION = "";
@@ -20,16 +20,21 @@ class Const {
   static final String SEED_V = "1983";
   static String DUMMY_USER = "admin";
   static const String DUMMYUSER_PWD = "a5ca360e803b868680e2b6f7805fcb9e";
-  static final String URL_JSON_OBJECTGETCHOICE = "asbmenurest.dll/datasnap/rest/Tasbmenurest/getchoices";
+  static final String URL_JSON_OBJECTGETCHOICE =
+      "asbmenurest.dll/datasnap/rest/Tasbmenurest/getchoices";
   static final String SET_HYBRID_INFO = "/Webservice.asmx/SetHybridInfo";
-  static final String SET_HYBRID_NOTIFICATION_INFO = "/Webservice.asmx/SetHybridNotifiInfo";
+  static final String SET_HYBRID_NOTIFICATION_INFO =
+      "/Webservice.asmx/SetHybridNotifiInfo";
   static final String LOGOUT_LINK = "webservice.asmx/SignOut";
   //NOTE BottomBar Items urls
-  static final String BOTTOMBAR_CALENDAR = 'aspx/AxMain.aspx?pname=dcalendar&authKey=AXPERT-';
-  static final String BOTTOMBAR_ANALYTICS = 'aspx/AxMain.aspx?pname=danalytics&authKey=AXPERT-';
+  static final String BOTTOMBAR_CALENDAR =
+      'aspx/AxMain.aspx?pname=dcalendar&authKey=AXPERT-';
+  static final String BOTTOMBAR_ANALYTICS =
+      'aspx/AxMain.aspx?pname=danalytics&authKey=AXPERT-';
   static bool isLogEnabled = false;
 
-  static String getSQLforClientID(String clientID) => "select * from tblclientMST where " + "clientid = '" + clientID + "'";
+  static String getSQLforClientID(String clientID) =>
+      "select * from tblclientMST where " + "clientid = '" + clientID + "'";
 
   static String getFullARMUrl(String Entrypoint) {
     print("getFullARMUrl => ${globalVariableController.ARM_URL.value}");
@@ -53,14 +58,17 @@ class Const {
           : globalVariableController.WEB_URL.value + "/" + Entrypoint;
   }
 
-  static String getAppBody() => "{\"Appname\":\"" + globalVariableController.PROJECT_NAME.value + "\"}";
+  static String getAppBody() =>
+      "{\"Appname\":\"" + globalVariableController.PROJECT_NAME.value + "\"}";
 
   static final THEMEDATA = ThemeData.light(useMaterial3: false).copyWith(
     brightness: Brightness.light,
     elevatedButtonTheme: ElevatedButtonThemeData(
         style: ButtonStyle(
-            backgroundColor: WidgetStateColor.resolveWith((states) => MyColors.blue2),
-            foregroundColor: WidgetStateColor.resolveWith((states) => Colors.white))),
+            backgroundColor:
+                WidgetStateColor.resolveWith((states) => MyColors.blue2),
+            foregroundColor:
+                WidgetStateColor.resolveWith((states) => Colors.white))),
     primaryColor: Color(0xff003AA5),
     scaffoldBackgroundColor: Colors.white,
     colorScheme: ThemeData().colorScheme.copyWith(primary: MyColors.blue2),

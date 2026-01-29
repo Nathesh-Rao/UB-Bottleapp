@@ -1,5 +1,5 @@
-import 'package:axpertflutter/Constants/Extensions.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/UpdatedHomePage/Models/ActivityListModel.dart';
+import 'package:ubbottleapp/Constants/Extensions.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/UpdatedHomePage/Models/ActivityListModel.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -23,9 +23,15 @@ class WidgetActivityList extends StatelessWidget {
       () => Visibility(
         visible: menuHomePageController.activityListData.isNotEmpty,
         child: Column(
-          children: List.generate(menuHomePageController.activityListData.length, (index) {
-            List<Color> colors = List.generate(menuHomePageController.activityListData[index].carddata.length, (index) => MyColors.getRandomColor());
-            return ActivityListPanel(activityListData: menuHomePageController.activityListData[index], colors: colors);
+          children: List.generate(
+              menuHomePageController.activityListData.length, (index) {
+            List<Color> colors = List.generate(
+                menuHomePageController.activityListData[index].carddata.length,
+                (index) => MyColors.getRandomColor());
+            return ActivityListPanel(
+                activityListData:
+                    menuHomePageController.activityListData[index],
+                colors: colors);
           }),
         ),
       ),
@@ -34,7 +40,8 @@ class WidgetActivityList extends StatelessWidget {
 }
 
 class ActivityListPanel extends StatefulWidget {
-  const ActivityListPanel({super.key, required this.activityListData, required this.colors});
+  const ActivityListPanel(
+      {super.key, required this.activityListData, required this.colors});
 
   final UpdatedHomeCardDataModel activityListData;
   final List<Color> colors;
@@ -59,9 +66,12 @@ class _ActivityListPanelState extends State<ActivityListPanel> {
       isSeeMore = !isSeeMore;
       if (isSeeMore) {
         // bHeight = bHeight2;
-        bHeight = (widget.activityListData.carddata.length > 11 ? bHeight2 : _getHeight_card(widget.activityListData.carddata.length));
+        bHeight = (widget.activityListData.carddata.length > 11
+            ? bHeight2
+            : _getHeight_card(widget.activityListData.carddata.length));
       } else {
-        scrollController.animateTo(scrollController.position.minScrollExtent, duration: Duration(milliseconds: 300), curve: Curves.decelerate);
+        scrollController.animateTo(scrollController.position.minScrollExtent,
+            duration: Duration(milliseconds: 300), curve: Curves.decelerate);
         bHeight = bHeight1;
       }
     });
@@ -97,8 +107,11 @@ class _ActivityListPanelState extends State<ActivityListPanel> {
           height: bHeight,
           child: Container(
               height: Get.height / 2,
-              decoration:
-                  BoxDecoration(color: Colors.white, borderRadius: BorderRadius.only(topRight: Radius.circular(25), topLeft: Radius.circular(25))),
+              decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                      topRight: Radius.circular(25),
+                      topLeft: Radius.circular(25))),
               child: Column(children: [
                 InkWell(
                   onTap: () {
@@ -146,7 +159,9 @@ class _ActivityListPanelState extends State<ActivityListPanel> {
                                 decelerationRate: ScrollDecelerationRate.fast,
                               )
                             : NeverScrollableScrollPhysics(),
-                        itemBuilder: (context, index) => _tileWidget(widget.activityListData.carddata[index], widget.colors[index]),
+                        itemBuilder: (context, index) => _tileWidget(
+                            widget.activityListData.carddata[index],
+                            widget.colors[index]),
                         separatorBuilder: (context, index) => Divider(),
                       )),
                 isSeeMoreVisible
@@ -170,7 +185,9 @@ class _ActivityListPanelState extends State<ActivityListPanel> {
                                         color: MyColors.blue1,
                                       )),
                                   Icon(
-                                    isSeeMore ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                                    isSeeMore
+                                        ? Icons.keyboard_arrow_up_rounded
+                                        : Icons.keyboard_arrow_down_rounded,
                                     color: MyColors.blue1,
                                     size: 17,
                                   )
@@ -206,8 +223,11 @@ class _ActivityListPanelState extends State<ActivityListPanel> {
         backgroundColor: color.withAlpha(100),
         radius: 18,
         child: Text(
-          activityData.title != null ? activityData.title!.getInitials(subStringIndex: 2) : "0",
-          style: GoogleFonts.urbanist(fontWeight: FontWeight.w700, color: darkenColor(color)),
+          activityData.title != null
+              ? activityData.title!.getInitials(subStringIndex: 2)
+              : "0",
+          style: GoogleFonts.urbanist(
+              fontWeight: FontWeight.w700, color: darkenColor(color)),
         ),
       ),
       title: Text(

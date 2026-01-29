@@ -1,5 +1,5 @@
-import 'package:axpertflutter/Constants/MyColors.dart';
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
+import 'package:ubbottleapp/Constants/MyColors.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -12,7 +12,9 @@ class WidgetQuickAccessPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() => Visibility(
-          visible: menuHomePageController.listOfOptionCards.length == 0 ? false : true,
+          visible: menuHomePageController.listOfOptionCards.length == 0
+              ? false
+              : true,
           child: Container(
             margin: EdgeInsets.only(top: 20, left: 15, right: 15),
             child: Column(
@@ -99,7 +101,8 @@ class WidgetQuickAccessPanel extends StatelessWidget {
                       itemCount: generateItems().length,
                       itemBuilder: (context, index) {
                         // return WidgetCardUpdated(menuHomePageController.listOfCards[index]);
-                        return AspectRatio(aspectRatio: 1 / 1, child: generateItems()[index]);
+                        return AspectRatio(
+                            aspectRatio: 1 / 1, child: generateItems()[index]);
                       },
                     ),
                   ),
@@ -121,7 +124,8 @@ class WidgetQuickAccessPanel extends StatelessWidget {
   List<Widget> generateItems() {
     List<Widget> items = List.generate(
       menuHomePageController.listOfOptionCards.length,
-      (index) => QuickAccessTileWidget(menuHomePageController.listOfOptionCards[index]),
+      (index) => QuickAccessTileWidget(
+          menuHomePageController.listOfOptionCards[index]),
     );
 
     if (items.length >= 8) {

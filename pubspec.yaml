@@ -1,4 +1,4 @@
-name: axpertflutter
+name: ubbottleapp
 description: A new Flutter project.
 
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
@@ -92,6 +92,7 @@ dependencies:
   app_settings: ^7.0.0
   file_picker: ^10.3.8
   flutter_image_compress: ^2.4.0
+  change_app_package_name: ^1.5.0
   # board_datetime_picker: ^2.2.0
   # gradient_circular_progress_indicator: ^0.0.4
   # syncfusion_flutter_datepicker: ^28.1.35

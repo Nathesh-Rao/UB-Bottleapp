@@ -2,9 +2,9 @@ import 'dart:developer';
 import 'dart:ffi';
 
 import 'package:animate_do/animate_do.dart';
-import 'package:axpertflutter/Constants/MyColors.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/AttendanceManagement/models/LeaveBalanceModel.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/AttendanceManagement/page/AttendanceApplyLeavePage.dart';
+import 'package:ubbottleapp/Constants/MyColors.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/AttendanceManagement/models/LeaveBalanceModel.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/AttendanceManagement/page/AttendanceApplyLeavePage.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -34,14 +34,17 @@ class WidgetTabLeavesHub extends StatelessWidget {
                   tag: "leaveApply",
                   child: Container(
                     clipBehavior: Clip.hardEdge,
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withAlpha(35),
-                        offset: Offset(0, -2),
-                        blurRadius: 10,
-                        spreadRadius: 5,
-                      )
-                    ]),
+                    decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withAlpha(35),
+                            offset: Offset(0, -2),
+                            blurRadius: 10,
+                            spreadRadius: 5,
+                          )
+                        ]),
                     child: Column(
                       children: [
                         Container(
@@ -67,8 +70,10 @@ class WidgetTabLeavesHub extends StatelessWidget {
                           child: Padding(
                             padding: EdgeInsets.only(bottom: 10),
                             child: Obx(() {
-                              var isLoading = attendanceController.isLeavesHubLoading.isTrue;
-                              var isEmpty = attendanceController.totalLeaveData.isEmpty;
+                              var isLoading = attendanceController
+                                  .isLeavesHubLoading.isTrue;
+                              var isEmpty =
+                                  attendanceController.totalLeaveData.isEmpty;
 
                               if (isLoading) {
                                 return Column(
@@ -109,16 +114,21 @@ class WidgetTabLeavesHub extends StatelessWidget {
                                   Spacer(),
 
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 20),
                                     child: Row(
                                       children: [
                                         Column(
                                           mainAxisSize: MainAxisSize.min,
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          crossAxisAlignment: CrossAxisAlignment.center,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.center,
                                           children: [
                                             Text(
-                                              attendanceController.totalLeaveData.length.toString(),
+                                              attendanceController
+                                                  .totalLeaveData.length
+                                                  .toString(),
                                               style: GoogleFonts.poppins(
                                                 fontSize: 28,
                                                 fontWeight: FontWeight.w700,
@@ -137,11 +147,14 @@ class WidgetTabLeavesHub extends StatelessWidget {
                                         Spacer(),
                                         Column(
                                           mainAxisSize: MainAxisSize.min,
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          crossAxisAlignment: CrossAxisAlignment.center,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.center,
                                           children: [
                                             Text(
-                                              attendanceController.totalLeaves.toString(),
+                                              attendanceController.totalLeaves
+                                                  .toString(),
                                               style: GoogleFonts.poppins(
                                                 fontSize: 28,
                                                 fontWeight: FontWeight.w700,
@@ -194,7 +207,8 @@ class WidgetTabLeavesHub extends StatelessWidget {
     return GradientCircularProgressIndicator(
       size: 170,
       // progress: 0.8,
-      progress: (attendanceController.totalBalanceLeaves.value / attendanceController.totalLeaves.value),
+      progress: (attendanceController.totalBalanceLeaves.value /
+          attendanceController.totalLeaves.value),
 
       stroke: 7,
       gradient: MyColors.subBGGradientHorizontal,
@@ -246,7 +260,8 @@ class WidgetTabLeavesHub extends StatelessWidget {
                         GradientCircularProgressIndicator(
                           size: 55,
 
-                          progress: _getLeaveProgressValue(attendanceController.totalLeaveData[index]),
+                          progress: _getLeaveProgressValue(
+                              attendanceController.totalLeaveData[index]),
                           // progress: data[data.keys.toList()[index]]! * 0.1,
                           stroke: 3,
                           gradient: MyColors.subBGGradientHorizontal,
@@ -258,11 +273,13 @@ class WidgetTabLeavesHub extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               Text(
-                                attendanceController.totalLeaveData[index].balanceLeaves,
+                                attendanceController
+                                    .totalLeaveData[index].balanceLeaves,
                                 style: style,
                               ),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 15),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 15),
                                 child: Divider(
                                   height: 1,
                                   thickness: 1,
@@ -270,7 +287,8 @@ class WidgetTabLeavesHub extends StatelessWidget {
                                 ),
                               ),
                               Text(
-                                attendanceController.totalLeaveData[index].totalLeaves,
+                                attendanceController
+                                    .totalLeaveData[index].totalLeaves,
                                 style: GoogleFonts.poppins(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,

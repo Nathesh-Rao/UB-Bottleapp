@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'dart:developer';
 
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/AttendanceManagement/models/AttendanceReportModel.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/AttendanceManagement/models/LeaveBalanceModel.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/AttendanceManagement/models/TeamMemberModel.dart';
-import 'package:axpertflutter/ModelPages/LandingPage/EssHomePage/AttendanceManagement/widgets/WidgetProfileBottomSheet.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/AttendanceManagement/models/AttendanceReportModel.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/AttendanceManagement/models/LeaveBalanceModel.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/AttendanceManagement/models/TeamMemberModel.dart';
+import 'package:ubbottleapp/ModelPages/LandingPage/EssHomePage/AttendanceManagement/widgets/WidgetProfileBottomSheet.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -48,7 +48,8 @@ class AttendanceController extends GetxController {
     if (diff.abs() == 2) {
       pageController.jumpToPage(index);
     } else {
-      pageController.animateToPage(index, duration: Duration(milliseconds: 400), curve: Curves.easeIn);
+      pageController.animateToPage(index,
+          duration: Duration(milliseconds: 400), curve: Curves.easeIn);
     }
   }
 

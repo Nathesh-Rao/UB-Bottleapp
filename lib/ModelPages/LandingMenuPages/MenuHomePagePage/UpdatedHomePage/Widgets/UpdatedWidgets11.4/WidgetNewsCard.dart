@@ -1,4 +1,4 @@
-import 'package:axpertflutter/ModelPages/LandingMenuPages/MenuHomePagePage/UpdatedHomePage/Models/NewsCardModel.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/UpdatedHomePage/Models/NewsCardModel.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -28,8 +28,10 @@ class _WidgetNewsCardState extends State<WidgetNewsCard> {
       () => Visibility(
         visible: menuHomePageController.newsCardData.isNotEmpty,
         child: Column(
-          children: List.generate(menuHomePageController.newsCardData.length,
-              (index) => NewsPanel(newsCardData: menuHomePageController.newsCardData[index])),
+          children: List.generate(
+              menuHomePageController.newsCardData.length,
+              (index) => NewsPanel(
+                  newsCardData: menuHomePageController.newsCardData[index])),
         ),
       ),
     );
@@ -65,7 +67,8 @@ class _NewsPanelState extends State<NewsPanel> {
   }
 
   void _getCardHeight() {
-    final RenderBox? renderBox = _cardKey.currentContext?.findRenderObject() as RenderBox?;
+    final RenderBox? renderBox =
+        _cardKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox != null) {
       setState(() {
         card_heightBeforeExpand = renderBox.size.height;
@@ -160,8 +163,10 @@ class _NewsPanelState extends State<NewsPanel> {
                       decelerationRate: ScrollDecelerationRate.fast,
                     )
                   : NeverScrollableScrollPhysics(),
-              itemBuilder: (context, index) => _tileWidget(widget.newsCardData.carddata[index]),
-              separatorBuilder: (context, index) => Divider(height: 0, thickness: 1),
+              itemBuilder: (context, index) =>
+                  _tileWidget(widget.newsCardData.carddata[index]),
+              separatorBuilder: (context, index) =>
+                  Divider(height: 0, thickness: 1),
             )),
             isSeeMoreVisible
                 ? Row(
@@ -184,7 +189,9 @@ class _NewsPanelState extends State<NewsPanel> {
                                     color: MyColors.blue1,
                                   )),
                               Icon(
-                                isSeeMore ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                                isSeeMore
+                                    ? Icons.keyboard_arrow_up_rounded
+                                    : Icons.keyboard_arrow_down_rounded,
                                 color: MyColors.blue1,
                                 size: 17,
                               )
@@ -248,14 +255,23 @@ class _NewsPanelState extends State<NewsPanel> {
               ),
               child: CachedNetworkImage(
                 fit: BoxFit.cover,
-                imageUrl: newsData.image == "" ? '' : Const.getFullWebUrl(newsData.image.toString().replaceAll("\$APP_NAME\$", globalVariableController.PROJECT_NAME.value)) ,
-                errorWidget: (context, url, error) => Image.network(Const.getFullWebUrl('images/NotificationIcons/Announcement.png'),height: 50,),
+                imageUrl: newsData.image == ""
+                    ? ''
+                    : Const.getFullWebUrl(newsData.image.toString().replaceAll(
+                        "\$APP_NAME\$",
+                        globalVariableController.PROJECT_NAME.value)),
+                errorWidget: (context, url, error) => Image.network(
+                  Const.getFullWebUrl(
+                      'images/NotificationIcons/Announcement.png'),
+                  height: 50,
+                ),
               ),
             )),
             Expanded(
                 flex: 2,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8.0, vertical: 3),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
