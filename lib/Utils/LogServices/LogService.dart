@@ -2,14 +2,22 @@ import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+import 'package:get/get.dart';
+import 'package:get/route_manager.dart';
 import 'package:ubbottleapp/Constants/AppStorage.dart';
 import 'package:ubbottleapp/Constants/Enums.dart';
 import 'package:ubbottleapp/Constants/Const.dart';
 import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:ubbottleapp/Constants/GlobalVariableController.dart';
 
 class LogService {
+  static GlobalVariableController gvcontroller = Get.find();
+
+  static File? localFile;
+
   static Future<String> _localPath() async {
     var directory = await getExternalStorageDirectory();
     directory ??= await getApplicationDocumentsDirectory();
@@ -18,7 +26,13 @@ class LogService {
 
   static Future<File> _localFile() async {
     final path = await _localPath();
-    return File('$path/AxpertLog.txt');
+    debugPrint(" log_path : $path");
+    var fullPath = '$path/AxpertLog.txt';
+    debugPrint(" log_fullPath : $fullPath");
+    Const.LOG_FILE_PATH = fullPath;
+    // gvcontroller.LOG_PATH.value = fullPath;
+    debugPrint(" const_log_fullPath : ${Const.LOG_FILE_PATH}");
+    return File(fullPath);
   }
 
   static getVersion() async {
@@ -28,26 +42,26 @@ class LogService {
   }
 
   static initLogs() async {
-    var file = await _localFile();
+    localFile = await _localFile();
     try {
       var isTraceOn =
           await AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? false;
       Const.isLogEnabled = isTraceOn;
 
-      var isExists = await file.exists();
+      var isExists = await localFile!.exists();
       if (!isExists) {
         if (Const.APP_VERSION == "") {
           await getVersion();
         }
-        await file.writeAsString('Axpert Android Log File\n',
+        await localFile?.writeAsString('Axpert Android Log File\n',
             mode: FileMode.write, flush: true);
-        await file.writeAsString('App Version: ${Const.APP_VERSION}\n',
+        await localFile?.writeAsString('App Version: ${Const.APP_VERSION}\n',
             mode: FileMode.append, flush: true);
-        await file.writeAsString(
+        await localFile?.writeAsString(
             'File Creation Date: ${DateFormat("dd-MMM-yyyy HH:mm:ss").format(DateTime.now())}\n',
             mode: FileMode.append,
             flush: true);
-        await file.writeAsString(
+        await localFile?.writeAsString(
             '------------------------------------------------------------------- \n\n',
             mode: FileMode.append,
             flush: true);
@@ -64,11 +78,11 @@ class LogService {
   static writeLog({String message = ""}) async {
     _logWithColor(message, yellow);
     if (Const.isLogEnabled) {
-      final file = await _localFile();
+      // final file = await _localFile();
       var formatedDateTime =
           DateFormat("dd-MMM-yyyy HH:mm:ss:SSS").format(DateTime.now());
       try {
-        await file.writeAsString('$formatedDateTime: $message\n',
+        await localFile?.writeAsString('$formatedDateTime: $message\n',
             mode: FileMode.append);
       } catch (e) {}
     }
@@ -79,10 +93,9 @@ class LogService {
 
   static clearLog() async {
     try {
-      final file = await _localFile();
-      var isExists = await file.exists();
+      var isExists = await localFile?.exists() ?? false;
       if (isExists) {
-        file.delete();
+        localFile?.delete();
         initLogs();
       }
     } catch (e) {}
@@ -94,11 +107,10 @@ class LogService {
     String message = '',
   }) async {
     if (Const.isLogEnabled) {
-      final file = await _localFile();
       var formatedDateTime =
           DateFormat("dd-MMM-yyyy HH:mm:ss:SSS").format(DateTime.now());
       try {
-        await file.writeAsString('$formatedDateTime: $log\n',
+        await localFile?.writeAsString('$formatedDateTime: $log\n',
             mode: FileMode.append);
       } catch (e) {}
     }

@@ -1,15 +1,15 @@
+import 'dart:developer';
+
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:ubbottleapp/Constants/CommonMethods.dart';
 import 'package:ubbottleapp/Constants/MyColors.dart';
-import 'package:ubbottleapp/Constants/Routes.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_module.dart';
 
-import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_switch/flutter_switch.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-
+import 'package:open_file/open_file.dart';
 import '../../../Constants/Const.dart';
 import '../../LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
 import '../../LandingPage/Controller/LandingPageController.dart';
@@ -251,7 +251,19 @@ class SettingsPage extends StatelessWidget {
                                     middleText: "Please select option",
                                     confirm: ElevatedButton(
                                         onPressed: () async {
-                                          Get.back();
+                                          // GlobalVariableController
+                                          //     globalVariableController =
+                                          //     Get.find();
+                                          // final dir =
+                                          //     await getApplicationDocumentsDirectory();
+                                          log(Const.LOG_FILE_PATH,
+                                              name: "GV_log_path_full");
+
+                                          await OpenFile.open(
+                                                  Const.LOG_FILE_PATH)
+                                              .then((_) {
+                                            Get.back();
+                                          });
                                         },
                                         child: Text("Open File")),
                                     cancel: TextButton(

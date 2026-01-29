@@ -10,6 +10,7 @@ class SyncProgressModel {
   RxString title = "Processing".obs;
   RxBool isLoading = true.obs;
   RxBool isCompleted = false.obs;
+  List<Map<String, dynamic>> failedRecords = [];
   SyncProgressModel({String initialTitle = "Processing"}) {
     title.value = initialTitle;
   }
@@ -22,6 +23,18 @@ class SyncProgressModel {
     message.value = msg;
     isLoading.value = true;
     isCompleted.value = false;
+  }
+
+  void addFailedRecord(int id, String error) {
+    failedRecords.add({
+      "id": id,
+      "error": error,
+      "timestamp": DateTime.now().toIso8601String(),
+    });
+  }
+
+  void clearFailedRecords() {
+    failedRecords.clear();
   }
 
   void complete() {

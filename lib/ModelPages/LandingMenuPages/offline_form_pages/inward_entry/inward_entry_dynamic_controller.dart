@@ -536,17 +536,140 @@ class InwardEntryDynamicController extends GetxController {
     );
   }
 
+  // Widget _compactField(
+  //   String label,
+  //   TextEditingController controller,
+  //   Map<String, TextEditingController> model,
+  // ) {
+  //   final Color accent = const Color(0xFF2563EB);
+
+  //   final bool isMafDate = label == "maf_date";
+  //   final bool isMafYear = label == "maf_year";
+
+  //   final bool isNumeric = !isMafDate && !isMafYear;
+
+  //   return Container(
+  //     margin: const EdgeInsets.only(bottom: 8),
+  //     height: 44,
+  //     decoration: BoxDecoration(
+  //       color: Colors.white,
+  //       borderRadius: BorderRadius.circular(10),
+  //       border: Border.all(color: const Color(0xFFE2E8F0)),
+  //     ),
+  //     child: Row(
+  //       children: [
+  //         Container(
+  //           width: 110,
+  //           height: double.infinity,
+  //           decoration: BoxDecoration(
+  //             color: accent.withOpacity(0.10),
+  //             borderRadius:
+  //                 const BorderRadius.horizontal(left: Radius.circular(10)),
+  //           ),
+  //           alignment: Alignment.centerLeft,
+  //           padding: const EdgeInsets.symmetric(horizontal: 10),
+  //           child: Text(
+  //             label.replaceAll("_", " ").toUpperCase(),
+  //             maxLines: 1,
+  //             overflow: TextOverflow.ellipsis,
+  //             style: TextStyle(
+  //               fontSize: 12,
+  //               fontWeight: FontWeight.w600,
+  //               color: accent,
+  //             ),
+  //           ),
+  //         ),
+  //         Expanded(
+  //           child: TextFormField(
+  //             controller: controller,
+  //             keyboardType:
+  //                 isNumeric ? TextInputType.number : TextInputType.text,
+  //             readOnly: isMafDate || isMafYear,
+  //             decoration: const InputDecoration(
+  //               isDense: true,
+  //               border: InputBorder.none,
+  //               hintText: "-",
+  //               contentPadding:
+  //                   EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+  //             ),
+  //             onTap: () async {
+  //               if (isNumeric) {
+  //                 if (controller.text == "0") {
+  //                   controller.text = "";
+  //                 }
+  //               }
+
+  //               if (isMafDate) {
+  //                 final d = await showDatePicker(
+  //                   context: Get.context!,
+  //                   firstDate: DateTime(2000),
+  //                   lastDate: DateTime(2100),
+  //                   initialDate: DateTime.now(),
+  //                 );
+  //                 if (d != null) {
+  //                   controller.text =
+  //                       "${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}";
+
+  //                   // ✅ AUTO-FILL YEAR
+  //                   final row = model; // <-- current row map
+  //                   if (row.containsKey("maf_year")) {
+  //                     row["maf_year"]!.text = d.year.toString();
+  //                   }
+  //                 }
+  //               } else if (isMafYear) {
+  //                 final now = DateTime.now();
+  //                 final y = await showDatePicker(
+  //                   context: Get.context!,
+  //                   firstDate: DateTime(2000),
+  //                   lastDate: DateTime(2100),
+  //                   initialDate: DateTime(now.year),
+  //                   initialDatePickerMode: DatePickerMode.year,
+  //                   initialEntryMode: DatePickerEntryMode.calendarOnly,
+  //                 );
+  //                 if (y != null) {
+  //                   controller.text = y.year.toString();
+  //                 }
+  //               }
+  //             },
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
   Widget _compactField(
-    String label,
+    String fieldName,
     TextEditingController controller,
-    Map<String, TextEditingController> model,
+    Map<String, TextEditingController> rowMap,
   ) {
+    // 1. DYNAMIC LOOKUP: Find definition by name
+    final List gridFields = schema["fillgrids"]["fields"];
+    final fieldDef = gridFields.firstWhere(
+      (e) => e["fld_name"] == fieldName,
+      orElse: () => null,
+    );
+
+    if (fieldDef == null) return const SizedBox.shrink();
+
+    // 2. EXTRACT CONFIG
+    final String label = fieldDef["fld_caption"] ?? fieldName;
+    final String type = fieldDef["fld_type"]?.toString().toLowerCase() ??
+        ""; // e.g. 'date', 'dd', 'n'
+    final String dataType = fieldDef["data_type"]?.toString().toLowerCase() ??
+        ""; // e.g. 'n', 'd', 's'
     final Color accent = const Color(0xFF2563EB);
 
-    final bool isMafDate = label == "maf_date";
-    final bool isMafYear = label == "maf_year";
+    // 3. DETERMINE BEHAVIOR FLAGS
+    final bool isDropdown = type == "dd";
+    final bool isDate = type == "date" || dataType == "d";
+    final bool isTime = type == "time" || dataType == "t";
+    final bool isYear = type == "year";
+    final bool isNumeric = type == "n" || dataType == "n";
 
-    final bool isNumeric = !isMafDate && !isMafYear;
+    // Readonly logic: Dates/Years are read-only (user must pick), others are editable
+    final bool isReadOnly =
+        isDate || isYear || isTime || (fieldDef["readonly"] == "T");
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -558,6 +681,7 @@ class InwardEntryDynamicController extends GetxController {
       ),
       child: Row(
         children: [
+          // --- LABEL ---
           Container(
             width: 110,
             height: double.infinity,
@@ -569,7 +693,7 @@ class InwardEntryDynamicController extends GetxController {
             alignment: Alignment.centerLeft,
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Text(
-              label.replaceAll("_", " ").toUpperCase(),
+              label.toUpperCase(),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -579,62 +703,185 @@ class InwardEntryDynamicController extends GetxController {
               ),
             ),
           ),
+
+          // --- INPUT AREA ---
           Expanded(
-            child: TextFormField(
-              controller: controller,
-              keyboardType:
-                  isNumeric ? TextInputType.number : TextInputType.text,
-              readOnly: isMafDate || isMafYear,
-              decoration: const InputDecoration(
-                isDense: true,
-                border: InputBorder.none,
-                hintText: "-",
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              ),
-              onTap: () async {
-                if (isNumeric) {
-                  if (controller.text == "0") {
-                    controller.text = "";
-                  }
-                }
+            child: isDropdown
+                ? _buildGridDropdown(fieldDef, controller)
+                : TextFormField(
+                    controller: controller,
+                    keyboardType:
+                        isNumeric ? TextInputType.number : TextInputType.text,
+                    readOnly: isReadOnly,
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      border: InputBorder.none,
+                      hintText: "-",
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    ),
+                    onTap: () async {
+                      if (isReadOnly && !isDate && !isYear && !isTime)
+                        return; // Standard read-only check
 
-                if (isMafDate) {
-                  final d = await showDatePicker(
-                    context: Get.context!,
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                    initialDate: DateTime.now(),
-                  );
-                  if (d != null) {
-                    controller.text =
-                        "${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}";
+                      // A. NUMERIC HANDLING (Clear '0' on tap for better UX)
+                      if (isNumeric) {
+                        if (controller.text == "0") {
+                          controller.text = "";
+                        }
+                      }
 
-                    // ✅ AUTO-FILL YEAR
-                    final row = model; // <-- current row map
-                    if (row.containsKey("maf_year")) {
-                      row["maf_year"]!.text = d.year.toString();
-                    }
-                  }
-                } else if (isMafYear) {
-                  final now = DateTime.now();
-                  final y = await showDatePicker(
-                    context: Get.context!,
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                    initialDate: DateTime(now.year),
-                    initialDatePickerMode: DatePickerMode.year,
-                    initialEntryMode: DatePickerEntryMode.calendarOnly,
-                  );
-                  if (y != null) {
-                    controller.text = y.year.toString();
-                  }
-                }
-              },
-            ),
+                      // B. DATE PICKER
+                      if (isDate) {
+                        await _handleDatePicker(controller, rowMap);
+                      }
+                      // C. YEAR PICKER
+                      else if (isYear) {
+                        await _handleYearPicker(controller);
+                      }
+                      // D. TIME PICKER
+                      else if (isTime) {
+                        await _handleTimePicker(controller);
+                      }
+                    },
+                  ),
           ),
         ],
       ),
+    );
+  }
+
+  // --- HELPER HANDLERS ---
+
+  Future<void> _handleDatePicker(TextEditingController controller,
+      Map<String, TextEditingController> rowMap) async {
+    final d = await showDatePicker(
+      context: Get.context!,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      initialDate: DateTime.now(),
+    );
+
+    if (d != null) {
+      controller.text =
+          "${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}";
+
+      // DYNAMIC YEAR AUTO-FILL
+      // We loop through the row to see if there is ANY field with type 'year'
+      // If found, we auto-populate it.
+      final List gridFields = schema["fillgrids"]["fields"];
+
+      for (var entry in rowMap.entries) {
+        final fDef = gridFields.firstWhere((e) => e["fld_name"] == entry.key,
+            orElse: () => null);
+
+        if (fDef != null && fDef["fld_type"] == "year") {
+          // Auto-fill the year field if it's currently empty or we want to overwrite
+          entry.value.text = d.year.toString();
+        }
+      }
+    }
+  }
+
+  Future<void> _handleYearPicker(TextEditingController controller) async {
+    final now = DateTime.now();
+    final y = await showDatePicker(
+      context: Get.context!,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      initialDate: DateTime(now.year),
+      initialDatePickerMode: DatePickerMode.year,
+      initialEntryMode: DatePickerEntryMode.calendarOnly,
+    );
+    if (y != null) {
+      controller.text = y.year.toString();
+    }
+  }
+
+  Future<void> _handleTimePicker(TextEditingController controller) async {
+    final t = await showTimePicker(
+      context: Get.context!,
+      initialTime: TimeOfDay.now(),
+    );
+    if (t != null) {
+      final local = t.format(Get.context!);
+      controller.text = local;
+    }
+  }
+
+  Widget _buildGridDropdown(
+      Map<String, dynamic> fieldDef, TextEditingController controller) {
+    final String dsName = fieldDef["datasource"] ?? "";
+
+    if (dsName.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.only(left: 12),
+        child: Align(
+            alignment: Alignment.centerLeft, child: Text("No Datasource")),
+      );
+    }
+
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: OfflineDbModule.getDatasourceOptions(
+        transId: schema["transid"],
+        datasource: dsName,
+      ),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(
+              child: SizedBox(
+                  height: 15,
+                  width: 15,
+                  child: CircularProgressIndicator(
+                    value: 40,
+                  )));
+        }
+
+        final options = snapshot.data!;
+
+        return ValueListenableBuilder<TextEditingValue>(
+          valueListenable: controller,
+          builder: (context, value, child) {
+            final currentText = value.text;
+
+            final bool isValidOption = options
+                .any((e) => e[fieldDef["fld_name"]]?.toString() == currentText);
+
+            return DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                isExpanded: true,
+                value: isValidOption ? currentText : null,
+                hint: const Padding(
+                  padding: EdgeInsets.only(left: 12.0),
+                  child: Text("Select",
+                      style: TextStyle(color: Colors.grey, fontSize: 13)),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                items: options.map((item) {
+                  final String key = fieldDef["fld_name"];
+                  String val = item[key]?.toString() ?? "";
+
+                  if (val.isEmpty && item.values.isNotEmpty) {
+                    val = item.values.last.toString();
+                  }
+
+                  return DropdownMenuItem<String>(
+                    value: val,
+                    child: Text(val,
+                        style: GoogleFonts.poppins(
+                            fontSize: 13, fontWeight: FontWeight.w500)),
+                  );
+                }).toList(),
+                onChanged: (newValue) {
+                  if (newValue != null) {
+                    controller.text = newValue;
+                  }
+                },
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -931,7 +1178,10 @@ class InwardEntryDynamicController extends GetxController {
 
     var result = Map<String, dynamic>.fromEntries(
       sampleSummaryJson.entries.where((e) {
-        if (e.key == "maf_date" || e.key == "maf_year" || e.key == "short") {
+        if (e.key.contains("date") ||
+            e.key.contains("year") ||
+            e.key.contains("short") ||
+            e.key.contains("state")) {
           return false;
         }
         final num v = num.tryParse(e.value.toString()) ?? 0;

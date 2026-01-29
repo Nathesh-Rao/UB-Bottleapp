@@ -9,6 +9,7 @@ class OfflineDBConstants {
   static const int STATUS_PENDING = 0;
   static const int STATUS_SUCCESS = 1;
   static const int STATUS_ERROR = 2;
+  static const int STATUS_FORCE_PUSHED = 3;
 
   // ================= TABLE NAMES =================
 

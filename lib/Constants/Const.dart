@@ -32,7 +32,7 @@ class Const {
   static final String BOTTOMBAR_ANALYTICS =
       'aspx/AxMain.aspx?pname=danalytics&authKey=AXPERT-';
   static bool isLogEnabled = false;
-
+  static String LOG_FILE_PATH = '';
   static String getSQLforClientID(String clientID) =>
       "select * from tblclientMST where " + "clientid = '" + clientID + "'";
 

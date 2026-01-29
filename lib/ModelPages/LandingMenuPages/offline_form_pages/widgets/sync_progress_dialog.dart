@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
+import 'package:ubbottleapp/Constants/MyColors.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/controller/offline_form_controller.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/sync_progress_model.dart';
 
 class SyncProgressDialog extends StatelessWidget {
@@ -194,29 +196,65 @@ class SyncProgressDialog extends StatelessWidget {
     return Obx(() {
       if (!progressModel.isCompleted.value) return const SizedBox.shrink();
 
-      return Padding(
-        padding: const EdgeInsets.only(top: 20),
-        child: SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: Get.back,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2563EB),
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Text(
-              "Close",
-              style: GoogleFonts.poppins(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // progressModel.failureCount.value > 0
+          //     ? Padding(
+          //         padding: const EdgeInsets.only(top: 20),
+          //         child: SizedBox(
+          //           width: double.infinity,
+          //           child: ElevatedButton(
+          //             onPressed: () {
+          //               OfflineFormController offlineFormController =
+          //                   Get.find();
+
+          //               offlineFormController.onForcePushClicked(progressModel);
+          //             },
+          //             style: ElevatedButton.styleFrom(
+          //               backgroundColor: MyColors.baseRed,
+          //               elevation: 0,
+          //               padding: const EdgeInsets.symmetric(vertical: 14),
+          //               shape: RoundedRectangleBorder(
+          //                 borderRadius: BorderRadius.circular(12),
+          //               ),
+          //             ),
+          //             child: Text(
+          //               "Force push ${progressModel.failureCount.value} records",
+          //               style: GoogleFonts.poppins(
+          //                 fontWeight: FontWeight.w600,
+          //                 fontSize: 14,
+          //               ),
+          //             ),
+          //           ),
+          //         ),
+          //       )
+          //     : SizedBox.shrink(),
+          Padding(
+            padding: const EdgeInsets.only(top: 15),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: Get.back,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2563EB),
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  "Close",
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
               ),
             ),
           ),
-        ),
+        ],
       );
     });
   }

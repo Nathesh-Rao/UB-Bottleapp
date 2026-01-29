@@ -425,20 +425,29 @@ class OfflineDbModule {
   }
 
   // DATASOURCE STRING
+  // static String _extractDatasourceString(List<Map<String, dynamic>> pages) {
+  //   final Set<String> set = {};
+
+  //   for (final page in pages) {
+  //     final fields = page['fields'] as List<dynamic>? ?? [];
+  //     for (final f in fields) {
+  //       final ds = f['datasource'];
+  //       if (ds != null && ds.toString().trim().isNotEmpty) {
+  //         set.add(ds.toString().trim());
+  //       }
+  //     }
+  //   }
+
+  //   return set.join(',');
+  // }
   static String _extractDatasourceString(List<Map<String, dynamic>> pages) {
-    final Set<String> set = {};
+    final Set<String> globalSet = {};
 
     for (final page in pages) {
-      final fields = page['fields'] as List<dynamic>? ?? [];
-      for (final f in fields) {
-        final ds = f['datasource'];
-        if (ds != null && ds.toString().trim().isNotEmpty) {
-          set.add(ds.toString().trim());
-        }
-      }
+      globalSet.addAll(_getAllUniqueDatasourcesInPage(page));
     }
 
-    return set.join(',');
+    return globalSet.join(',');
   }
 
   static Future<void> _saveDatasourceString({
@@ -793,204 +802,12 @@ class OfflineDbModule {
     return SubmitStatus.savedOffline;
   }
 
-  // static Future<String> processPendingQueue(
-  //     {required bool isInternetAvailable}) async {
-  //   if (!isInternetAvailable) return "No internet connection";
-
-  //   final scope = await _getLastOfflineUserScope();
-  //   if (scope == null) return "No user session found";
-
-  //   final username = scope['username']!;
-  //   final projectName = scope['projectName']!;
-
-  //   final String currentSessionId =
-  //       AppStorage().retrieveValue(AppStorage.SESSIONID) ?? "";
-  //   if (currentSessionId.isEmpty) return "No active session to sync";
-
-  //   final rows = await _database.query(
-  //     OfflineDBConstants.TABLE_PENDING_REQUESTS,
-  //     where: '''
-  //     ${OfflineDBConstants.COL_STATUS} IN (${OfflineDBConstants.STATUS_PENDING}, ${OfflineDBConstants.STATUS_ERROR})
-  //     AND ${OfflineDBConstants.COL_USERNAME} = ?
-  //     AND ${OfflineDBConstants.COL_PROJECT_NAME} = ?
-  //   ''',
-  //     whereArgs: [username, projectName],
-  //     orderBy: OfflineDBConstants.COL_CREATED_AT,
-  //   );
-
-  //   if (rows.isEmpty) return "Queue is empty";
-
-  //   int successCount = 0;
-  //   int failCount = 0;
-
-  //   final ServerConnections serverConnections = ServerConnections();
-  //   final String url =
-  //       Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
-
-  //   for (final row in rows) {
-  //     final id = row[OfflineDBConstants.COL_ID] as int;
-  //     final bodyStr = row[OfflineDBConstants.COL_REQUEST_JSON] as String;
-
-  //     try {
-  //       final Map<String, dynamic> payload = jsonDecode(bodyStr);
-
-  //       payload['ARMSessionId'] = currentSessionId;
-
-  //       final dynamic res = await serverConnections.postToServer(
-  //         url: url,
-  //         body: jsonEncode(payload),
-  //         isBearer: true,
-  //       );
-
-  //       bool isSuccess = false;
-  //       if (res != null && res.isNotEmpty) {
-  //         try {
-  //           final decoded = jsonDecode(res);
-  //           if (decoded is Map<String, dynamic> && decoded['success'] == true) {
-  //             isSuccess = true;
-  //           } else {
-  //             LogService.writeLog(
-  //                 message: "[QUEUE_FAIL] ID: $id - Msg: ${decoded['message']}");
-  //           }
-  //         } catch (_) {}
-  //       }
-
-  //       await _database.update(
-  //         OfflineDBConstants.TABLE_PENDING_REQUESTS,
-  //         {
-  //           OfflineDBConstants.COL_STATUS: isSuccess
-  //               ? OfflineDBConstants.STATUS_SUCCESS
-  //               : OfflineDBConstants.STATUS_ERROR,
-  //         },
-  //         where: '${OfflineDBConstants.COL_ID} = ?',
-  //         whereArgs: [id],
-  //       );
-
-  //       if (isSuccess)
-  //         successCount++;
-  //       else
-  //         failCount++;
-  //     } catch (e) {
-  //       failCount++;
-  //       LogService.writeLog(message: "[QUEUE_PROCESS_ERROR] ID: $id - $e");
-  //     }
-  //   }
-
-  //   return "Processed: $successCount success, $failCount failed";
-  // }
-
-  // static Future<String> processPendingQueue(
-  //     {required bool isInternetAvailable}) async {
-  //   if (!isInternetAvailable) return "No internet connection";
-
-  //   final scope = await _getLastOfflineUserScope();
-  //   if (scope == null) return "No user session found";
-
-  //   final username = scope['username']!;
-  //   final projectName = scope['projectName']!;
-
-  //   final String currentSessionId =
-  //       AppStorage().retrieveValue(AppStorage.SESSIONID) ?? "";
-  //   if (currentSessionId.isEmpty) return "No active session to sync";
-
-  //   // --- FIX START: Fetch ONLY IDs first ---
-  //   final idRows = await _database.query(
-  //     OfflineDBConstants.TABLE_PENDING_REQUESTS,
-  //     columns: [OfflineDBConstants.COL_ID], // <--- Only fetch ID
-  //     where: '''
-  //     ${OfflineDBConstants.COL_STATUS} IN (${OfflineDBConstants.STATUS_PENDING}, ${OfflineDBConstants.STATUS_ERROR})
-  //     AND ${OfflineDBConstants.COL_USERNAME} = ?
-  //     AND ${OfflineDBConstants.COL_PROJECT_NAME} = ?
-  //   ''',
-  //     whereArgs: [username, projectName],
-  //     orderBy: OfflineDBConstants.COL_CREATED_AT,
-  //   );
-
-  //   if (idRows.isEmpty) return "Queue is empty";
-  //   // --- FIX END ---
-
-  //   int successCount = 0;
-  //   int failCount = 0;
-
-  //   final ServerConnections serverConnections = ServerConnections();
-  //   final String url =
-  //       Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
-
-  //   // Loop through IDs one by one
-  //   for (final row in idRows) {
-  //     final id = row[OfflineDBConstants.COL_ID] as int;
-
-  //     try {
-  //       // --- FETCH HEAVY DATA INDIVIDUALLY ---
-  //       // We fetch the JSON only for this specific ID.
-  //       // This ensures the CursorWindow only holds ONE heavy row at a time.
-  //       final List<Map<String, Object?>> heavyRow = await _database.query(
-  //         OfflineDBConstants.TABLE_PENDING_REQUESTS,
-  //         columns: [OfflineDBConstants.COL_REQUEST_JSON],
-  //         where: '${OfflineDBConstants.COL_ID} = ?',
-  //         whereArgs: [id],
-  //       );
-
-  //       if (heavyRow.isEmpty) continue; // Should not happen, but safe check
-
-  //       final bodyStr =
-  //           heavyRow.first[OfflineDBConstants.COL_REQUEST_JSON] as String;
-
-  //       // ----------------------------------------
-  //       // ... Rest of your existing upload logic ...
-  //       final Map<String, dynamic> payload = jsonDecode(bodyStr);
-
-  //       payload['ARMSessionId'] = currentSessionId;
-
-  //       final dynamic res = await serverConnections.postToServer(
-  //         url: url,
-  //         body: jsonEncode(payload),
-  //         isBearer: true,
-  //       );
-
-  //       bool isSuccess = false;
-  //       if (res != null && res.isNotEmpty) {
-  //         try {
-  //           final decoded = jsonDecode(res);
-  //           if (decoded is Map<String, dynamic> && decoded['success'] == true) {
-  //             isSuccess = true;
-  //           } else {
-  //             LogService.writeLog(
-  //                 message: "[QUEUE_FAIL] ID: $id - Msg: ${decoded['message']}");
-  //           }
-  //         } catch (_) {}
-  //       }
-
-  //       // Update status
-  //       await _database.update(
-  //         OfflineDBConstants.TABLE_PENDING_REQUESTS,
-  //         {
-  //           OfflineDBConstants.COL_STATUS: isSuccess
-  //               ? OfflineDBConstants.STATUS_SUCCESS
-  //               : OfflineDBConstants.STATUS_ERROR,
-
-  //         },
-  //         where: '${OfflineDBConstants.COL_ID} = ?',
-  //         whereArgs: [id],
-  //       );
-
-  //       if (isSuccess)
-  //         successCount++;
-  //       else
-  //         failCount++;
-  //     } catch (e) {
-  //       failCount++;
-  //       LogService.writeLog(message: "[QUEUE_PROCESS_ERROR] ID: $id - $e");
-  //     }
-  //   }
-
-  //   return "Processed: $successCount success, $failCount failed";
-  // }
-
   // static Future<String> processPendingQueue({
   //   required bool isInternetAvailable,
-  //   Function(int current, int total)? onProgress, // Optional UI callback
+  //   SyncProgressModel? progress,
   // }) async {
+  //   final totalStopwatch = Stopwatch()..start();
+
   //   log("STARTED", name: "SUBMIT_RESPONSE");
   //   if (!isInternetAvailable) return "No internet connection";
 
@@ -1004,40 +821,43 @@ class OfflineDbModule {
   //       AppStorage().retrieveValue(AppStorage.SESSIONID) ?? "";
   //   if (currentSessionId.isEmpty) return "No active session to sync";
 
-  //   // 1. Fetch ONLY IDs first (Lightweight)
+  //   progress?.updateMessage("Checking pending queue...");
+
   //   final idRows = await _database.query(
   //     OfflineDBConstants.TABLE_PENDING_REQUESTS,
   //     columns: [OfflineDBConstants.COL_ID],
   //     where: '''
-  //     ${OfflineDBConstants.COL_STATUS} IN (${OfflineDBConstants.STATUS_PENDING}, ${OfflineDBConstants.STATUS_ERROR})
-  //     AND ${OfflineDBConstants.COL_USERNAME} = ?
-  //     AND ${OfflineDBConstants.COL_PROJECT_NAME} = ?
-  //   ''',
+  //   ${OfflineDBConstants.COL_STATUS} IN (${OfflineDBConstants.STATUS_PENDING}, ${OfflineDBConstants.STATUS_ERROR})
+  //   AND ${OfflineDBConstants.COL_USERNAME} = ?
+  //   AND ${OfflineDBConstants.COL_PROJECT_NAME} = ?
+  // ''',
   //     whereArgs: [username, projectName],
   //     orderBy: OfflineDBConstants.COL_CREATED_AT,
   //   );
 
-  //   if (idRows.isEmpty) return "Queue is empty";
+  //   if (idRows.isEmpty) {
+  //     progress?.complete();
+  //     return "Queue is empty";
+  //   }
 
   //   int successCount = 0;
   //   int failCount = 0;
   //   int total = idRows.length;
 
+  //   progress?.init(
+  //       total: total, msg: "Found $total records. Starting upload...");
+
   //   final ServerConnections serverConnections = ServerConnections();
   //   final String url =
   //       Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
-
-  //   // 2. Loop through IDs
+  //   progress?.clearFailedRecords();
   //   for (int i = 0; i < total; i++) {
   //     final row = idRows[i];
   //     final id = row[OfflineDBConstants.COL_ID] as int;
-
-  //     // Update UI Progress
-  //     if (onProgress != null) onProgress(i + 1, total);
-
+  //     Map<String, dynamic> tempPayloadbarerForCatchOnly = {};
   //     try {
-  //       // 3. SAFE READ: Use _readLargeString (Chunking)
-  //       // This handles both new small JSONs and old massive JSONs safely.
+  //       progress?.updateMessage("Reading record ${i + 1} of $total...");
+
   //       final bodyStr = await _readLargeString(
   //         table: OfflineDBConstants.TABLE_PENDING_REQUESTS,
   //         column: OfflineDBConstants.COL_REQUEST_JSON,
@@ -1047,44 +867,41 @@ class OfflineDbModule {
 
   //       if (bodyStr == null || bodyStr.isEmpty) {
   //         LogService.writeLog(message: "[QUEUE_SKIP] ID: $id - Empty body");
+  //         progress?.increment(isSuccess: false);
   //         continue;
   //       }
 
-  //       // 4. Decode & Prep
   //       final Map<String, dynamic> originalPayload = jsonDecode(bodyStr);
   //       originalPayload['ARMSessionId'] = currentSessionId;
 
-  //       log(originalPayload.toString(), name: "SUBMIT_RESPONSE_BEFORE");
-  //       // 5. CONVERT PATHS -> BASE64 (The Magic Step)
-  //       // This reads local files and creates a temporary upload-ready map
+  //       progress?.updateMessage("Processing files for record ${i + 1}...");
 
   //       final stopwatch1 = Stopwatch()..start();
   //       final Map<String, dynamic> uploadPayload =
   //           await _convertPayloadPathsToBase64(originalPayload);
   //       stopwatch1.stop();
+
   //       LogService.writeLog(
   //         message:
-  //             "[B64_SPEED] ID: _convertPayloadPathsToBase64 - Took: ${stopwatch1.elapsed.inSeconds} s :: ${stopwatch1.elapsedMilliseconds} ms",
+  //             "[B64_SPEED] ID: _convertPayloadPathsToBase64 - Took: ${stopwatch1.elapsed.inSeconds}s",
   //       );
-  //       // log(jsonEncode(uploadPayload), name: "SUBMIT_RESPONSE_BODY");
-  //       // debugPrint(
-  //       //     "SUBMIT_RESPONSE_BODY ${jsonEncode(uploadPayload).toString()}");
-  //       // log(jsonEncode(uploadPayload), name: "[PAYLOAD_SPEED]");
-  //       // savePayloadForPostman(uploadPayload,
-  //       //     "${originalPayload['publickey']}${DateTime.now().millisecond}");
+
+  //       progress?.updateMessage(
+  //           "Uploading${_isAssetHelper(uploadPayload)}record ${i + 1}...");
+
   //       final stopwatch = Stopwatch()..start();
   //       final dynamic res = await serverConnections.postToServer(
   //         url: url,
   //         body: jsonEncode(uploadPayload),
   //         isBearer: true,
   //       );
-  //       log(res, name: "SUBMIT_RESPONSE_RES");
   //       stopwatch.stop();
+
   //       LogService.writeLog(
   //         message:
-  //             "[API_SPEED] ID: $id - Took: ${stopwatch.elapsed.inSeconds} s :: ${stopwatch.elapsedMilliseconds} ms",
+  //             "[API_SPEED] ID: $id - Took: ${stopwatch.elapsed.inSeconds}s",
   //       );
-  //       // 7. CHECK SUCCESS
+
   //       bool isSuccess = false;
   //       String? errorMsg;
 
@@ -1104,15 +921,15 @@ class OfflineDbModule {
   //       }
 
   //       if (isSuccess) {
-  //         // 8. CLEANUP: Delete local files to free space
-  //         await _deletePayloadFiles(originalPayload);
+  //         await _deletePayloadFiles(uploadPayload);
   //         successCount++;
   //       } else {
   //         failCount++;
+  //         progress?.addFailedRecord(
+  //             uploadPayload.toString(), errorMsg ?? "Unknown Error");
   //         LogService.writeLog(message: "[QUEUE_FAIL] ID: $id - $errorMsg");
   //       }
 
-  //       // 9. UPDATE STATUS
   //       await _database.update(
   //         OfflineDBConstants.TABLE_PENDING_REQUESTS,
   //         {
@@ -1123,15 +940,27 @@ class OfflineDbModule {
   //         where: '${OfflineDBConstants.COL_ID} = ?',
   //         whereArgs: [id],
   //       );
+
+  //       progress?.increment(isSuccess: isSuccess);
   //     } catch (e) {
   //       failCount++;
-  //       log(e.toString(), name: "SUBMIT_RESPONSE_ERR");
+  //       progress?.addFailedRecord(
+  //           tempPayloadbarerForCatchOnly.toString(), e.toString());
+  //       progress?.increment(isSuccess: false);
 
+  //       log(e.toString(), name: "SUBMIT_RESPONSE_ERR");
   //       LogService.writeLog(message: "[QUEUE_PROCESS_ERROR] ID: $id - $e");
   //     }
   //   }
 
-  //   return "Processed: $successCount success, $failCount failed";
+  //   totalStopwatch.stop();
+  //   final duration = totalStopwatch.elapsed;
+  //   final timeString = "${duration.inMinutes}m ${duration.inSeconds % 60}s";
+
+  //   progress?.complete();
+  //   progress?.updateMessage("Completed in $timeString");
+
+  //   return "Processed: $successCount success, $failCount failed in $timeString";
   // }
 
   static Future<String> processPendingQueue({
@@ -1140,7 +969,6 @@ class OfflineDbModule {
   }) async {
     final totalStopwatch = Stopwatch()..start();
 
-    log("STARTED", name: "SUBMIT_RESPONSE");
     if (!isInternetAvailable) return "No internet connection";
 
     final scope = await _getLastOfflineUserScope();
@@ -1159,10 +987,10 @@ class OfflineDbModule {
       OfflineDBConstants.TABLE_PENDING_REQUESTS,
       columns: [OfflineDBConstants.COL_ID],
       where: '''
-    ${OfflineDBConstants.COL_STATUS} IN (${OfflineDBConstants.STATUS_PENDING}, ${OfflineDBConstants.STATUS_ERROR})
-    AND ${OfflineDBConstants.COL_USERNAME} = ?
-    AND ${OfflineDBConstants.COL_PROJECT_NAME} = ?
-  ''',
+      ${OfflineDBConstants.COL_STATUS} IN (${OfflineDBConstants.STATUS_PENDING}, ${OfflineDBConstants.STATUS_ERROR})
+      AND ${OfflineDBConstants.COL_USERNAME} = ?
+      AND ${OfflineDBConstants.COL_PROJECT_NAME} = ?
+    ''',
       whereArgs: [username, projectName],
       orderBy: OfflineDBConstants.COL_CREATED_AT,
     );
@@ -1176,6 +1004,7 @@ class OfflineDbModule {
     int failCount = 0;
     int total = idRows.length;
 
+    progress?.clearFailedRecords();
     progress?.init(
         total: total, msg: "Found $total records. Starting upload...");
 
@@ -1184,8 +1013,7 @@ class OfflineDbModule {
         Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
 
     for (int i = 0; i < total; i++) {
-      final row = idRows[i];
-      final id = row[OfflineDBConstants.COL_ID] as int;
+      final id = idRows[i][OfflineDBConstants.COL_ID] as int;
 
       try {
         progress?.updateMessage("Reading record ${i + 1} of $total...");
@@ -1198,7 +1026,8 @@ class OfflineDbModule {
         );
 
         if (bodyStr == null || bodyStr.isEmpty) {
-          LogService.writeLog(message: "[QUEUE_SKIP] ID: $id - Empty body");
+          await _markAsError(id);
+          progress?.addFailedRecord(id, "Empty payload");
           progress?.increment(isSuccess: false);
           continue;
         }
@@ -1206,32 +1035,16 @@ class OfflineDbModule {
         final Map<String, dynamic> originalPayload = jsonDecode(bodyStr);
         originalPayload['ARMSessionId'] = currentSessionId;
 
-        progress?.updateMessage("Processing files for record ${i + 1}...");
-
-        final stopwatch1 = Stopwatch()..start();
         final Map<String, dynamic> uploadPayload =
             await _convertPayloadPathsToBase64(originalPayload);
-        stopwatch1.stop();
-
-        LogService.writeLog(
-          message:
-              "[B64_SPEED] ID: _convertPayloadPathsToBase64 - Took: ${stopwatch1.elapsed.inSeconds}s",
-        );
 
         progress?.updateMessage(
-            "Uploading${_isAssetHelper(uploadPayload)}record ${i + 1}...");
+            "Uploading${_isAssetHelper(uploadPayload)}record ${i + 1} of $total...");
 
-        final stopwatch = Stopwatch()..start();
         final dynamic res = await serverConnections.postToServer(
           url: url,
           body: jsonEncode(uploadPayload),
           isBearer: true,
-        );
-        stopwatch.stop();
-
-        LogService.writeLog(
-          message:
-              "[API_SPEED] ID: $id - Took: ${stopwatch.elapsed.inSeconds}s",
         );
 
         bool isSuccess = false;
@@ -1243,41 +1056,31 @@ class OfflineDbModule {
             if (decoded is Map<String, dynamic> && decoded['success'] == true) {
               isSuccess = true;
             } else {
-              errorMsg = decoded['message'] ?? "Unknown Server Error";
+              errorMsg = decoded['message'] ?? "Unknown server error";
             }
           } catch (e) {
-            errorMsg = "Parse Error: $e";
+            errorMsg = "Response parse error: $e";
           }
         } else {
-          errorMsg = "Empty Response";
+          errorMsg = "Empty response from server";
         }
 
         if (isSuccess) {
-          await _deletePayloadFiles(originalPayload);
+          await _deletePayloadFiles(uploadPayload);
+          await _markAsSuccess(id);
           successCount++;
         } else {
+          await _markAsError(id);
+          progress?.addFailedRecord(id, errorMsg ?? "Unknown error");
           failCount++;
-          LogService.writeLog(message: "[QUEUE_FAIL] ID: $id - $errorMsg");
         }
-
-        await _database.update(
-          OfflineDBConstants.TABLE_PENDING_REQUESTS,
-          {
-            OfflineDBConstants.COL_STATUS: isSuccess
-                ? OfflineDBConstants.STATUS_SUCCESS
-                : OfflineDBConstants.STATUS_ERROR,
-          },
-          where: '${OfflineDBConstants.COL_ID} = ?',
-          whereArgs: [id],
-        );
 
         progress?.increment(isSuccess: isSuccess);
       } catch (e) {
-        failCount++;
+        await _markAsError(id);
+        progress?.addFailedRecord(id, e.toString());
         progress?.increment(isSuccess: false);
-
-        log(e.toString(), name: "SUBMIT_RESPONSE_ERR");
-        LogService.writeLog(message: "[QUEUE_PROCESS_ERROR] ID: $id - $e");
+        failCount++;
       }
     }
 
@@ -1291,6 +1094,24 @@ class OfflineDbModule {
     return "Processed: $successCount success, $failCount failed in $timeString";
   }
 
+  static Future<void> _markAsError(int id) async {
+    await _database.update(
+      OfflineDBConstants.TABLE_PENDING_REQUESTS,
+      {OfflineDBConstants.COL_STATUS: OfflineDBConstants.STATUS_ERROR},
+      where: '${OfflineDBConstants.COL_ID} = ?',
+      whereArgs: [id],
+    );
+  }
+
+  static Future<void> _markAsSuccess(int id) async {
+    await _database.update(
+      OfflineDBConstants.TABLE_PENDING_REQUESTS,
+      {OfflineDBConstants.COL_STATUS: OfflineDBConstants.STATUS_SUCCESS},
+      where: '${OfflineDBConstants.COL_ID} = ?',
+      whereArgs: [id],
+    );
+  }
+
   static String _isAssetHelper(Map<String, dynamic> pl) {
     String publicKey = pl["publickey"] ?? '';
 
@@ -1301,6 +1122,239 @@ class OfflineDbModule {
     }
 
     return ' ';
+  }
+
+  // static Future<void> forcePushFailedRecords({
+  //   required bool isInternetAvailable,
+  //   required SyncProgressModel progress,
+  // }) async {
+  //   if (!isInternetAvailable) {
+  //     Get.snackbar("Error", "No internet connection");
+  //     return;
+  //   }
+
+  //   if (progress.failedRecords.isEmpty) {
+  //     progress.updateMessage("No failed records to force push.");
+  //     return;
+  //   }
+
+  //   int total = progress.failedRecords.length;
+  //   progress.init(total: total, msg: "Preparing Force Push...");
+
+  //   final ServerConnections serverConnections = ServerConnections();
+
+  //   final String forceUrl =
+  //       Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED_FORCE);
+
+  //   int successCount = 0;
+
+  //   for (int i = 0; i < total; i++) {
+  //     final record = progress.failedRecords[i];
+  //     final int id = record['id'];
+  //     final String prevError = record['error'];
+
+  //     try {
+  //       progress.updateMessage("Force pushing record ${i + 1}...");
+
+  //       final bodyStr = await _readLargeString(
+  //         table: OfflineDBConstants.TABLE_PENDING_REQUESTS,
+  //         column: OfflineDBConstants.COL_REQUEST_JSON,
+  //         where: '${OfflineDBConstants.COL_ID} = ?',
+  //         whereArgs: [id],
+  //       );
+
+  //       if (bodyStr == null || bodyStr.isEmpty) {
+  //         progress.increment(isSuccess: false);
+  //         continue;
+  //       }
+
+  //       final Map<String, dynamic> originalPayload = jsonDecode(bodyStr);
+
+  //       final Map<String, dynamic> forcePayload = {
+  //         "original_payload": originalPayload,
+  //         "error_message": prevError,
+  //         "force_pushed_at": DateTime.now().toIso8601String(),
+  //         "user_comment": "Force Push Triggered by User"
+  //       };
+
+  //       final Map<String, dynamic> payload = {
+  //         "ARMSessionId": "ARM-bottleapp-d1dc7260-0e2b-4c25-8b01-97a7017a20af",
+  //         "publickey": "axofflinemobilelog",
+  //         "project": "bottleapp",
+  //         "submitdata": {
+  //           "username": "uidev1",
+  //           "trace": "false",
+  //           "keyfield": "",
+  //           "dataarray": {
+  //             "data": {
+  //               "mode": "new",
+  //               "keyvalue": "",
+  //               "recordid": "0",
+  //               "dc1": {
+  //                 "row1": {
+  //                   "username": "uidev",
+  //                   "errorresponse":
+  //                       "{\"status\":\"failed\",\"result\":\"[Microsoft][ODBC Driver 18 for SQL Server]String data, right truncation\"}",
+  //                   "payload":
+  //                       "{\"submitdata\":{\"project\":\"genie\",\"name\":\"inwae\",\"token\":\"379a26af14108ae93cf65c5e78c01b85\",\"seed\":\"554719\",\"userauthkey\":\"00050148015001580159016132163450607080013\",\"trace\":\"true\",\"username\":\"ashish\",\"keyfield\":\"\",\"dataarray\":{\"data\":{\"mode\":\"new\",\"keyvalue\":\"\",\"recordid\":\"0\",\"dc1\":{\"row1\":{\"unit_name\":\"3200-NANJANGUD\",\"ub_ge_no\":\"12:21\",\"receipt_date_time\":\"29/01/2026 12:20:30 PM\",\"vehicle_no\":\"TEST\",\"s1_dc\":\"test\",\"s1_name\":\"NAGARAJU & CO\",\"state\":\"Karnataka\",\"s2_district\":\"Chikkaballapura\",\"s2_name\":\"Ashish\",\"entry_date\":\"29/01/2026\",\"entry_time\":\"08:22 AM\",\"exit_date\":\"29/01/2026\",\"exit_time\":\"\",\"loaded_truck\":\"6000\",\"empty_truck\":\"100\",\"netweight\":\"500\",\"bottle_type_n\":\"Ultra\",\"bottle_capacity\":\"650\",\"packing\":\"Bags\",\"btlper_bag_crate\":\"90\",\"billed_qty_bags_crates\":\"418\",\"received_bags_crates\":\"382\",\"bags_sample\":\"19\",\"short_bags\":\"\"}},\"dc2\":{\"row1\":{\"broken\":\"28\",\"neck_chip\":\"20\",\"extra_dirty\":\"52\",\"short\":\"0\",\"other_brand\":\"0\",\"other_kf\":\"0\",\"torn_bags\":\"0\",\"tat_mfg_date\":\"\",\"mng_year\":\"\",\"fillrows\":\"1\"},\"row2\":{\"broken\":\"0\",\"neck_chip\":\"0\",\"extra_dirty\":\"0\",\"short\":\"0\",\"other_brand\":\"0\",\"other_kf\":\"0\",\"torn_bags\":\"0\",\"tat_mfg_date\":\"\",\"mng_year\":\"\",\"fillrows\":\"2\"},\"row3\":{\"broken\":\"0\",\"neck_chip\":\"0\",\"extra_dirty\":\"0\",\"short\":\"0\",\"other_brand\":\"0\",\"other_kf\":\"0\",\"torn_bags\":\"0\",\"tat_mfg_date\":\"\",\"mng_year\":\"\",\"fillrows\":\"3\"},\"row4\":{\"broken\":\"0\",\"neck_chip\":\"0\",\"extra_dirty\":\"0\",\"short\":\"0\",\"other_brand\":\"0\",\"other_kf\":\"0\",\"torn_bags\":\"0\",\"tat_mfg_date\":\"\",\"mng_year\":\"\",\"fillrows\":\"4\"},\"row5\":{\"broken\":\"0\",\"neck_chip\":\"0\",\"extra_dirty\":\"0\",\"short\":\"0\",\"other_brand\":\"0\",\"other_kf\":\"0\",\"torn_bags\":\"0\",\"tat_mfg_date\":\"\",\"mng_year\":\"\",\"fillrows\":\"5\"},\"row6\":{\"broken\":\"0\",\"neck_chip\":\"0\",\"extra_dirty\":\"0\",\"short\":\"0\",\"other_brand\":\"0\",\"other_kf\":\"0\",\"torn_bags\":\"0\",\"tat_mfg_date\":\"\",\"mng_year\":\"\",\"fillrows\":\"6\"},\"row7\":{\"broken\":\"0\",\"neck_chip\":\"0\",\"extra_dirty\":\"0\",\"short\":\"0\",\"other_brand\":\"0\",\"other_kf\":\"0\",\"torn_bags\":\"0\",\"tat_mfg_date\":\"\",\"mng_year\":\"\",\"fillrows\":\"7\"},\"row8\":{\"broken\":\"0\",\"neck_chip\":\"0\",\"extra_dirty\":\"0\",\"short\":\"0\",\"other_brand\":\"0\",\"other_kf\":\"0\",\"torn_bags\":\"0\",\"tat_mfg_date\":\"\",\"mng_year\":\"\",\"fillrows\":\"8\"},\"row9\":{\"broken\":\"0\",\"neck_chip\":\"0\",\"extra_dirty\":\"0\",\"short\":\"0\",\"other_brand\":\"0\",\"other_kf\":\"0\",\"torn_bags\":\"0\",\"tat_mfg_date\":\"\",\"mng_year\":\"\",\"fillrows\":\"9\"},\"row10\":{\"broken\":\"0\",\"neck_chip\":\"0\",\"extra_dirty\":\"0\",\"short\":\"0\",\"other_brand\":\"0\",\"other_kf\":\"0\",\"torn_bags\":\"0\",\"tat_mfg_date\":\"\",\"mng_year\":\"\",\"fillrows\":\"10\"},\"row11\":{\"broken\":\"0\",\"neck_chip\":\"0\",\"extra_dirty\":\"0\",\"short\":\"0\",\"other_brand\":\"0\",\"other_kf\":\"0\",\"torn_bags\":\"0\",\"tat_mfg_date\":\"\",\"mng_year\":\"\",\"fillrows\":\"11\"},\"row12\":{\"broken\":\"0\",\"neck_chip\":\"0\",\"extra_dirty\":\"0\",\"short\":\"0\",\"other_brand\":\"0\",\"other_kf\":\"0\",\"torn_bags\":\"0\",\"tat_mfg_date\":\"\",\"mng_year\":\"\",\"fillrows\":\"12\"},\"row13\":{\"broken\":\"0\",\"neck_chip\":\"0\",\"extra_dirty\":\"0\",\"short\":\"0\",\"other_brand\":\"0\",\"other_kf\":\"0\",\"torn_bags\":\"0\",\"tat_mfg_date\":\"\",\"mng_year\":\"\",\"fillrows\":\"13\"},\"row14\":{\"broken\":\"0\",\"neck_chip\":\"0\",\"extra_dirty\":\"0\",\"short\":\"0\",\"other_brand\":\"0\",\"other_kf\":\"0\",\"torn_bags\":\"0\",\"tat_mfg_date\":\"\",\"mng_year\":\"\",\"fillrows\":\"14\"},\"row15\":{\"broken\":\"0\",\"neck_chip\":\"0\",\"extra_dirty\":\"0\",\"short\":\"0\",\"other_brand\":\"0\",\"other_kf\":\"0\",\"torn_bags\":\"0\",\"tat_mfg_date\":\"\",\"mng_year\":\"\",\"fillrows\":\"15\"},\"row16\":{\"broken\":\"0\",\"neck_chip\":\"0\",\"extra_dirty\":\"0\",\"short\":\"0\",\"other_brand\":\"0\",\"other_kf\":\"0\",\"torn_bags\":\"0\",\"tat_mfg_date\":\"\",\"mng_year\":\"\",\"fillrows\":\"16\"},\"row17\":{\"broken\":\"0\",\"neck_chip\":\"0\",\"extra_dirty\":\"0\",\"short\":\"0\",\"other_brand\":\"0\",\"other_kf\":\"0\",\"torn_bags\":\"0\",\"tat_mfg_date\":\"\",\"mng_year\":\"\",\"fillrows\":\"17\"},\"row18\":{\"broken\":\"0\",\"neck_chip\":\"0\",\"extra_dirty\":\"0\",\"short\":\"0\",\"other_brand\":\"0\",\"other_kf\":\"0\",\"torn_bags\":\"0\",\"tat_mfg_date\":\"\",\"mng_year\":\"\",\"fillrows\":\"18\"},\"row19\":{\"broken\":\"0\",\"neck_chip\":\"0\",\"extra_dirty\":\"0\",\"short\":\"0\",\"other_brand\":\"0\",\"other_kf\":\"0\",\"torn_bags\":\"0\",\"tat_mfg_date\":\"\",\"mng_year\":\"\",\"fillrows\":\"19\"}},\"dc3\":{\"row1\":{\"tot_broken\":\"28\",\"tot_neckchip\":\"20\",\"tot_extradirty\":\"52\",\"tot_short\":\"0\",\"tot_otherbrand\":\"0\",\"tot_otherkf\":\"0\",\"tot_tornbags\":\"0\"}}}}}}",
+  //                   "errordt": "29/01/2026 12:20:30 PM"
+  //                 }
+  //               }
+  //             }
+  //           }
+  //         }
+  //       };
+
+  //       final dynamic res = await serverConnections.postToServer(
+  //         url: forceUrl,
+  //         body: jsonEncode(payload),
+  //         isBearer: true,
+  //       );
+
+  //       bool isSuccess = false;
+  //       if (res != null && res.isNotEmpty) {
+  //         final decoded = jsonDecode(res);
+  //         if (decoded is Map && decoded['success'] == true) {
+  //           isSuccess = true;
+  //         }
+  //       }
+
+  //       if (isSuccess) {
+  //         successCount++;
+
+  //         await _database.update(
+  //           OfflineDBConstants.TABLE_PENDING_REQUESTS,
+  //           {
+  //             OfflineDBConstants.COL_STATUS:
+  //                 OfflineDBConstants.STATUS_FORCE_PUSHED,
+  //           },
+  //           where: '${OfflineDBConstants.COL_ID} = ?',
+  //           whereArgs: [id],
+  //         );
+
+  //         await _deletePayloadFiles(originalPayload);
+  //       }
+
+  //       progress.increment(isSuccess: isSuccess);
+  //     } catch (e) {
+  //       progress.increment(isSuccess: false);
+  //       LogService.writeLog(message: "[FORCE_FAIL] ID: $id - $e");
+  //     }
+  //   }
+
+  //   progress.complete();
+  //   progress.updateMessage(
+  //       "Force Push Complete.\n$successCount records offloaded.");
+  // }
+  static Future<void> forcePushFailedRecords({
+    required bool isInternetAvailable,
+    required SyncProgressModel progress,
+  }) async {
+    if (!isInternetAvailable) {
+      Get.snackbar("Error", "No internet connection");
+      return;
+    }
+
+    if (progress.failedRecords.isEmpty) {
+      progress.updateMessage("No failed records to force push.");
+      return;
+    }
+
+    final int total = progress.failedRecords.length;
+    progress.init(total: total, msg: "Preparing Force Push...");
+
+    final ServerConnections serverConnections = ServerConnections();
+    final String forceUrl =
+        Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
+
+    int successCount = 0;
+
+    for (int i = 0; i < total; i++) {
+      final record = progress.failedRecords[i];
+      final int id = record['id'];
+      final String prevError = record['error'];
+
+      try {
+        progress.updateMessage("Force pushing record ${i + 1} of $total...");
+
+        final bodyStr = await _readLargeString(
+          table: OfflineDBConstants.TABLE_PENDING_REQUESTS,
+          column: OfflineDBConstants.COL_REQUEST_JSON,
+          where: '${OfflineDBConstants.COL_ID} = ?',
+          whereArgs: [id],
+        );
+
+        if (bodyStr == null || bodyStr.isEmpty) {
+          progress.increment(isSuccess: false);
+          continue;
+        }
+
+        final String originalPayloadString = bodyStr;
+
+        final Map<String, dynamic> payload = {
+          "ARMSessionId": AppStorage().retrieveValue(AppStorage.SESSIONID),
+          "publickey": "axofflinemobilelog",
+          "project": "bottleapp",
+          "submitdata": {
+            "username": "uidev1",
+            "trace": "false",
+            "keyfield": "",
+            "dataarray": {
+              "data": {
+                "mode": "new",
+                "keyvalue": "",
+                "recordid": "0",
+                "dc1": {
+                  "row1": {
+                    "username": "uidev",
+                    "errorresponse": prevError,
+                    "payload": originalPayloadString,
+                    "errordt": DateTime.now().toIso8601String(),
+                  }
+                }
+              }
+            }
+          }
+        };
+
+        final dynamic res = await serverConnections.postToServer(
+          url: forceUrl,
+          body: jsonEncode(payload),
+          isBearer: true,
+        );
+
+        bool isSuccess = false;
+        if (res != null && res.isNotEmpty) {
+          final decoded = jsonDecode(res);
+          if (decoded is Map && decoded['success'] == true) {
+            isSuccess = true;
+          }
+        }
+
+        if (isSuccess) {
+          successCount++;
+
+          await _database.update(
+            OfflineDBConstants.TABLE_PENDING_REQUESTS,
+            {
+              OfflineDBConstants.COL_STATUS:
+                  OfflineDBConstants.STATUS_FORCE_PUSHED
+            },
+            where: '${OfflineDBConstants.COL_ID} = ?',
+            whereArgs: [id],
+          );
+        }
+
+        progress.increment(isSuccess: isSuccess);
+      } catch (e) {
+        progress.increment(isSuccess: false);
+        LogService.writeLog(message: "[FORCE_FAIL] ID: $id - $e");
+      }
+    }
+
+    progress.complete();
+    progress.updateMessage(
+        "Force Push Complete.\n$successCount records offloaded.");
   }
 
   static Future<Map<String, dynamic>> _convertPayloadPathsToBase64(

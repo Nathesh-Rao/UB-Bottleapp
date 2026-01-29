@@ -841,7 +841,7 @@ class OfflineFormController extends GetxController {
       await OfflineDbModule.clearAllExceptUser();
       await getAllPages();
       // await loadOfflineDashboard();
-
+      refreshPendingCount();
       Get.snackbar("Done", "All offline data cleared");
       LogService.writeLog(message: "$tag[SUCCESS]");
     } catch (e, st) {
@@ -1118,6 +1118,15 @@ class OfflineFormController extends GetxController {
     }
   }
 
+  Future<void> onForcePushClicked(SyncProgressModel model) async {
+    final isOnline = await Get.find<InternetConnectivity>().check();
+
+    await OfflineDbModule.forcePushFailedRecords(
+      isInternetAvailable: isOnline,
+      progress: model,
+    );
+  }
+
   void _showSimpleSuccessDialog(
       {required String title, required String message}) {
     Get.dialog(
@@ -1273,43 +1282,47 @@ class OfflineFormController extends GetxController {
     );
     if (!ok) return;
 
+    final progressModel = SyncProgressModel(initialTitle: "Full Sync");
+
+    progressModel.init(total: 3, msg: "Initializing...");
+    Get.dialog(
+      SyncProgressDialog(progressModel: progressModel),
+      barrierDismissible: false,
+    );
+
     try {
       // --- START SYNC UI ---
       // Open a non-dismissible progress dialog
-      _showSyncProgressDialog();
-
-      // STEP 1: UPLOAD
-      syncStatusText.value = "Step 1/3: Uploading pending data...";
-      // Artificial delay only if you want users to read the text (optional, e.g. 500ms)
-      await Future.delayed(const Duration(milliseconds: 500));
+      progressModel.updateMessage("Step 1/3: Uploading pending data...");
 
       final pushResult =
           await OfflineDbModule.processPendingQueue(isInternetAvailable: true);
       LogService.writeLog(message: "$tag[STEP_1] $pushResult");
-
+      progressModel.increment();
       // STEP 2: FORMS
-      syncStatusText.value = "Step 2/3: Checking for new forms...";
+      progressModel.updateMessage("Step 2/3: Checking for new forms...");
       final pages = await OfflineDbModule.fetchAndStoreOfflinePages();
       await getAllPages(); // Refresh the list in memory
       LogService.writeLog(
           message: "$tag[STEP_2] Fetched ${pages.length} forms");
-
       // STEP 3: DATASOURCES
-      syncStatusText.value = "Step 3/3: Updating datasources...";
+      progressModel.increment();
+      progressModel.updateMessage("Step 3/3: Updating datasources...");
       await OfflineDbModule.refreshAllDatasourcesFromDownloadedPages();
       LogService.writeLog(message: "$tag[STEP_3] Datasources updated");
-
+      refreshPendingCount();
       // --- FINISH ---
-      Get.back(); // Close Progress Dialog
+      progressModel.increment();
 
       // Show Beautiful Success Dialog
-      _showSyncSuccessDialog(
-        uploads: pushResult,
-        formsCount: pages.length,
-      );
-    } catch (e, st) {
-      Get.back(); // Close Progress Dialog on error
+      progressModel.updateMessage(
+          "Sync Complete!\nForms: ${pages.length} updated\nUploads: $pushResult");
 
+      // Show the "Close" button and Green Check
+      progressModel.complete();
+    } catch (e, st) {
+      progressModel.updateMessage("Sync Failed: $e");
+      progressModel.complete();
       LogService.writeLog(message: "$tag[FAILED] $e");
       LogService.writeLog(message: "$tag[STACK] $st");
 

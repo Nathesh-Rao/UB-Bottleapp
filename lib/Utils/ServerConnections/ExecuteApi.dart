@@ -40,6 +40,8 @@ class ExecuteApi {
   // var body;
   var url = Const.getFullARMUrl(API_ARM_EXECUTE_PUBLISHED);
 
+  static String API_ARM_EXECUTE_PUBLISHED_FORCE = "";
+
   CallFetchData_ExecuteAPI({body = '', isBearer = false, header = ''}) async {
     var resp = await ServerConnections().postToServer(
         url: url,
