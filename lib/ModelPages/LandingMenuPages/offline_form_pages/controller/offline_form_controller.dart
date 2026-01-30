@@ -888,15 +888,175 @@ class OfflineFormController extends GetxController {
   //   return result;
   // }
 
+  // Future<bool> _confirm({
+  //   required String title,
+  //   required String message,
+  //   String subtitle = '',
+  //   String okText = "Yes",
+  //   String cancelText = "Cancel",
+  //   IconData icon = Icons.help_outline_rounded,
+  //   Color confirmColor = const Color(0xFF2563EB),
+  // }) async {
+  //   bool result = false;
+
+  //   await Get.dialog(
+  //     Dialog(
+  //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+  //       elevation: 0,
+  //       backgroundColor: Colors.white,
+  //       child: Padding(
+  //         padding: const EdgeInsets.all(24.0),
+  //         child: Column(
+  //           mainAxisSize: MainAxisSize.min,
+  //           children: [
+  //             // --- Icon Circle ---
+  //             Container(
+  //               width: 60,
+  //               height: 60,
+  //               decoration: BoxDecoration(
+  //                 color: confirmColor.withOpacity(0.1),
+  //                 shape: BoxShape.circle,
+  //               ),
+  //               child: Icon(icon, size: 30, color: confirmColor),
+  //             ),
+  //             const SizedBox(height: 20),
+
+  //             // --- Title ---
+  //             Text(
+  //               title,
+  //               textAlign: TextAlign.center,
+  //               style: GoogleFonts.poppins(
+  //                 fontSize: 18,
+  //                 fontWeight: FontWeight.w600,
+  //                 color: Colors.black87,
+  //               ),
+  //             ),
+  //             const SizedBox(height: 10),
+  //             Visibility(
+  //               visible: subtitle.isNotEmpty,
+  //               child: Padding(
+  //                 padding: EdgeInsetsGeometry.only(bottom: 10),
+  //                 child: Text(
+  //                   subtitle,
+  //                   textAlign: TextAlign.center,
+  //                   style: GoogleFonts.poppins(
+  //                     fontSize: 14,
+  //                     color: Colors.grey[900],
+  //                     // height: 1,
+  //                   ),
+  //                 ),
+  //               ),
+  //             ),
+  //             // --- Message ---
+  //             Text(
+  //               message,
+  //               textAlign: TextAlign.center,
+  //               style: GoogleFonts.poppins(
+  //                 fontSize: 14,
+  //                 color: Colors.grey[600],
+  //                 height: 1.5,
+  //               ),
+  //             ),
+  //             const SizedBox(height: 24),
+
+  //             // --- Buttons ---
+  //             Row(
+  //               children: [
+  //                 // Cancel Button
+  //                 Expanded(
+  //                   child: TextButton(
+  //                     onPressed: () {
+  //                       result = false;
+  //                       Get.back();
+  //                     },
+  //                     style: TextButton.styleFrom(
+  //                       padding: const EdgeInsets.symmetric(vertical: 14),
+  //                       foregroundColor: Colors.grey[700],
+  //                       shape: RoundedRectangleBorder(
+  //                         borderRadius: BorderRadius.circular(12),
+  //                         side: BorderSide(color: Colors.grey.shade300),
+  //                       ),
+  //                     ),
+  //                     child: Text(
+  //                       cancelText,
+  //                       style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+  //                     ),
+  //                   ),
+  //                 ),
+  //                 const SizedBox(width: 12),
+
+  //                 // Confirm Button
+  //                 Expanded(
+  //                   child: ElevatedButton(
+  //                     onPressed: () {
+  //                       result = true;
+  //                       Get.back();
+  //                     },
+  //                     style: ElevatedButton.styleFrom(
+  //                       backgroundColor: confirmColor,
+  //                       foregroundColor: Colors.white,
+  //                       padding: const EdgeInsets.symmetric(vertical: 14),
+  //                       elevation: 0,
+  //                       shape: RoundedRectangleBorder(
+  //                         borderRadius: BorderRadius.circular(12),
+  //                       ),
+  //                     ),
+  //                     child: Text(
+  //                       okText,
+  //                       style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+  //                     ),
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //     barrierDismissible: false,
+  //   );
+
+  //   return result;
+  // }
+
   Future<bool> _confirm({
     required String title,
     required String message,
+    String subtitle = '',
     String okText = "Yes",
     String cancelText = "Cancel",
     IconData icon = Icons.help_outline_rounded,
     Color confirmColor = const Color(0xFF2563EB),
+    TextAlign? messageTextAlign,
+    Color? highLightColor,
+    Color? subtitleColor,
   }) async {
     bool result = false;
+
+    Widget _parseText(String text, TextStyle baseStyle, {TextAlign? align}) {
+      if (!text.contains("**")) {
+        return Text(text,
+            textAlign: align ?? TextAlign.center, style: baseStyle);
+      }
+
+      final parts = text.split("**");
+      return Text.rich(
+        TextSpan(
+          children: parts.map((part) {
+            final isBold = parts.indexOf(part) % 2 != 0;
+            return TextSpan(
+              text: part,
+              style: isBold
+                  ? baseStyle.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: highLightColor ?? Colors.grey[600])
+                  : baseStyle,
+            );
+          }).toList(),
+        ),
+        textAlign: align ?? TextAlign.center,
+      );
+    }
 
     await Get.dialog(
       Dialog(
@@ -908,19 +1068,16 @@ class OfflineFormController extends GetxController {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // --- Icon Circle ---
               Container(
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: confirmColor.withOpacity(0.1),
+                  color: confirmColor.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, size: 30, color: confirmColor),
               ),
               const SizedBox(height: 20),
-
-              // --- Title ---
               Text(
                 title,
                 textAlign: TextAlign.center,
@@ -931,23 +1088,30 @@ class OfflineFormController extends GetxController {
                 ),
               ),
               const SizedBox(height: 10),
-
-              // --- Message ---
-              Text(
+              if (subtitle.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _parseText(
+                    subtitle,
+                    GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: subtitleColor ?? Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              _parseText(
                 message,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
+                align: messageTextAlign,
+                GoogleFonts.poppins(
                   fontSize: 14,
                   color: Colors.grey[600],
                   height: 1.5,
                 ),
               ),
               const SizedBox(height: 24),
-
-              // --- Buttons ---
               Row(
                 children: [
-                  // Cancel Button
                   Expanded(
                     child: TextButton(
                       onPressed: () {
@@ -969,8 +1133,6 @@ class OfflineFormController extends GetxController {
                     ),
                   ),
                   const SizedBox(width: 12),
-
-                  // Confirm Button
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
@@ -1081,14 +1243,18 @@ class OfflineFormController extends GetxController {
     if (!ok) return;
     final progressModel = SyncProgressModel(initialTitle: "Uploading Data");
     Get.dialog(
-      SyncProgressDialog(progressModel: progressModel),
+      SyncProgressDialog(
+        progressModel: progressModel,
+        reTry: actionPushPending,
+        showForcePush: true,
+      ),
       barrierDismissible: false,
     );
     try {
       // _showSyncProgressDialog();
       // syncStatusText.value = "Uploading queued submissions...";
 
-      await Future.delayed(const Duration(milliseconds: 800));
+      // await Future.delayed(const Duration(milliseconds: 800));
 
       final resultMsg = await OfflineDbModule.processPendingQueue(
         isInternetAvailable: true,
@@ -1102,7 +1268,7 @@ class OfflineFormController extends GetxController {
       LogService.writeLog(message: "$tag[DONE] $resultMsg");
     } catch (e, st) {
       // Get.back(); // Ensure dialog closes
-      LogService.writeLog(message: "$tag[FAILED] $e");
+      LogService.writeLog(message: "$tag[FAILED] $e \n$st");
       refreshPendingCount();
       Get.snackbar(
         "Upload Error",
@@ -1120,160 +1286,34 @@ class OfflineFormController extends GetxController {
 
   Future<void> onForcePushClicked(SyncProgressModel model) async {
     final isOnline = await Get.find<InternetConnectivity>().check();
+    final bool ok = await _confirm(
+      title: "Confirm Force Push",
+      subtitle:
+          "**This action will upload failed records to the server log and delete them permanently from this device**.",
+      message: "**Important Notes:**"
+          "• You can only access this data via the **Web Instance**."
+          "• Successfully forced records **cannot be retried** for normal syncing.\n\n"
+          "**Are you sure you want to proceed?**",
+      okText: "Yes, Force Push",
+      confirmColor: Colors.redAccent,
+      icon: Icons.warning_amber_rounded,
+    );
 
+    if (!ok) return;
     await OfflineDbModule.forcePushFailedRecords(
       isInternetAvailable: isOnline,
       progress: model,
     );
   }
 
-  void _showSimpleSuccessDialog(
-      {required String title, required String message}) {
-    Get.dialog(
-      Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: Colors.white,
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Success Icon
-              const Icon(
-                Icons.check_circle_rounded,
-                color: Color(0xFF22C55E),
-                size: 56,
-              ),
-              const SizedBox(height: 16),
-
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              // Result Details (e.g., "Processed 3 success, 0 failed")
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF0FDF4), // Light Green bg
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFBBF7D0)),
-                ),
-                child: Text(
-                  message,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                      // Monospaced looks technical/cool for stats
-                      fontSize: 13,
-                      color: const Color(0xFF15803D),
-                      fontWeight: FontWeight.w500),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Get.back(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  child: Text("Done",
-                      style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-                ),
-              )
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-  // Future<void> actionSyncAll() async {
-  //   const tag = "[OFFLINE_ACTION_SYNC_ALL]";
-
-  //   if (!await _isInternetAvailable()) {
-  //     _showNeedInternetDialog();
-  //     return;
-  //   }
-
-  //   final ok = await _confirm(
-  //     title: "Full Sync",
-  //     message:
-  //         "This will:\n1. Upload pending data\n2. Download latest Forms\n3. Download latest Datasources\n\nThis may take a moment. Continue?",
-  //     okText: "Start Sync",
-  //   );
-  //   if (!ok) return;
-
-  //   try {
-  //     isLoading.value = true;
-
-  //     // STEP 1: Push Pending
-  //     Get.snackbar("Step 1/3", "Uploading pending data...",
-  //         showProgressIndicator: true);
-  //     final pushResult =
-  //         await OfflineDbModule.processPendingQueue(isInternetAvailable: true);
-  //     LogService.writeLog(message: "$tag[STEP_1] $pushResult");
-
-  //     // STEP 2: Refetch Forms
-  //     Get.snackbar("Step 2/3", "Downloading latest forms...",
-  //         showProgressIndicator: true);
-  //     final pages = await OfflineDbModule.fetchAndStoreOfflinePages();
-  //     await getAllPages(); // Refresh controller list
-  //     LogService.writeLog(
-  //         message: "$tag[STEP_2] Fetched ${pages.length} forms");
-
-  //     // STEP 3: Refetch Datasources
-  //     Get.snackbar("Step 3/3", "Downloading datasources...",
-  //         showProgressIndicator: true);
-  //     await OfflineDbModule.refreshAllDatasourcesFromDownloadedPages();
-  //     LogService.writeLog(message: "$tag[STEP_3] Datasources updated");
-
-  //     // DONE
-  //     // await loadOfflineDashboard();
-  //     Get.back(); // close progress snackbar
-
-  //     Get.dialog(
-  //       AlertDialog(
-  //         title: const Text("Sync Complete"),
-  //         content: Text(
-  //             "Uploads: $pushResult\nForms Updated: ${pages.length}\nDatasources: Updated"),
-  //         actions: [
-  //           TextButton(onPressed: () => Get.back(), child: const Text("OK"))
-  //         ],
-  //       ),
-  //     );
-  //   } catch (e, st) {
-  //     LogService.writeLog(message: "$tag[FAILED] $e");
-  //     LogService.writeLog(message: "$tag[STACK] $st");
-  //     Get.snackbar("Error", "Sync failed. Check logs.");
-  //   } finally {
-  //     isLoading.value = false;
-  //   }
-  // }
-  var syncStatusText = "Initializing...".obs;
-
   Future<void> actionSyncAll() async {
     const tag = "[OFFLINE_ACTION_SYNC_ALL]";
 
-    // 1. Internet Check
     if (!await _isInternetAvailable()) {
       _showNeedInternetDialog();
       return;
     }
 
-    // 2. Confirmation
     final ok = await _confirm(
       title: "Full Sync",
       message:
@@ -1291,30 +1331,23 @@ class OfflineFormController extends GetxController {
     );
 
     try {
-      // --- START SYNC UI ---
-      // Open a non-dismissible progress dialog
       progressModel.updateMessage("Step 1/3: Uploading pending data...");
 
       final pushResult =
           await OfflineDbModule.processPendingQueue(isInternetAvailable: true);
       LogService.writeLog(message: "$tag[STEP_1] $pushResult");
       progressModel.increment();
-      // STEP 2: FORMS
       progressModel.updateMessage("Step 2/3: Checking for new forms...");
       final pages = await OfflineDbModule.fetchAndStoreOfflinePages();
       await getAllPages(); // Refresh the list in memory
       LogService.writeLog(
           message: "$tag[STEP_2] Fetched ${pages.length} forms");
-      // STEP 3: DATASOURCES
       progressModel.increment();
       progressModel.updateMessage("Step 3/3: Updating datasources...");
       await OfflineDbModule.refreshAllDatasourcesFromDownloadedPages();
       LogService.writeLog(message: "$tag[STEP_3] Datasources updated");
       refreshPendingCount();
-      // --- FINISH ---
       progressModel.increment();
-
-      // Show Beautiful Success Dialog
       progressModel.updateMessage(
           "Sync Complete!\nForms: ${pages.length} updated\nUploads: $pushResult");
 
@@ -1338,179 +1371,6 @@ class OfflineFormController extends GetxController {
     }
   }
 
-  void _showSyncProgressDialog() {
-    Get.dialog(
-      PopScope(
-        canPop: false, // Prevent back button
-        child: Dialog(
-          backgroundColor: Colors.white,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircularProgressIndicator(color: Color(0xFF2563EB)),
-                const SizedBox(height: 24),
-
-                // Reactive Text
-                Obx(() => Text(
-                      syncStatusText.value,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black87,
-                      ),
-                    )),
-
-                const SizedBox(height: 8),
-                Text(
-                  "Please wait, do not close the app.",
-                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-      barrierDismissible: false,
-    );
-  }
-
-  void _showSyncSuccessDialog(
-      {required String uploads, required int formsCount}) {
-    Get.dialog(
-      Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // --- Header (Green Success Background) ---
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF22C55E), // Success Green
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
-                  ),
-                ),
-                child: const Icon(
-                  Icons.check_circle,
-                  color: Colors.white,
-                  size: 60,
-                ),
-              ),
-
-              // --- Body Content ---
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  children: [
-                    Text(
-                      "Sync Complete!",
-                      style: GoogleFonts.poppins(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Stats Rows
-                    _buildSyncStatRow(
-                        Icons.cloud_upload, "Upload Status", uploads),
-                    const Divider(height: 20),
-                    _buildSyncStatRow(Icons.description, "Forms Updated",
-                        "$formsCount forms"),
-                    const Divider(height: 20),
-                    _buildSyncStatRow(
-                        Icons.storage, "Datasources", "Refreshed"),
-
-                    const SizedBox(height: 24),
-
-                    // --- OK Button ---
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () => Get.back(),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2563EB),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        child: Text(
-                          "Awesome!",
-                          style:
-                              GoogleFonts.poppins(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSyncStatRow(IconData icon, String label, String value) {
-    return Row(
-      children: [
-        // Icon Box
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, size: 20, color: const Color(0xFF2563EB)),
-        ),
-        const SizedBox(width: 12),
-
-        // Text Info
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w500),
-              ),
-              Text(
-                value,
-                style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87),
-                maxLines: 2, // Allow wrapping if message is long
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   Future<void> actionRefetchDatasources() async {
     if (!await _isInternetAvailable()) {
       _showNeedInternetDialog();
@@ -1526,13 +1386,25 @@ class OfflineFormController extends GetxController {
 
     try {
       isLoading.value = true;
-      Get.snackbar("Downloading", "Fetching datasources...",
-          showProgressIndicator: true);
 
-      await OfflineDbModule.refreshAllDatasourcesFromDownloadedPages();
+      SyncProgressModel progressModel =
+          SyncProgressModel(initialTitle: "Refetching Datasources");
+      // Open the dialog immediately
+      Get.dialog(
+        SyncProgressDialog(
+          progressModel: progressModel,
+          reTry: actionRefetchDatasources,
+        ),
+        barrierDismissible: false,
+      );
 
-      Get.back();
-      Get.snackbar("Success", "Datasources updated successfully");
+      await OfflineDbModule.refreshAllDatasourcesFromDownloadedPages(
+          progressModel: progressModel);
+
+      progressModel.complete();
+
+      // Get.back();
+      // Get.snackbar("Success", "Datasources updated successfully");
     } catch (e) {
       Get.snackbar("Error", "Failed to update datasources");
     } finally {

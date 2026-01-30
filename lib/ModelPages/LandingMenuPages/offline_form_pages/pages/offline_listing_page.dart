@@ -21,8 +21,7 @@ class OfflineListingPage extends GetView<OfflineFormController> {
   Widget build(BuildContext context) {
     // Get.put(OfflineStaticFormController());
     var inwardEntryDynamicController = Get.put(InwardEntryDynamicController());
-    InternetConnectivity connectionController = Get.find();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
       controller.getAllPages();
     });
 

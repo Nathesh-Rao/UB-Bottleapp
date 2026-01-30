@@ -74,7 +74,6 @@ Future<void> main() async {
   await FirebaseMessaging.onMessageOpenedApp.listen(onMessageOpenAppListener);
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   configureEasyLoading();
-  // configureLogging();
   if (Platform.isAndroid) {
     await InAppWebViewController.setWebContentsDebuggingEnabled(true);
   }

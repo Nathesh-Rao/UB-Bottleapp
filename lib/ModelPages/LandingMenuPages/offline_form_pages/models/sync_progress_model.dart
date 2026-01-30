@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 
 class SyncProgressModel {
   RxInt totalItems = 0.obs;
@@ -29,7 +30,7 @@ class SyncProgressModel {
     failedRecords.add({
       "id": id,
       "error": error,
-      "timestamp": DateTime.now().toIso8601String(),
+      "timestamp": DateFormat('yyyy-MM-dd h:mm a').format(DateTime.now()),
     });
   }
 

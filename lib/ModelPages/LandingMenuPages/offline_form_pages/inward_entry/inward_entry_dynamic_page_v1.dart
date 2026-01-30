@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:animate_do/animate_do.dart';
 import 'package:ubbottleapp/Constants/MyColors.dart';
 import 'package:flutter/cupertino.dart';
@@ -22,16 +24,11 @@ class InwardEntryDynamicPageV1 extends GetView<InwardEntryDynamicController> {
       ),
     );
 
-    // WidgetsBinding.instance.addPostFrameCallback((_) {});
-
-    // final Map<String, dynamic> schema = controller.schema;
     final List fields = List.from(schema["fields"]);
 
-    // sort by order
     fields.sort((a, b) => int.parse(a["order"].toString())
         .compareTo(int.parse(b["order"].toString())));
 
-    // group by section
     final Map<String, List<Map<String, dynamic>>> sections = {};
     for (final f in fields) {
       final String section = f["fld_category"] ?? "General";
@@ -39,123 +36,133 @@ class InwardEntryDynamicPageV1 extends GetView<InwardEntryDynamicController> {
       sections[section]!.add(Map<String, dynamic>.from(f));
     }
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FB),
-      appBar: AppBar(
-        elevation: 0,
+    return PopScope(
+      onPopInvokedWithResult: (bool dp, _) async {
+        if (dp) return;
+
+        await controller.onPopCalled();
+      },
+      canPop: false,
+      child: Scaffold(
         backgroundColor: const Color(0xFFF5F7FB),
-        surfaceTintColor: const Color(0xFFF5F7FB),
-        title: Text(
-          'Inward Entry',
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
+        appBar: AppBar(
+          elevation: 0,
+          backgroundColor: const Color(0xFFF5F7FB),
+          surfaceTintColor: const Color(0xFFF5F7FB),
+          title: Text(
+            'Inward Entry',
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          actions: [
+            // IconButton(
+            //   onPressed: () => controller.prepareForm(schema),
+            //   icon: Icon(Icons.history, color: MyColors.green),
+            // ),
+            IconButton(
+              onPressed: () => controller.prepareForm(schema),
+              icon: Icon(Icons.history, color: MyColors.baseYellow),
+            )
+          ],
+          iconTheme: const IconThemeData(color: Colors.black87),
+        ),
+        body: Obx(
+          () => ListView(
+            controller: controller.scrollCtrl,
+            padding: const EdgeInsets.all(16),
+            children: controller.isFormPreparing.value
+                ? [
+                    Center(
+                      child: CupertinoActivityIndicator(
+                        color: MyColors.baseBlue,
+                      ),
+                    )
+                  ]
+                : [
+                    ...sections.entries.map((entry) {
+                      final sectionTitle = entry.key;
+                      final sectionFields = entry.value;
+
+                      return _Section(
+                        title: sectionTitle,
+                        children: sectionFields.map((f) {
+                          return _buildFieldFromSchema(context, f);
+                        }).toList(),
+                      );
+                    }).toList(),
+                    const SizedBox(height: 50),
+                  ],
           ),
         ),
-        actions: [
-          // IconButton(
-          //   onPressed: () => controller.prepareForm(schema),
-          //   icon: Icon(Icons.history, color: MyColors.green),
-          // ),
-          IconButton(
-            onPressed: () => controller.prepareForm(schema),
-            icon: Icon(Icons.history, color: MyColors.baseYellow),
-          )
-        ],
-        iconTheme: const IconThemeData(color: Colors.black87),
-      ),
-      body: Obx(
-        () => ListView(
-          controller: controller.scrollCtrl,
-          padding: const EdgeInsets.all(16),
-          children: controller.isFormPreparing.value
-              ? [
-                  Center(
-                    child: CupertinoActivityIndicator(
-                      color: MyColors.baseBlue,
-                    ),
-                  )
-                ]
-              : [
-                  ...sections.entries.map((entry) {
-                    final sectionTitle = entry.key;
-                    final sectionFields = entry.value;
+        floatingActionButton: Builder(builder: (context) {
+          final bool keyboardOpen =
+              MediaQuery.of(context).viewInsets.bottom > 0;
 
-                    return _Section(
-                      title: sectionTitle,
-                      children: sectionFields.map((f) {
-                        return _buildFieldFromSchema(context, f);
-                      }).toList(),
-                    );
-                  }).toList(),
-                  const SizedBox(height: 50),
-                ],
-        ),
-      ),
-      floatingActionButton: Builder(builder: (context) {
-        final bool keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+          return Row(
+            children: [
+              keyboardOpen ? Spacer() : const SizedBox(width: 40),
+              Obx(() {
+                return FloatingActionButton(
+                  heroTag: "scrollFab",
+                  backgroundColor: Colors.white,
+                  onPressed: () {
+                    if (!controller.scrollCtrl.hasClients) return;
 
-        return Row(
-          children: [
-            keyboardOpen ? Spacer() : const SizedBox(width: 40),
-            Obx(() {
-              return FloatingActionButton(
-                heroTag: "scrollFab",
-                backgroundColor: Colors.white,
-                onPressed: () {
-                  if (!controller.scrollCtrl.hasClients) return;
-
-                  if (controller.isAtTop.value) {
-                    controller.scrollCtrl.animateTo(
-                      controller.scrollCtrl.position.maxScrollExtent,
-                      duration: const Duration(milliseconds: 500),
-                      curve: Curves.easeInOut,
-                    );
-                  } else {
-                    controller.scrollCtrl.animateTo(
-                      0,
-                      duration: const Duration(milliseconds: 500),
-                      curve: Curves.easeInOut,
-                    );
-                  }
-                },
-                child: Icon(
-                  controller.isAtTop.value
-                      ? Icons.keyboard_arrow_down
-                      : Icons.keyboard_arrow_up,
-                  color: MyColors.baseBlue,
+                    if (controller.isAtTop.value) {
+                      controller.scrollCtrl.animateTo(
+                        controller.scrollCtrl.position.maxScrollExtent,
+                        duration: const Duration(milliseconds: 500),
+                        curve: Curves.easeInOut,
+                      );
+                    } else {
+                      controller.scrollCtrl.animateTo(
+                        0,
+                        duration: const Duration(milliseconds: 500),
+                        curve: Curves.easeInOut,
+                      );
+                    }
+                  },
+                  child: Icon(
+                    controller.isAtTop.value
+                        ? Icons.keyboard_arrow_down
+                        : Icons.keyboard_arrow_up,
+                    color: MyColors.baseBlue,
+                  ),
+                );
+              }),
+              !keyboardOpen ? Spacer() : const SizedBox(width: 40),
+              Obx(() {
+                if (!controller.showMiniFab.value)
+                  return const SizedBox.shrink();
+                return FloatingActionButton(
+                  heroTag: "sampleFab",
+                  backgroundColor: MyColors.blue10,
+                  onPressed: () => controller.openSampleDetailsDialog(),
+                  child: const Icon(Icons.table_rows_outlined),
+                );
+              }),
+            ],
+          );
+        }),
+        bottomNavigationBar: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: SizedBox(
+            height: 52,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2563EB),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
                 ),
-              );
-            }),
-            !keyboardOpen ? Spacer() : const SizedBox(width: 40),
-            Obx(() {
-              if (!controller.showMiniFab.value) return const SizedBox.shrink();
-              return FloatingActionButton(
-                heroTag: "sampleFab",
-                backgroundColor: MyColors.blue10,
-                onPressed: () => controller.openSampleDetailsDialog(),
-                child: const Icon(Icons.table_rows_outlined),
-              );
-            }),
-          ],
-        );
-      }),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: SizedBox(
-          height: 52,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2563EB),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
               ),
+              onPressed: () {
+                controller.next();
+              },
+              child: const Text("Next"),
             ),
-            onPressed: () {
-              controller.next();
-            },
-            child: const Text("Next"),
           ),
         ),
       ),

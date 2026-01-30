@@ -8,8 +8,13 @@ import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/model
 
 class SyncProgressDialog extends StatelessWidget {
   final SyncProgressModel progressModel;
-
-  const SyncProgressDialog({Key? key, required this.progressModel})
+  final Function? reTry;
+  final bool showForcePush;
+  const SyncProgressDialog(
+      {Key? key,
+      required this.progressModel,
+      this.reTry,
+      this.showForcePush = false})
       : super(key: key);
 
   @override
@@ -199,58 +204,94 @@ class SyncProgressDialog extends StatelessWidget {
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // progressModel.failureCount.value > 0
-          //     ? Padding(
-          //         padding: const EdgeInsets.only(top: 20),
-          //         child: SizedBox(
-          //           width: double.infinity,
-          //           child: ElevatedButton(
-          //             onPressed: () {
-          //               OfflineFormController offlineFormController =
-          //                   Get.find();
+          (progressModel.failureCount.value > 0 && showForcePush)
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 20),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        OfflineFormController offlineFormController =
+                            Get.find();
 
-          //               offlineFormController.onForcePushClicked(progressModel);
-          //             },
-          //             style: ElevatedButton.styleFrom(
-          //               backgroundColor: MyColors.baseRed,
-          //               elevation: 0,
-          //               padding: const EdgeInsets.symmetric(vertical: 14),
-          //               shape: RoundedRectangleBorder(
-          //                 borderRadius: BorderRadius.circular(12),
-          //               ),
-          //             ),
-          //             child: Text(
-          //               "Force push ${progressModel.failureCount.value} records",
-          //               style: GoogleFonts.poppins(
-          //                 fontWeight: FontWeight.w600,
-          //                 fontSize: 14,
-          //               ),
-          //             ),
-          //           ),
-          //         ),
-          //       )
-          //     : SizedBox.shrink(),
+                        offlineFormController.onForcePushClicked(progressModel);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: MyColors.baseRed,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        "Force push ${progressModel.failureCount.value} records",
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              : SizedBox.shrink(),
           Padding(
             padding: const EdgeInsets.only(top: 15),
             child: SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
-                onPressed: Get.back,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB),
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              child: Row(
+                spacing: (reTry != null && progressModel.failureCount.value > 0)
+                    ? 15
+                    : 0,
+                children: [
+                  (reTry != null && progressModel.failureCount.value > 0)
+                      ? Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Get.back();
+                              reTry!();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF2563EB),
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Text(
+                              "Retry",
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        )
+                      : SizedBox.shrink(),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: Get.back,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: MyColors.AXMDark,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        "Close",
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-                child: Text(
-                  "Close",
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
+                ],
               ),
             ),
           ),

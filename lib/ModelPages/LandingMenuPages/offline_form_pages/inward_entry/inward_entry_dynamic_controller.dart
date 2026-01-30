@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:developer';
+import 'package:flutter/services.dart';
 import 'package:ubbottleapp/Constants/AppStorage.dart';
 import 'package:ubbottleapp/Constants/CommonMethods.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_module.dart';
@@ -537,16 +538,37 @@ class InwardEntryDynamicController extends GetxController {
   }
 
   // Widget _compactField(
-  //   String label,
+  //   String fieldName,
   //   TextEditingController controller,
-  //   Map<String, TextEditingController> model,
+  //   Map<String, TextEditingController> rowMap,
   // ) {
+  //   // 1. DYNAMIC LOOKUP: Find definition by name
+  //   final List gridFields = schema["fillgrids"]["fields"];
+  //   final fieldDef = gridFields.firstWhere(
+  //     (e) => e["fld_name"] == fieldName,
+  //     orElse: () => null,
+  //   );
+
+  //   if (fieldDef == null) return const SizedBox.shrink();
+
+  //   // 2. EXTRACT CONFIG
+  //   final String label = fieldDef["fld_caption"] ?? fieldName;
+  //   final String type = fieldDef["fld_type"]?.toString().toLowerCase() ??
+  //       ""; // e.g. 'date', 'dd', 'n'
+  //   final String dataType = fieldDef["data_type"]?.toString().toLowerCase() ??
+  //       ""; // e.g. 'n', 'd', 's'
   //   final Color accent = const Color(0xFF2563EB);
 
-  //   final bool isMafDate = label == "maf_date";
-  //   final bool isMafYear = label == "maf_year";
+  //   // 3. DETERMINE BEHAVIOR FLAGS
+  //   final bool isDropdown = type == "dd";
+  //   final bool isDate = type == "date" || dataType == "d";
+  //   final bool isTime = type == "time" || dataType == "t";
+  //   final bool isYear = type == "year";
+  //   final bool isNumeric = type == "n" || dataType == "n";
 
-  //   final bool isNumeric = !isMafDate && !isMafYear;
+  //   // Readonly logic: Dates/Years are read-only (user must pick), others are editable
+  //   final bool isReadOnly =
+  //       isDate || isYear || isTime || (fieldDef["readonly"] == "T");
 
   //   return Container(
   //     margin: const EdgeInsets.only(bottom: 8),
@@ -558,6 +580,7 @@ class InwardEntryDynamicController extends GetxController {
   //     ),
   //     child: Row(
   //       children: [
+  //         // --- LABEL ---
   //         Container(
   //           width: 110,
   //           height: double.infinity,
@@ -569,7 +592,7 @@ class InwardEntryDynamicController extends GetxController {
   //           alignment: Alignment.centerLeft,
   //           padding: const EdgeInsets.symmetric(horizontal: 10),
   //           child: Text(
-  //             label.replaceAll("_", " ").toUpperCase(),
+  //             label.toUpperCase(),
   //             maxLines: 1,
   //             overflow: TextOverflow.ellipsis,
   //             style: TextStyle(
@@ -579,59 +602,48 @@ class InwardEntryDynamicController extends GetxController {
   //             ),
   //           ),
   //         ),
+
+  //         // --- INPUT AREA ---
   //         Expanded(
-  //           child: TextFormField(
-  //             controller: controller,
-  //             keyboardType:
-  //                 isNumeric ? TextInputType.number : TextInputType.text,
-  //             readOnly: isMafDate || isMafYear,
-  //             decoration: const InputDecoration(
-  //               isDense: true,
-  //               border: InputBorder.none,
-  //               hintText: "-",
-  //               contentPadding:
-  //                   EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-  //             ),
-  //             onTap: () async {
-  //               if (isNumeric) {
-  //                 if (controller.text == "0") {
-  //                   controller.text = "";
-  //                 }
-  //               }
+  //           child: isDropdown
+  //               ? _buildGridDropdown(fieldDef, controller)
+  //               : TextFormField(
+  //                   controller: controller,
+  //                   keyboardType:
+  //                       isNumeric ? TextInputType.number : TextInputType.text,
+  //                   readOnly: isReadOnly,
+  //                   decoration: const InputDecoration(
+  //                     isDense: true,
+  //                     border: InputBorder.none,
+  //                     hintText: "-",
+  //                     contentPadding:
+  //                         EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+  //                   ),
+  //                   onTap: () async {
+  //                     if (isReadOnly && !isDate && !isYear && !isTime)
+  //                       return; // Standard read-only check
 
-  //               if (isMafDate) {
-  //                 final d = await showDatePicker(
-  //                   context: Get.context!,
-  //                   firstDate: DateTime(2000),
-  //                   lastDate: DateTime(2100),
-  //                   initialDate: DateTime.now(),
-  //                 );
-  //                 if (d != null) {
-  //                   controller.text =
-  //                       "${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}";
+  //                     // A. NUMERIC HANDLING (Clear '0' on tap for better UX)
+  //                     if (isNumeric) {
+  //                       if (controller.text == "0") {
+  //                         controller.text = "";
+  //                       }
+  //                     }
 
-  //                   // ✅ AUTO-FILL YEAR
-  //                   final row = model; // <-- current row map
-  //                   if (row.containsKey("maf_year")) {
-  //                     row["maf_year"]!.text = d.year.toString();
-  //                   }
-  //                 }
-  //               } else if (isMafYear) {
-  //                 final now = DateTime.now();
-  //                 final y = await showDatePicker(
-  //                   context: Get.context!,
-  //                   firstDate: DateTime(2000),
-  //                   lastDate: DateTime(2100),
-  //                   initialDate: DateTime(now.year),
-  //                   initialDatePickerMode: DatePickerMode.year,
-  //                   initialEntryMode: DatePickerEntryMode.calendarOnly,
-  //                 );
-  //                 if (y != null) {
-  //                   controller.text = y.year.toString();
-  //                 }
-  //               }
-  //             },
-  //           ),
+  //                     // B. DATE PICKER
+  //                     if (isDate) {
+  //                       await _handleDatePicker(controller, rowMap);
+  //                     }
+  //                     // C. YEAR PICKER
+  //                     else if (isYear) {
+  //                       await _handleYearPicker(controller);
+  //                     }
+  //                     // D. TIME PICKER
+  //                     else if (isTime) {
+  //                       await _handleTimePicker(controller);
+  //                     }
+  //                   },
+  //                 ),
   //         ),
   //       ],
   //     ),
@@ -643,7 +655,7 @@ class InwardEntryDynamicController extends GetxController {
     TextEditingController controller,
     Map<String, TextEditingController> rowMap,
   ) {
-    // 1. DYNAMIC LOOKUP: Find definition by name
+    // 1. CONFIG: Find definition
     final List gridFields = schema["fillgrids"]["fields"];
     final fieldDef = gridFields.firstWhere(
       (e) => e["fld_name"] == fieldName,
@@ -652,30 +664,39 @@ class InwardEntryDynamicController extends GetxController {
 
     if (fieldDef == null) return const SizedBox.shrink();
 
-    // 2. EXTRACT CONFIG
+    // 2. PARSE ATTRIBUTES
     final String label = fieldDef["fld_caption"] ?? fieldName;
     final String type = fieldDef["fld_type"]?.toString().toLowerCase() ??
-        ""; // e.g. 'date', 'dd', 'n'
-    final String dataType = fieldDef["data_type"]?.toString().toLowerCase() ??
-        ""; // e.g. 'n', 'd', 's'
+        ""; // c, n, d, dd, m, year, time
+    final bool isReadOnlyConfig = fieldDef["readonly"] == "T";
     final Color accent = const Color(0xFF2563EB);
 
-    // 3. DETERMINE BEHAVIOR FLAGS
+    // 3. IDENTIFY SPECIFIC TYPES
     final bool isDropdown = type == "dd";
-    final bool isDate = type == "date" || dataType == "d";
-    final bool isTime = type == "time" || dataType == "t";
+    final bool isNumeric = type == "n";
+    final bool isDate =
+        type == "d" || type == "date"; // Handle both 'd' and 'date'
     final bool isYear = type == "year";
-    final bool isNumeric = type == "n" || dataType == "n";
+    final bool isTime = type == "time";
+    final bool isMemo = type == "m";
+    final bool isCheckbox = type == "cb";
 
-    // Readonly logic: Dates/Years are read-only (user must pick), others are editable
-    final bool isReadOnly =
-        isDate || isYear || isTime || (fieldDef["readonly"] == "T");
+    // 4. READ-ONLY LOGIC
+    // Pickers are read-only for typing, but clickable.
+    final bool isPicker = isDate || isTime || isYear;
+    final bool isFieldReadOnly = isReadOnlyConfig || isPicker;
 
+    // 5. RENDER CHECKBOX (Special Case: Doesn't use standard text field box)
+    if (isCheckbox) {
+      return _buildCompactCheckbox(label, controller, isReadOnlyConfig);
+    }
+
+    // 6. RENDER STANDARD FIELD
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       height: 44,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isReadOnlyConfig ? const Color(0xFFF8FAFC) : Colors.white,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
@@ -710,41 +731,105 @@ class InwardEntryDynamicController extends GetxController {
                 ? _buildGridDropdown(fieldDef, controller)
                 : TextFormField(
                     controller: controller,
-                    keyboardType:
-                        isNumeric ? TextInputType.number : TextInputType.text,
-                    readOnly: isReadOnly,
+                    // A. KEYBOARD
+                    keyboardType: isNumeric
+                        ? const TextInputType.numberWithOptions(decimal: true)
+                        : (isMemo
+                            ? TextInputType.multiline
+                            : TextInputType.text),
+
+                    // B. FORMATTERS (Numbers only)
+                    inputFormatters: [
+                      if (isNumeric)
+                        FilteringTextInputFormatter.allow(
+                            RegExp(r'^\d+\.?\d{0,2}')),
+                    ],
+
+                    // C. BEHAVIOR
+                    readOnly: isFieldReadOnly,
+                    maxLines: 1, // Keep grid row compact even for Memo
+                    style: TextStyle(
+                      color: isReadOnlyConfig ? Colors.grey : Colors.black87,
+                      fontSize: 13,
+                    ),
                     decoration: const InputDecoration(
                       isDense: true,
                       border: InputBorder.none,
                       hintText: "-",
                       contentPadding:
-                          EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          EdgeInsets.symmetric(horizontal: 12, vertical: 13),
                     ),
                     onTap: () async {
-                      if (isReadOnly && !isDate && !isYear && !isTime)
-                        return; // Standard read-only check
+                      if (isReadOnlyConfig) return;
 
-                      // A. NUMERIC HANDLING (Clear '0' on tap for better UX)
-                      if (isNumeric) {
-                        if (controller.text == "0") {
-                          controller.text = "";
-                        }
+                      // Clear "0" for better UX on numeric fields
+                      if (isNumeric && controller.text == "0") {
+                        controller.text = "";
                       }
 
-                      // B. DATE PICKER
-                      if (isDate) {
+                      // PICKERS
+                      if (isDate)
                         await _handleDatePicker(controller, rowMap);
-                      }
-                      // C. YEAR PICKER
-                      else if (isYear) {
+                      else if (isYear)
                         await _handleYearPicker(controller);
-                      }
-                      // D. TIME PICKER
-                      else if (isTime) {
-                        await _handleTimePicker(controller);
-                      }
+                      else if (isTime) await _handleTimePicker(controller);
                     },
                   ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- Helper for Checkbox in Grid ---
+  Widget _buildCompactCheckbox(
+      String label, TextEditingController controller, bool isReadOnly) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      height: 44,
+      child: Row(
+        children: [
+          // Reuse label style for consistency
+          Container(
+            width: 110,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              color: const Color(0xFF2563EB).withOpacity(0.10),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Text(
+              label.toUpperCase(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF2563EB)),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Checkbox Widget
+          ValueListenableBuilder(
+            valueListenable: controller,
+            builder: (context, value, child) {
+              final isChecked =
+                  value.text.toLowerCase() == "true" || value.text == "1";
+              return Transform.scale(
+                scale: 1.1,
+                child: Checkbox(
+                  value: isChecked,
+                  activeColor: const Color(0xFF2563EB),
+                  onChanged: isReadOnly
+                      ? null
+                      : (v) {
+                          controller.text =
+                              (v == true).toString(); // Saves "true" or "false"
+                        },
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -1641,5 +1726,47 @@ class InwardEntryDynamicController extends GetxController {
 
     _bagsToSampleDebounce?.cancel();
     super.onClose();
+  }
+
+  Future<void> onPopCalled() async {
+    final bool confirm = await Get.dialog(
+          AlertDialog(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            backgroundColor: Colors.white,
+            title: const Text(
+              "Exit Form?",
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
+            ),
+            content: const Text(
+              "Unsaved changes will be lost.\nAre you sure you want to go back?",
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+            actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            actions: [
+              TextButton(
+                onPressed: () => Get.back(result: false),
+                child: Text(
+                  "Cancel",
+                  style: TextStyle(
+                      color: Colors.grey[600], fontWeight: FontWeight.w600),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Get.back(result: true),
+                child: const Text(
+                  "Exit",
+                  style: TextStyle(
+                      color: Colors.redAccent, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (confirm) {
+      Get.back();
+    }
   }
 }

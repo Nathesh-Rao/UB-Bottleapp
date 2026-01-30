@@ -7,6 +7,7 @@ import 'package:ubbottleapp/Constants/Const.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/data_source_model.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/form_page_model.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/sync_progress_model.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/widgets/sync_progress_dialog.dart';
 import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
 import 'package:ubbottleapp/Utils/ServerConnections/ExecuteApi.dart';
 import 'package:ubbottleapp/Utils/ServerConnections/ServerConnections.dart';
@@ -286,6 +287,85 @@ class OfflineDbModule {
     );
   }
 
+  // static Future<List<Map<String, dynamic>>> _fetchAndStoreOfflinePagesInternal({
+  //   required String username,
+  //   required String projectName,
+  // }) async {
+  //   const String tag = "[OFFLINE_PAGES_FETCH_001]";
+
+  //   try {
+  //     LogService.writeLog(
+  //         message: "$tag[START] Fetching offline pages from JSON file");
+
+  //     final res = await http.get(
+  //       Uri.parse(OfflineDBConstants.OFFLINE_PAGES_URL),
+  //     );
+
+  //     if (res.statusCode != 200) {
+  //       LogService.writeLog(
+  //         message: "$tag[FAILED] HTTP ${res.statusCode} while fetching JSON",
+  //       );
+  //       return [];
+  //     }
+
+  //     final decoded = jsonDecode(utf8.decode(res.bodyBytes)) as List<dynamic>;
+  //     final pages = decoded.map((e) => e as Map<String, dynamic>).toList();
+
+  //     if (pages.isEmpty) {
+  //       LogService.writeLog(message: "$tag[INFO] JSON has 0 pages");
+  //       return [];
+  //     }
+
+  //     await _database.delete(
+  //       OfflineDBConstants.TABLE_OFFLINE_PAGES,
+  //       where:
+  //           '${OfflineDBConstants.COL_USERNAME} = ? AND ${OfflineDBConstants.COL_PROJECT_NAME} = ?',
+  //       whereArgs: [username, projectName],
+  //     );
+
+  //     final batch = _database.batch();
+
+  //     for (final page in pages) {
+  //       batch.insert(
+  //         OfflineDBConstants.TABLE_OFFLINE_PAGES,
+  //         {
+  //           OfflineDBConstants.COL_USERNAME: username,
+  //           OfflineDBConstants.COL_PROJECT_NAME: projectName,
+  //           OfflineDBConstants.COL_TRANS_ID: page['transid'],
+  //           OfflineDBConstants.COL_PAGE_JSON: jsonEncode(page),
+  //           OfflineDBConstants.COL_FETCHED_AT: DateTime.now().toIso8601String(),
+  //         },
+  //         conflictAlgorithm: ConflictAlgorithm.replace,
+  //       );
+  //     }
+
+  //     await batch.commit(noResult: true);
+
+  //     final dsString = _extractDatasourceString(pages);
+
+  //     await _saveDatasourceString(
+  //       username: username,
+  //       projectName: projectName,
+  //       value: dsString,
+  //     );
+
+  //     LogService.writeLog(
+  //       message:
+  //           "$tag[SUCCESS] Replaced pages with ${pages.length} records for $username / $projectName",
+  //     );
+
+  //     return pages;
+  //   } catch (e, st) {
+  //     LogService.writeLog(
+  //       message: "$tag[FAILED] Exception while fetching pages => $e",
+  //     );
+  //     LogService.writeLog(
+  //       message: "$tag[STACK] $st",
+  //     );
+  //     return [];
+  //   }
+  // }
+
   static Future<List<Map<String, dynamic>>> _fetchAndStoreOfflinePagesInternal({
     required String username,
     required String projectName,
@@ -293,74 +373,76 @@ class OfflineDbModule {
     const String tag = "[OFFLINE_PAGES_FETCH_001]";
 
     try {
-      LogService.writeLog(
-          message: "$tag[START] Fetching offline pages from JSON file");
+      LogService.writeLog(message: "$tag[START] Fetching offline pages...");
 
-      final res = await http.get(
-        Uri.parse(OfflineDBConstants.OFFLINE_PAGES_URL),
-      );
+      final res =
+          await http.get(Uri.parse(OfflineDBConstants.OFFLINE_PAGES_URL));
 
-      if (res.statusCode != 200) {
-        LogService.writeLog(
-          message: "$tag[FAILED] HTTP ${res.statusCode} while fetching JSON",
-        );
-        return [];
-      }
+      if (res.statusCode != 200) return [];
 
       final decoded = jsonDecode(utf8.decode(res.bodyBytes)) as List<dynamic>;
       final pages = decoded.map((e) => e as Map<String, dynamic>).toList();
 
-      if (pages.isEmpty) {
-        LogService.writeLog(message: "$tag[INFO] JSON has 0 pages");
-        return [];
-      }
+      if (pages.isEmpty) return [];
 
-      await _database.delete(
+      // 1. CLEAR OLD DATA (Pages & Datasource Lists)
+      final batchDelete = _database.batch();
+      batchDelete.delete(
         OfflineDBConstants.TABLE_OFFLINE_PAGES,
         where:
             '${OfflineDBConstants.COL_USERNAME} = ? AND ${OfflineDBConstants.COL_PROJECT_NAME} = ?',
         whereArgs: [username, projectName],
       );
+      batchDelete.delete(
+        OfflineDBConstants.TABLE_DATASOURCES,
+        where:
+            '${OfflineDBConstants.COL_USERNAME} = ? AND ${OfflineDBConstants.COL_PROJECT_NAME} = ?',
+        whereArgs: [username, projectName],
+      );
+      await batchDelete.commit(noResult: true);
 
-      final batch = _database.batch();
+      // 2. INSERT NEW PAGES & THEIR DATASOURCE LISTS
+      final batchInsert = _database.batch();
 
       for (final page in pages) {
-        batch.insert(
+        final String transId = page['transid'] ?? "";
+
+        // A. Insert Page JSON
+        batchInsert.insert(
           OfflineDBConstants.TABLE_OFFLINE_PAGES,
           {
             OfflineDBConstants.COL_USERNAME: username,
             OfflineDBConstants.COL_PROJECT_NAME: projectName,
-            OfflineDBConstants.COL_TRANS_ID: page['transid'],
+            OfflineDBConstants.COL_TRANS_ID: transId,
             OfflineDBConstants.COL_PAGE_JSON: jsonEncode(page),
             OfflineDBConstants.COL_FETCHED_AT: DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
+
+        // B. Extract & Save Datasources for THIS Page
+        final Set<String> dsSet = _getAllUniqueDatasourcesInPage(page);
+        if (dsSet.isNotEmpty) {
+          final String dsString = dsSet.join(',');
+
+          batchInsert.insert(
+            OfflineDBConstants.TABLE_DATASOURCES,
+            {
+              OfflineDBConstants.COL_USERNAME: username,
+              OfflineDBConstants.COL_PROJECT_NAME: projectName,
+              OfflineDBConstants.COL_TRANS_ID: transId,
+              OfflineDBConstants.COL_DATASOURCE_NAMES: dsString,
+            },
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
       }
 
-      await batch.commit(noResult: true);
-
-      final dsString = _extractDatasourceString(pages);
-
-      await _saveDatasourceString(
-        username: username,
-        projectName: projectName,
-        value: dsString,
-      );
-
-      LogService.writeLog(
-        message:
-            "$tag[SUCCESS] Replaced pages with ${pages.length} records for $username / $projectName",
-      );
+      await batchInsert.commit(noResult: true);
 
       return pages;
-    } catch (e, st) {
-      LogService.writeLog(
-        message: "$tag[FAILED] Exception while fetching pages => $e",
-      );
-      LogService.writeLog(
-        message: "$tag[STACK] $st",
-      );
+    } catch (e) {
+      LogService.writeLog(message: "$tag[FAILED] $e");
       return [];
     }
   }
@@ -413,7 +495,7 @@ class OfflineDbModule {
       ${OfflineDBConstants.COL_PROJECT_NAME} = ?
     ''',
       whereArgs: [username, projectName],
-      orderBy: OfflineDBConstants.COL_FETCHED_AT + ' DESC',
+      orderBy: OfflineDBConstants.COL_FETCHED_AT + ' ASC',
     );
 
     return result
@@ -424,59 +506,73 @@ class OfflineDbModule {
         .toList();
   }
 
-  // DATASOURCE STRING
+  // }
   // static String _extractDatasourceString(List<Map<String, dynamic>> pages) {
-  //   final Set<String> set = {};
+  //   final Set<String> globalSet = {};
 
   //   for (final page in pages) {
-  //     final fields = page['fields'] as List<dynamic>? ?? [];
-  //     for (final f in fields) {
-  //       final ds = f['datasource'];
-  //       if (ds != null && ds.toString().trim().isNotEmpty) {
-  //         set.add(ds.toString().trim());
-  //       }
-  //     }
+  //     globalSet.addAll(_getAllUniqueDatasourcesInPage(page));
   //   }
 
-  //   return set.join(',');
+  //   return globalSet.join(',');
   // }
-  static String _extractDatasourceString(List<Map<String, dynamic>> pages) {
-    final Set<String> globalSet = {};
 
-    for (final page in pages) {
-      globalSet.addAll(_getAllUniqueDatasourcesInPage(page));
-    }
+  // static Future<void> _saveDatasourceString({
+  //   required String username,
+  //   required String projectName,
+  //   required String value,
+  // }) async {
+  //   await _database.insert(
+  //     OfflineDBConstants.TABLE_DATASOURCES,
+  //     {
+  //       OfflineDBConstants.COL_USERNAME: username,
+  //       OfflineDBConstants.COL_PROJECT_NAME: projectName,
+  //       OfflineDBConstants.COL_DATASOURCE_NAMES: value,
+  //     },
+  //     conflictAlgorithm: ConflictAlgorithm.replace,
+  //   );
+  // }
 
-    return globalSet.join(',');
-  }
+  // static Future<List<String>> _getDatasourceList({
+  //   required String username,
+  //   required String projectName,
+  // }) async {
+  //   final result = await _database.query(
+  //     OfflineDBConstants.TABLE_DATASOURCES,
+  //     where: '''
+  //     ${OfflineDBConstants.COL_USERNAME} = ? AND
+  //     ${OfflineDBConstants.COL_PROJECT_NAME} = ?
+  //   ''',
+  //     whereArgs: [username, projectName],
+  //     limit: 1,
+  //   );
 
-  static Future<void> _saveDatasourceString({
-    required String username,
-    required String projectName,
-    required String value,
-  }) async {
-    await _database.insert(
-      OfflineDBConstants.TABLE_DATASOURCES,
-      {
-        OfflineDBConstants.COL_USERNAME: username,
-        OfflineDBConstants.COL_PROJECT_NAME: projectName,
-        OfflineDBConstants.COL_DATASOURCE_NAMES: value,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-  }
+  //   if (result.isEmpty) return [];
+
+  //   final raw =
+  //       result.first[OfflineDBConstants.COL_DATASOURCE_NAMES] as String? ?? '';
+
+  //   return raw
+  //       .split(',')
+  //       .map((e) => e.trim())
+  //       .where((e) => e.isNotEmpty)
+  //       .toList();
+  // }
 
   static Future<List<String>> _getDatasourceList({
     required String username,
     required String projectName,
+    required String transId,
   }) async {
     final result = await _database.query(
       OfflineDBConstants.TABLE_DATASOURCES,
+      columns: [OfflineDBConstants.COL_DATASOURCE_NAMES],
       where: '''
-      ${OfflineDBConstants.COL_USERNAME} = ? AND
-      ${OfflineDBConstants.COL_PROJECT_NAME} = ?
+      ${OfflineDBConstants.COL_USERNAME} = ? AND 
+      ${OfflineDBConstants.COL_PROJECT_NAME} = ? AND 
+      ${OfflineDBConstants.COL_TRANS_ID} = ? 
     ''',
-      whereArgs: [username, projectName],
+      whereArgs: [username, projectName, transId], // <--- FILTER BY ID
       limit: 1,
     );
 
@@ -494,6 +590,7 @@ class OfflineDbModule {
 
   static Future<void> fetchAndStoreAllDatasources({
     required String transId,
+    SyncProgressModel? progress,
   }) async {
     final scope = await _getLastOfflineUserScope();
     if (scope == null) return;
@@ -502,69 +599,164 @@ class OfflineDbModule {
       username: scope['username']!,
       projectName: scope['projectName']!,
       transId: transId,
+      progress: progress,
     );
   }
+
+  // static Future<void> _fetchAndStoreAllDatasourcesInternal({
+  //   required String username,
+  //   required String projectName,
+  //   required String transId,
+  //   SyncProgressModel? progress,
+  // }) async {
+  //   try {
+  //     final datasources = await _getDatasourceList(
+  //       username: username,
+  //       projectName: projectName,
+  //     );
+  //     progress?.totalItems.value = datasources.length;
+  //     for (final ds in datasources) {
+  //       // Check if already cached for this user+project+form+ds
+  //       progress?.updateMessage("Fetching: $ds\n(Form: $transId)");
+  //       final exists = await _database.query(
+  //         OfflineDBConstants.TABLE_DATASOURCE_DATA,
+  //         where: '''
+  //       ${OfflineDBConstants.COL_USERNAME} = ? AND
+  //       ${OfflineDBConstants.COL_PROJECT_NAME} = ? AND
+  //       ${OfflineDBConstants.COL_TRANS_ID} = ? AND
+  //       ${OfflineDBConstants.COL_DATASOURCE_NAME} = ?
+  //     ''',
+  //         whereArgs: [username, projectName, transId, ds],
+  //         limit: 1,
+  //       );
+
+  //       if (exists.isNotEmpty) {
+  //         progress?.increment();
+  //         continue;
+  //       }
+
+  //       final scope = await _getLastOfflineUserScope();
+  //       if (scope == null) continue;
+
+  //       final session = AppStorage().retrieveValue(AppStorage.SESSIONID) ?? "";
+
+  //       final res = await OfflineDatasources.fetchDatasource(
+  //         datasourceName: ds,
+  //         sessionId: session,
+  //         username: scope['username']!,
+  //         appName: scope['projectName']!,
+  //         sqlParams: {
+  //           "username": scope['username']!,
+  //         },
+  //       );
+  //       debugPrint("DATA_SOURCE res=> $res");
+  //       if (res == null || res.isEmpty) {
+  //         progress?.increment(isSuccess: false);
+  //         continue;
+  //       } else {
+  //         progress?.increment();
+  //       }
+
+  //       await _database.insert(
+  //         OfflineDBConstants.TABLE_DATASOURCE_DATA,
+  //         {
+  //           OfflineDBConstants.COL_USERNAME: username,
+  //           OfflineDBConstants.COL_PROJECT_NAME: projectName,
+  //           OfflineDBConstants.COL_TRANS_ID: transId,
+  //           OfflineDBConstants.COL_DATASOURCE_NAME: ds,
+  //           OfflineDBConstants.COL_RESPONSE_JSON: res,
+  //         },
+  //         conflictAlgorithm: ConflictAlgorithm.replace,
+  //       );
+  //     }
+
+  //   } catch (e) {
+  //     progress?.increment(isSuccess: false);
+  //   }
+  // }
 
   static Future<void> _fetchAndStoreAllDatasourcesInternal({
     required String username,
     required String projectName,
     required String transId,
+    SyncProgressModel? progress,
   }) async {
-    final datasources = await _getDatasourceList(
-      username: username,
-      projectName: projectName,
-    );
-
-    for (final ds in datasources) {
-      // Check if already cached for this user+project+form+ds
-      final exists = await _database.query(
-        OfflineDBConstants.TABLE_DATASOURCE_DATA,
-        where: '''
-        ${OfflineDBConstants.COL_USERNAME} = ? AND
-        ${OfflineDBConstants.COL_PROJECT_NAME} = ? AND
-        ${OfflineDBConstants.COL_TRANS_ID} = ? AND
-        ${OfflineDBConstants.COL_DATASOURCE_NAME} = ?
-      ''',
-        whereArgs: [username, projectName, transId, ds],
-        limit: 1,
+    try {
+      final datasources = await _getDatasourceList(
+        username: username,
+        projectName: projectName,
+        transId: transId,
       );
 
-      if (exists.isNotEmpty) continue;
+      if (datasources.isEmpty) {
+        debugPrint("No datasources found inside page: $transId");
+        return;
+      }
 
-      final scope = await _getLastOfflineUserScope();
-      if (scope == null) continue;
+      progress?.totalItems.value = datasources.length;
 
-      final session = AppStorage().retrieveValue(AppStorage.SESSIONID) ?? "";
+      for (final ds in datasources) {
+        progress?.updateMessage("Fetching: $ds\n(Form: $transId)");
 
-      final res = await OfflineDatasources.fetchDatasource(
-        datasourceName: ds,
-        sessionId: session,
-        username: scope['username']!,
-        appName: scope['projectName']!,
-        sqlParams: {
-          "username": scope['username']!,
-        },
-      );
-      debugPrint("DATA_SOURCE res=> $res");
-      if (res == null || res.isEmpty) continue;
+        final exists = await _database.query(
+          OfflineDBConstants.TABLE_DATASOURCE_DATA,
+          columns: [OfflineDBConstants.COL_ID],
+          where: '''
+            ${OfflineDBConstants.COL_USERNAME} = ? AND
+            ${OfflineDBConstants.COL_PROJECT_NAME} = ? AND
+            ${OfflineDBConstants.COL_TRANS_ID} = ? AND
+            ${OfflineDBConstants.COL_DATASOURCE_NAME} = ?
+          ''',
+          whereArgs: [username, projectName, transId, ds],
+          limit: 1,
+        );
 
-      await _database.insert(
-        OfflineDBConstants.TABLE_DATASOURCE_DATA,
-        {
-          OfflineDBConstants.COL_USERNAME: username,
-          OfflineDBConstants.COL_PROJECT_NAME: projectName,
-          OfflineDBConstants.COL_TRANS_ID: transId,
-          OfflineDBConstants.COL_DATASOURCE_NAME: ds,
-          OfflineDBConstants.COL_RESPONSE_JSON: res,
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+        if (exists.isNotEmpty) {
+          progress?.increment();
+          continue;
+        }
+
+        final scope = await _getLastOfflineUserScope();
+        if (scope == null) continue;
+
+        final session = AppStorage().retrieveValue(AppStorage.SESSIONID) ?? "";
+
+        final res = await OfflineDatasources.fetchDatasource(
+          datasourceName: ds,
+          sessionId: session,
+          username: scope['username']!,
+          appName: scope['projectName']!,
+          sqlParams: {
+            "username": scope['username']!,
+          },
+        ).timeout(const Duration(seconds: 15));
+
+        if (res == null || res.isEmpty) {
+          debugPrint("Empty response for DS: $ds");
+          progress?.increment(isSuccess: false);
+          continue;
+        }
+
+        await _database.insert(
+          OfflineDBConstants.TABLE_DATASOURCE_DATA,
+          {
+            OfflineDBConstants.COL_USERNAME: username,
+            OfflineDBConstants.COL_PROJECT_NAME: projectName,
+            OfflineDBConstants.COL_TRANS_ID: transId,
+            OfflineDBConstants.COL_DATASOURCE_NAME: ds,
+            OfflineDBConstants.COL_RESPONSE_JSON: res,
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+
+        progress?.increment();
+      }
+    } catch (e) {
+      debugPrint("Error fetching datasources for $transId: $e");
+      progress?.increment(isSuccess: false);
     }
   }
 
-// ---------------------------------------------------------------------------
-  // HELPER: Recursively Extract Datasources (Root Fields + Grid Fields)
-  // ---------------------------------------------------------------------------
   static Set<String> _getAllUniqueDatasourcesInPage(Map<String, dynamic> page) {
     final Set<String> dsSet = {};
 
@@ -1051,6 +1243,7 @@ class OfflineDbModule {
         String? errorMsg;
 
         if (res != null && res.isNotEmpty) {
+          LogService.writeLog(message: "[API ERROR]||[API SUCCESS] $res");
           try {
             final decoded = jsonDecode(res);
             if (decoded is Map<String, dynamic> && decoded['success'] == true) {
@@ -1268,11 +1461,13 @@ class OfflineDbModule {
         Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
 
     int successCount = 0;
+    int failCount = 0;
 
     for (int i = 0; i < total; i++) {
       final record = progress.failedRecords[i];
       final int id = record['id'];
       final String prevError = record['error'];
+      final String errt = record['timestamp'];
 
       try {
         progress.updateMessage("Force pushing record ${i + 1} of $total...");
@@ -1294,9 +1489,9 @@ class OfflineDbModule {
         final Map<String, dynamic> payload = {
           "ARMSessionId": AppStorage().retrieveValue(AppStorage.SESSIONID),
           "publickey": "axofflinemobilelog",
-          "project": "bottleapp",
+          "project": AppStorage().retrieveValue(AppStorage.PROJECT_NAME),
           "submitdata": {
-            "username": "uidev1",
+            "username": AppStorage().retrieveValue(AppStorage.USER_NAME),
             "trace": "false",
             "keyfield": "",
             "dataarray": {
@@ -1306,10 +1501,11 @@ class OfflineDbModule {
                 "recordid": "0",
                 "dc1": {
                   "row1": {
-                    "username": "uidev",
+                    "errordt": errt,
+                    "username":
+                        AppStorage().retrieveValue(AppStorage.USER_NAME),
                     "errorresponse": prevError,
-                    "payload": originalPayloadString,
-                    "errordt": DateTime.now().toIso8601String(),
+                    "payload": originalPayloadString
                   }
                 }
               }
@@ -1343,6 +1539,9 @@ class OfflineDbModule {
             where: '${OfflineDBConstants.COL_ID} = ?',
             whereArgs: [id],
           );
+        } else {
+          failCount++;
+          LogService.writeLog(message: "[FORCE_FAIL] ID: $id - $res");
         }
 
         progress.increment(isSuccess: isSuccess);
@@ -1353,8 +1552,18 @@ class OfflineDbModule {
     }
 
     progress.complete();
-    progress.updateMessage(
-        "Force Push Complete.\n$successCount records offloaded.");
+    if (successCount > 0 && failCount == 0) {
+      progress.updateMessage(
+          "Force Push Successful! \nOffloaded all $successCount records.");
+    } else if (successCount == 0 && failCount > 0) {
+      progress.updateMessage(
+          "Force Push Failed. \nCould not offload any of the $failCount records.");
+    } else if (successCount > 0 && failCount > 0) {
+      progress.updateMessage(
+          "Force Push Completed with Issues.\nSuccess: $successCount \nFailed: $failCount");
+    } else {
+      progress.updateMessage("Operation completed. No records processed.");
+    }
   }
 
   static Future<Map<String, dynamic>> _convertPayloadPathsToBase64(
@@ -2207,15 +2416,16 @@ class OfflineDbModule {
   //   return "Processed: $successCount success, $failCount failed";
   // }
 
-  static Future<void> refreshAllDatasourcesFromDownloadedPages() async {
-    final pages = await getOfflinePages();
-
+  static Future<void> refreshAllDatasourcesFromDownloadedPages(
+      {SyncProgressModel? progressModel}) async {
+    var pages = await OfflineDbModule.getOfflinePages();
     if (pages.isEmpty) return;
-
+    progressModel?.init(total: pages.length, msg: "Analyzing forms...");
     for (final p in pages) {
       final transId = p['transid'];
       if (transId != null) {
-        await fetchAndStoreAllDatasources(transId: transId);
+        await fetchAndStoreAllDatasources(
+            transId: transId, progress: progressModel);
       }
     }
   }

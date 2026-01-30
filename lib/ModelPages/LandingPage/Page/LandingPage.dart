@@ -106,7 +106,7 @@ class LandingPage extends StatelessWidget {
                   const Divider(),
                   _sectionHeader("Queue"),
                   Obx(
-                    // TODO Percentage || progress indicater for the uploads going on
+              
                     () => _simpleRow(
                         icon: Icons.upload_file,
                         color: Colors.deepOrange,

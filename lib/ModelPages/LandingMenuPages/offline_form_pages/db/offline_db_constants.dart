@@ -73,13 +73,14 @@ class OfflineDBConstants {
     ''';
 
   // -------- DATASOURCE NAMES (PER USER+PROJECT) --------
-  static final String CREATE_DATASOURCES_TABLE = CREATE_QUERY +
+static final String CREATE_DATASOURCES_TABLE = CREATE_QUERY +
       TABLE_DATASOURCES +
       '''
       (
         $COL_ID INTEGER PRIMARY KEY AUTOINCREMENT,
         $COL_USERNAME TEXT,
         $COL_PROJECT_NAME TEXT,
+        $COL_TRANS_ID TEXT,  <-- ADD THIS LINE
         $COL_DATASOURCE_NAMES TEXT
       );
     ''';
