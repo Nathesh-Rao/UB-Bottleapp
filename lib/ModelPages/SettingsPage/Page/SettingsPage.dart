@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:ubbottleapp/Constants/CommonMethods.dart';
@@ -245,33 +246,7 @@ class SettingsPage extends StatelessWidget {
                               Divider(),
                               ListTile(
                                 onTap: () async {
-                                  await Get.defaultDialog(
-                                    barrierDismissible: false,
-                                    title: "Action",
-                                    middleText: "Please select option",
-                                    confirm: ElevatedButton(
-                                        onPressed: () async {
-                                          // GlobalVariableController
-                                          //     globalVariableController =
-                                          //     Get.find();
-                                          // final dir =
-                                          //     await getApplicationDocumentsDirectory();
-                                          log(Const.LOG_FILE_PATH,
-                                              name: "GV_log_path_full");
-
-                                          await OpenFile.open(
-                                                  Const.LOG_FILE_PATH)
-                                              .then((_) {
-                                            Get.back();
-                                          });
-                                        },
-                                        child: Text("Open File")),
-                                    cancel: TextButton(
-                                        onPressed: () async {
-                                          Get.back();
-                                        },
-                                        child: Text("Cancel")),
-                                  );
+                                  await settingsPageController.showtraceDlg();
                                 },
                                 leading: Icon(Icons.description_outlined),
                                 title: Text(

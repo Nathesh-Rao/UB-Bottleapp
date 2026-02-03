@@ -877,7 +877,8 @@ class LandingPageController extends GetxController with WidgetsBindingObserver {
                 ),
                 SizedBox(height: 5),
                 TextScroll(
-                  CommonMethods.capitalize(userNickName.value),
+                  CommonMethods.capitalize(
+                      AppStorage().retrieveValue(AppStorage.USER_NAME)),
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 )
               ],

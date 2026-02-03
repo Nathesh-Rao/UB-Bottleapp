@@ -3,17 +3,20 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:ubbottleapp/Constants/MyColors.dart';
-import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/controller/offline_form_controller.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/sync_progress_model.dart';
 
 class SyncProgressDialog extends StatelessWidget {
   final SyncProgressModel progressModel;
   final Function? reTry;
+  final Function? onComplete;
   final bool showForcePush;
+  final String onCompleteTitle;
   const SyncProgressDialog(
       {Key? key,
       required this.progressModel,
       this.reTry,
+      this.onComplete,
+      this.onCompleteTitle = '',
       this.showForcePush = false})
       : super(key: key);
 
@@ -122,11 +125,20 @@ class SyncProgressDialog extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              value: progressModel.progressValue,
-              minHeight: 5,
-              backgroundColor: Colors.grey.shade200,
-              valueColor: const AlwaysStoppedAnimation(Color(0xFF2563EB)),
+            child: Stack(
+              children: [
+                LinearProgressIndicator(
+                  minHeight: 5,
+                  backgroundColor: Colors.grey.shade200,
+                  color: Color(0xFF2563EB).withAlpha(100),
+                ),
+                LinearProgressIndicator(
+                  value: progressModel.progressValue,
+                  minHeight: 5,
+                  backgroundColor: Colors.transparent,
+                  valueColor: const AlwaysStoppedAnimation(Color(0xFF2563EB)),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 6),
@@ -204,28 +216,60 @@ class SyncProgressDialog extends StatelessWidget {
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          (progressModel.failureCount.value > 0 && showForcePush)
+          // (progressModel.failureCount.value > 0 && showForcePush)
+          //     ? Padding(
+          //         padding: const EdgeInsets.only(top: 20),
+          //         child: SizedBox(
+          //           width: double.infinity,
+          //           child: ElevatedButton(
+          //             onPressed: () {
+          //               OfflineFormController offlineFormController =
+          //                   Get.find();
+
+          //               offlineFormController.onForcePushClicked(progressModel);
+          //             },
+          //             style: ElevatedButton.styleFrom(
+          //               backgroundColor: MyColors.baseRed,
+          //               elevation: 0,
+          //               padding: const EdgeInsets.symmetric(vertical: 14),
+          //               shape: RoundedRectangleBorder(
+          //                 borderRadius: BorderRadius.circular(12),
+          //               ),
+          //             ),
+          //             child: Text(
+          //               "Force push ${progressModel.failureCount.value} records",
+          //               style: GoogleFonts.poppins(
+          //                 fontWeight: FontWeight.w600,
+          //                 fontSize: 14,
+          //               ),
+          //             ),
+          //           ),
+          //         ),
+          //       )
+          //     : SizedBox.shrink(),
+
+          (onComplete != null)
               ? Padding(
                   padding: const EdgeInsets.only(top: 20),
                   child: SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
-                        OfflineFormController offlineFormController =
-                            Get.find();
-
-                        offlineFormController.onForcePushClicked(progressModel);
+                        Get.back();
+                        onComplete!();
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: MyColors.baseRed,
+                        backgroundColor: const Color(0xFF2563EB),
                         elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 14,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       child: Text(
-                        "Force push ${progressModel.failureCount.value} records",
+                        onCompleteTitle,
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
@@ -235,6 +279,7 @@ class SyncProgressDialog extends StatelessWidget {
                   ),
                 )
               : SizedBox.shrink(),
+
           Padding(
             padding: const EdgeInsets.only(top: 15),
             child: SizedBox(

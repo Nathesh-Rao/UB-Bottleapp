@@ -2,6 +2,7 @@ import 'package:ubbottleapp/Constants/MyColors.dart';
 import 'package:ubbottleapp/Constants/Routes.dart';
 import 'package:ubbottleapp/ModelPages/InApplicationWebView/controller/webview_controller.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/controller/offline_form_controller.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_module.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/inward_entry/inward_entry_dynamic_controller.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/inward_entry/inward_entry_dynamic_page_v1.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/widgets/form_action_tile.dart';
@@ -21,7 +22,7 @@ class OfflineListingPage extends GetView<OfflineFormController> {
   Widget build(BuildContext context) {
     // Get.put(OfflineStaticFormController());
     var inwardEntryDynamicController = Get.put(InwardEntryDynamicController());
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       controller.getAllPages();
     });
 
@@ -89,10 +90,7 @@ class OfflineListingPage extends GetView<OfflineFormController> {
         ],
       ),
       // floatingActionButton: FloatingActionButton(
-      //   onPressed: () {
-      //     // Get.to(OfflineStaticFormPageV2Compact());
-
-      //   },
+      //   onPressed:
       //   child: Icon(Icons.pages),
       // ),
     );

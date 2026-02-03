@@ -53,7 +53,7 @@ class OfflineDbModule {
 
     _db = await openDatabase(
       dbPath,
-      version: 3,
+      version: 4,
       onCreate: (db, _) async {
         await _createTables(db);
       },
@@ -1154,13 +1154,13 @@ class OfflineDbModule {
 
   //   return "Processed: $successCount success, $failCount failed in $timeString";
   // }
-
+  static var processPendingQueTag = "PROCESS_PENDING_QUE";
   static Future<String> processPendingQueue({
     required bool isInternetAvailable,
     SyncProgressModel? progress,
   }) async {
-    final totalStopwatch = Stopwatch()..start();
-
+    // final totalStopwatch = Stopwatch()..start();
+    log("processpendingque started", name: processPendingQueTag);
     if (!isInternetAvailable) return "No internet connection";
 
     final scope = await _getLastOfflineUserScope();
@@ -1168,6 +1168,8 @@ class OfflineDbModule {
 
     final username = scope['username']!;
     final projectName = scope['projectName']!;
+    log("processpendingque scope Username $username",
+        name: processPendingQueTag);
 
     final String currentSessionId =
         AppStorage().retrieveValue(AppStorage.SESSIONID) ?? "";
@@ -1186,6 +1188,8 @@ class OfflineDbModule {
       whereArgs: [username, projectName],
       orderBy: OfflineDBConstants.COL_CREATED_AT,
     );
+    log("processpendingque idRows.isEmpty ${idRows.isEmpty}",
+        name: processPendingQueTag);
 
     if (idRows.isEmpty) {
       progress?.complete();
@@ -1203,7 +1207,8 @@ class OfflineDbModule {
     final ServerConnections serverConnections = ServerConnections();
     final String url =
         Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
-
+    var isTraceOn =
+        await AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? false;
     for (int i = 0; i < total; i++) {
       final id = idRows[i][OfflineDBConstants.COL_ID] as int;
 
@@ -1227,12 +1232,20 @@ class OfflineDbModule {
         final Map<String, dynamic> originalPayload = jsonDecode(bodyStr);
         originalPayload['ARMSessionId'] = currentSessionId;
 
+        originalPayload['ARMSessionId'] = currentSessionId;
+        originalPayload['submitdata']['trace'] = isTraceOn ? "true" : "false";
+        originalPayload['submitdata']['username'] =
+            (originalPayload['submitdata']['username'] ?? "").isEmpty
+                ? await AppStorage().retrieveValue(AppStorage.USER_NAME)
+                : originalPayload['submitdata']['username'];
+
         final Map<String, dynamic> uploadPayload =
             await _convertPayloadPathsToBase64(originalPayload);
-
+        log("processpendingque uploadPayload.length ${uploadPayload.length}",
+            name: processPendingQueTag);
         progress?.updateMessage(
             "Uploading${_isAssetHelper(uploadPayload)}record ${i + 1} of $total...");
-
+//  LogService.writeLog(message: "Process Pending que ");
         final dynamic res = await serverConnections.postToServer(
           url: url,
           body: jsonEncode(uploadPayload),
@@ -1277,14 +1290,14 @@ class OfflineDbModule {
       }
     }
 
-    totalStopwatch.stop();
-    final duration = totalStopwatch.elapsed;
-    final timeString = "${duration.inMinutes}m ${duration.inSeconds % 60}s";
+    // totalStopwatch.stop();
+    // final duration = totalStopwatch.elapsed;
+    // final timeString = "${duration.inMinutes}m ${duration.inSeconds % 60}s";
 
     progress?.complete();
-    progress?.updateMessage("Completed in $timeString");
+    progress?.updateMessage("Completed ");
 
-    return "Processed: $successCount success, $failCount failed in $timeString";
+    return "Processed: $successCount success, $failCount failed ";
   }
 
   static Future<void> _markAsError(int id) async {
@@ -1309,9 +1322,15 @@ class OfflineDbModule {
     String publicKey = pl["publickey"] ?? '';
 
     if (publicKey.toLowerCase() == "inwardentry") {
-      return " Asset ";
+      var ubge = pl["submitdata"]["dataarray"]["data"]["dc1"]["row1"]
+              ["ub_ge_no"] ??
+          "Asset";
+      return ubge.isEmpty ? " Master " : " UBGE: $ubge ";
     } else if (publicKey.toLowerCase() == "inwardattach") {
-      return " Master ";
+      var ubge = pl["submitdata"]["dataarray"]["data"]["dc1"]["row1"]
+              ["ub_gen_no"] ??
+          "";
+      return ubge.isEmpty ? " Asset " : " UBGE: $ubge ";
     }
 
     return ' ';
@@ -1439,6 +1458,134 @@ class OfflineDbModule {
   //   progress.updateMessage(
   //       "Force Push Complete.\n$successCount records offloaded.");
   // }
+// last working version on 02/FEB/2026
+  // static Future<void> forcePushFailedRecords({
+  //   required bool isInternetAvailable,
+  //   required SyncProgressModel progress,
+  // }) async {
+  //   if (!isInternetAvailable) {
+  //     Get.snackbar("Error", "No internet connection");
+  //     return;
+  //   }
+
+  //   if (progress.failedRecords.isEmpty) {
+  //     progress.updateMessage("No failed records to force push.");
+  //     return;
+  //   }
+
+  //   final int total = progress.failedRecords.length;
+  //   progress.init(total: total, msg: "Preparing Force Push...");
+
+  //   final ServerConnections serverConnections = ServerConnections();
+  //   final String forceUrl =
+  //       Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
+
+  //   int successCount = 0;
+  //   int failCount = 0;
+
+  //   for (int i = 0; i < total; i++) {
+  //     final record = progress.failedRecords[i];
+  //     final int id = record['id'];
+  //     final String prevError = record['error'];
+  //     final String errt = record['timestamp'];
+
+  //     try {
+  //       progress.updateMessage("Force pushing record ${i + 1} of $total...");
+
+  //       final bodyStr = await _readLargeString(
+  //         table: OfflineDBConstants.TABLE_PENDING_REQUESTS,
+  //         column: OfflineDBConstants.COL_REQUEST_JSON,
+  //         where: '${OfflineDBConstants.COL_ID} = ?',
+  //         whereArgs: [id],
+  //       );
+
+  //       if (bodyStr == null || bodyStr.isEmpty) {
+  //         progress.increment(isSuccess: false);
+  //         continue;
+  //       }
+
+  //       final String originalPayloadString =  bodyStr;
+
+  //       final Map<String, dynamic> payload = {
+  //         "ARMSessionId": AppStorage().retrieveValue(AppStorage.SESSIONID),
+  //         "publickey": "axofflinemobilelog",
+  //         "project": AppStorage().retrieveValue(AppStorage.PROJECT_NAME),
+  //         "submitdata": {
+  //           "username": AppStorage().retrieveValue(AppStorage.USER_NAME),
+  //           "trace": "false",
+  //           "keyfield": "",
+  //           "dataarray": {
+  //             "data": {
+  //               "mode": "new",
+  //               "keyvalue": "",
+  //               "recordid": "0",
+  //               "dc1": {
+  //                 "row1": {
+  //                   "errordt": errt,
+  //                   "username":
+  //                       AppStorage().retrieveValue(AppStorage.USER_NAME),
+  //                   "errorresponse": prevError,
+  //                   "payload": originalPayloadString
+  //                 }
+  //               }
+  //             }
+  //           }
+  //         }
+  //       };
+
+  //       final dynamic res = await serverConnections.postToServer(
+  //         url: forceUrl,
+  //         body: jsonEncode(payload),
+  //         isBearer: true,
+  //       );
+
+  //       bool isSuccess = false;
+  //       if (res != null && res.isNotEmpty) {
+  //         final decoded = jsonDecode(res);
+  //         if (decoded is Map && decoded['success'] == true) {
+  //           isSuccess = true;
+  //         }
+  //       }
+
+  //       if (isSuccess) {
+  //         successCount++;
+
+  //         await _database.update(
+  //           OfflineDBConstants.TABLE_PENDING_REQUESTS,
+  //           {
+  //             OfflineDBConstants.COL_STATUS:
+  //                 OfflineDBConstants.STATUS_FORCE_PUSHED
+  //           },
+  //           where: '${OfflineDBConstants.COL_ID} = ?',
+  //           whereArgs: [id],
+  //         );
+  //       } else {
+  //         failCount++;
+  //         LogService.writeLog(message: "[FORCE_FAIL] ID: $id - $res");
+  //       }
+
+  //       progress.increment(isSuccess: isSuccess);
+  //     } catch (e) {
+  //       progress.increment(isSuccess: false);
+  //       LogService.writeLog(message: "[FORCE_FAIL] ID: $id - $e");
+  //     }
+  //   }
+
+  //   progress.complete();
+  //   if (successCount > 0 && failCount == 0) {
+  //     progress.updateMessage(
+  //         "Force Push Successful! \nOffloaded all $successCount records.");
+  //   } else if (successCount == 0 && failCount > 0) {
+  //     progress.updateMessage(
+  //         "Force Push Failed. \nCould not offload any of the $failCount records.");
+  //   } else if (successCount > 0 && failCount > 0) {
+  //     progress.updateMessage(
+  //         "Force Push Completed with Issues.\nSuccess: $successCount \nFailed: $failCount");
+  //   } else {
+  //     progress.updateMessage("Operation completed. No records processed.");
+  //   }
+  // }
+
   static Future<void> forcePushFailedRecords({
     required bool isInternetAvailable,
     required SyncProgressModel progress,
@@ -1462,6 +1609,10 @@ class OfflineDbModule {
 
     int successCount = 0;
     int failCount = 0;
+    var isTraceOn =
+        await AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? false;
+
+    log(isTraceOn.toString(), name: "trace");
 
     for (int i = 0; i < total; i++) {
       final record = progress.failedRecords[i];
@@ -1484,15 +1635,23 @@ class OfflineDbModule {
           continue;
         }
 
-        final String originalPayloadString = bodyStr;
+        final Map<String, dynamic> originalPayload = jsonDecode(bodyStr);
+        originalPayload['ARMSessionId'] =
+            AppStorage().retrieveValue(AppStorage.SESSIONID);
 
-        final Map<String, dynamic> payload = {
-          "ARMSessionId": AppStorage().retrieveValue(AppStorage.SESSIONID),
+        final Map<String, dynamic> payloadWithBase64 =
+            await _convertPayloadPathsToBase64(originalPayload);
+
+        final String payloadStringToSend = jsonEncode(payloadWithBase64);
+
+        final Map<String, dynamic> wrapperPayload = {
+          "ARMSessionId":
+              await AppStorage().retrieveValue(AppStorage.SESSIONID),
           "publickey": "axofflinemobilelog",
-          "project": AppStorage().retrieveValue(AppStorage.PROJECT_NAME),
+          "project": await AppStorage().retrieveValue(AppStorage.PROJECT_NAME),
           "submitdata": {
-            "username": AppStorage().retrieveValue(AppStorage.USER_NAME),
-            "trace": "false",
+            "username": await AppStorage().retrieveValue(AppStorage.USER_NAME),
+            "trace": isTraceOn ? "true" : "false",
             "keyfield": "",
             "dataarray": {
               "data": {
@@ -1503,9 +1662,9 @@ class OfflineDbModule {
                   "row1": {
                     "errordt": errt,
                     "username":
-                        AppStorage().retrieveValue(AppStorage.USER_NAME),
+                        await AppStorage().retrieveValue(AppStorage.USER_NAME),
                     "errorresponse": prevError,
-                    "payload": originalPayloadString
+                    "payload": payloadStringToSend
                   }
                 }
               }
@@ -1515,7 +1674,7 @@ class OfflineDbModule {
 
         final dynamic res = await serverConnections.postToServer(
           url: forceUrl,
-          body: jsonEncode(payload),
+          body: jsonEncode(wrapperPayload),
           isBearer: true,
         );
 
@@ -1529,6 +1688,8 @@ class OfflineDbModule {
 
         if (isSuccess) {
           successCount++;
+
+          await _deletePayloadFiles(payloadWithBase64);
 
           await _database.update(
             OfflineDBConstants.TABLE_PENDING_REQUESTS,
@@ -1570,9 +1731,14 @@ class OfflineDbModule {
       Map<String, dynamic> originalBody) async {
     Map<String, dynamic> payload = jsonDecode(jsonEncode(originalBody));
 
-    await _recursivePathProcessor(payload, _convertAction);
+    try {
+      await _recursivePathProcessor(payload, _convertAction);
 
-    return payload;
+      return payload;
+    } catch (e) {
+      log("_convertPayloadPathsToBase64", name: processPendingQueTag);
+      return {};
+    }
   }
 
   static Future<void> savePayloadForPostman(
@@ -1584,6 +1750,101 @@ class OfflineDbModule {
 
     print("✅ FILE SAVED AT SPEED: ${file.path}");
     Get.snackbar("Saved", "File ready for extraction");
+  }
+
+  static Future<void> uploadTraceFile({
+    required bool isInternetAvailable,
+    SyncProgressModel? progress,
+  }) async {
+    if (!isInternetAvailable) {
+      progress?.updateMessage("Error: No internet connection");
+      progress?.increment(isSuccess: false);
+      return;
+    }
+
+    final File traceFile = File(Const.LOG_FILE_PATH);
+    if (!await traceFile.exists()) {
+      progress?.updateMessage("No trace file found to upload.");
+      progress?.increment(isSuccess: false);
+      return;
+    }
+    var isTraceOn =
+        await AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? false;
+    try {
+      progress?.updateMessage("Reading trace file...");
+      progress?.updateMessage("Uploading to server...");
+      LogService.writeLog(message: "[TRACE_UPLOAD] Preparing upload...");
+
+      List<int> fileBytes = await traceFile.readAsBytes();
+      String base64Trace = base64Encode(fileBytes);
+
+      final String currentSessionId =
+          await AppStorage().retrieveValue(AppStorage.SESSIONID) ?? "";
+      final String currentUser =
+          await AppStorage().retrieveValue(AppStorage.USER_NAME) ?? "";
+      final String project =
+          await AppStorage().retrieveValue(AppStorage.PROJECT_NAME) ?? "";
+
+      final Map<String, dynamic> payload = {
+        "ARMSessionId": currentSessionId,
+        "publickey": "axofflinemobilelog",
+        "project": project,
+        "submitdata": {
+          "username": currentUser,
+          "trace": isTraceOn ? "true" : "false",
+          "keyfield": "",
+          "dataarray": {
+            "data": {
+              "mode": "new",
+              "keyvalue": "",
+              "recordid": "0",
+              "dc1": {
+                "row1": {
+                  "errordt": DateTime.now().toIso8601String(),
+                  "username": currentUser,
+                  "errorresponse": "Trace Log Upload",
+                  "payload": "",
+                  "axpfile_file": {
+                    "file1": {
+                      "filename": "${Const.LOG_FILE_PATH.split("/").last}",
+                      "fileasbase64": base64Trace
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      };
+
+      // 3. Send to Server
+      final ServerConnections serverConnections = ServerConnections();
+      final String url =
+          Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
+
+      final dynamic res = await serverConnections.postToServer(
+        url: url,
+        body: jsonEncode(payload),
+        isBearer: true,
+      );
+
+      // 4. Log Result
+      if (res != null && res.isNotEmpty) {
+        final decoded = jsonDecode(res);
+        if (decoded is Map && decoded['success'] == true) {
+          progress?.updateMessage("Upload Successful!");
+          LogService.writeLog(message: "[TRACE_UPLOAD] Success");
+        } else {
+          progress?.increment(isSuccess: false);
+          progress?.updateMessage("Upload Failed.");
+          LogService.writeLog(message: "[TRACE_UPLOAD] Server Failed: $res");
+        }
+      }
+    } catch (e) {
+      progress?.increment(isSuccess: false);
+      progress?.updateMessage("Upload Failed.");
+      LogService.writeLog(message: "[TRACE_UPLOAD] Exception: $e");
+    }
   }
 
   static Future<dynamic> _convertAction(dynamic value) async {

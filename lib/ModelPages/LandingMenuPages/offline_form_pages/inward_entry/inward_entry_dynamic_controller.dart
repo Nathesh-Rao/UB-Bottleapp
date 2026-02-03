@@ -168,7 +168,7 @@ class InwardEntryDynamicController extends GetxController {
   }
 
   void _attachBusinessListeners() {
-    getTextCtrl("received_bags_crates").addListener(_onReceivedChanged);
+    getTextCtrl("billed_qty_bags_crates").addListener(_onReceivedChanged);
     // ever(getTextCtrl("eceived_bags_crates"), (_){
     //   _onReceivedChanged();
     // });
@@ -226,7 +226,7 @@ class InwardEntryDynamicController extends GetxController {
 
   void _onReceivedChanged() {
     final received =
-        int.tryParse(getTextCtrl("received_bags_crates").text.trim()) ?? 0;
+        int.tryParse(getTextCtrl("billed_qty_bags_crates").text.trim()) ?? 0;
 
     final String packingType =
         getDropdownCtrl("packing").value.trim().toLowerCase();
@@ -280,7 +280,7 @@ class InwardEntryDynamicController extends GetxController {
 
   void _recheckMiniFab() {
     final received =
-        int.tryParse(getTextCtrl("received_bags_crates").text.trim()) ?? 0;
+        int.tryParse(getTextCtrl("billed_qty_bags_crates").text.trim()) ?? 0;
     final sample = int.tryParse(getTextCtrl("bags_sample").text.trim()) ?? 0;
 
     if (received >= 1 && sample >= 1) {
@@ -398,27 +398,24 @@ class InwardEntryDynamicController extends GetxController {
   }
 
   Widget _buildTabletGridView() {
-    return GridView.builder(
-      padding: const EdgeInsets.only(bottom: 20),
-      // gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-
-      //   maxCrossAxisExtent: 400,
-      //   mainAxisExtent: 500,
-      //   crossAxisSpacing: 12,
-      //   mainAxisSpacing: 12,
-      // ),
-      //
-      // gridampleGridRows.length,
-      itemCount: sampleGridRows.length,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          childAspectRatio: 0.45,
-          crossAxisCount: 3,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10),
-      itemBuilder: (context, index) {
-        final row = sampleGridRows[index];
-        return _buildSampleFormPage(row, index + 1);
-      },
+    return Scrollbar(
+      thumbVisibility: true,
+      thickness: 15,
+      radius: const Radius.circular(10),
+      interactive: true,
+      child: GridView.builder(
+        padding: const EdgeInsets.only(bottom: 20),
+        itemCount: sampleGridRows.length,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            childAspectRatio: 0.45,
+            crossAxisCount: 3,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10),
+        itemBuilder: (context, index) {
+          final row = sampleGridRows[index];
+          return _buildSampleFormPage(row, index + 1);
+        },
+      ),
     );
   }
 
@@ -894,6 +891,81 @@ class InwardEntryDynamicController extends GetxController {
     }
   }
 
+  // Widget _buildGridDropdown(
+  //     Map<String, dynamic> fieldDef, TextEditingController controller) {
+  //   final String dsName = fieldDef["datasource"] ?? "";
+
+  //   if (dsName.isEmpty) {
+  //     return const Padding(
+  //       padding: EdgeInsets.only(left: 12),
+  //       child: Align(
+  //           alignment: Alignment.centerLeft, child: Text("No Datasource")),
+  //     );
+  //   }
+
+  //   return FutureBuilder<List<Map<String, dynamic>>>(
+  //     future: OfflineDbModule.getDatasourceOptions(
+  //       transId: schema["transid"],
+  //       datasource: dsName,
+  //     ),
+  //     builder: (context, snapshot) {
+  //       if (!snapshot.hasData) {
+  //         return const Center(
+  //             child: SizedBox(
+  //                 height: 15,
+  //                 width: 15,
+  //                 child: CircularProgressIndicator(
+  //                   value: 40,
+  //                 )));
+  //       }
+
+  //       final options = snapshot.data!;
+
+  //       return ValueListenableBuilder<TextEditingValue>(
+  //         valueListenable: controller,
+  //         builder: (context, value, child) {
+  //           final currentText = value.text;
+
+  //           final bool isValidOption = options
+  //               .any((e) => e[fieldDef["fld_name"]]?.toString() == currentText);
+
+  //           return DropdownButtonHideUnderline(
+  //             child: DropdownButton<String>(
+  //               isExpanded: true,
+  //               value: isValidOption ? currentText : null,
+  //               hint: const Padding(
+  //                 padding: EdgeInsets.only(left: 12.0),
+  //                 child: Text("Select",
+  //                     style: TextStyle(color: Colors.grey, fontSize: 13)),
+  //               ),
+  //               padding: const EdgeInsets.symmetric(horizontal: 12),
+  //               items: options.map((item) {
+  //                 final String key = fieldDef["fld_name"];
+  //                 String val = item[key]?.toString() ?? "";
+
+  //                 if (val.isEmpty && item.values.isNotEmpty) {
+  //                   val = item.values.last.toString();
+  //                 }
+
+  //                 return DropdownMenuItem<String>(
+  //                   value: val,
+  //                   child: Text(val,
+  //                       style: GoogleFonts.poppins(
+  //                           fontSize: 13, fontWeight: FontWeight.w500)),
+  //                 );
+  //               }).toList(),
+  //               onChanged: (newValue) {
+  //                 if (newValue != null) {
+  //                   controller.text = newValue;
+  //                 }
+  //               },
+  //             ),
+  //           );
+  //         },
+  //       );
+  //     },
+  //   );
+  // }
   Widget _buildGridDropdown(
       Map<String, dynamic> fieldDef, TextEditingController controller) {
     final String dsName = fieldDef["datasource"] ?? "";
@@ -917,9 +989,7 @@ class InwardEntryDynamicController extends GetxController {
               child: SizedBox(
                   height: 15,
                   width: 15,
-                  child: CircularProgressIndicator(
-                    value: 40,
-                  )));
+                  child: CircularProgressIndicator(strokeWidth: 2)));
         }
 
         final options = snapshot.data!;
@@ -929,8 +999,18 @@ class InwardEntryDynamicController extends GetxController {
           builder: (context, value, child) {
             final currentText = value.text;
 
-            final bool isValidOption = options
-                .any((e) => e[fieldDef["fld_name"]]?.toString() == currentText);
+            String getOptionValue(Map<String, dynamic> item) {
+              final String key = fieldDef["fld_name"];
+              String val = item[key]?.toString() ?? "";
+
+              if (val.isEmpty && item.values.isNotEmpty) {
+                val = item.values.last.toString();
+              }
+              return val;
+            }
+
+            final bool isValidOption =
+                options.any((e) => getOptionValue(e) == currentText);
 
             return DropdownButtonHideUnderline(
               child: DropdownButton<String>(
@@ -943,12 +1023,7 @@ class InwardEntryDynamicController extends GetxController {
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 items: options.map((item) {
-                  final String key = fieldDef["fld_name"];
-                  String val = item[key]?.toString() ?? "";
-
-                  if (val.isEmpty && item.values.isNotEmpty) {
-                    val = item.values.last.toString();
-                  }
+                  final String val = getOptionValue(item);
 
                   return DropdownMenuItem<String>(
                     value: val,
@@ -1310,7 +1385,7 @@ class InwardEntryDynamicController extends GetxController {
     return isValid;
   }
 
-  Map<String, dynamic> generateSubmitPayload() {
+  Future<Map<String, dynamic>> generateSubmitPayload() async {
     // ----------------- 1. DC1 (Header Data) -----------------
     final Map<String, dynamic> dc1Data = {};
     final List fields = schema["fields"];
@@ -1382,8 +1457,10 @@ class InwardEntryDynamicController extends GetxController {
       }
     };
 
-    String sessionId = AppStorage().retrieveValue(AppStorage.SESSIONID) ?? "";
-    final String username = AppStorage().retrieveValue(AppStorage.USER_NAME);
+    String sessionId =
+        await AppStorage().retrieveValue(AppStorage.SESSIONID) ?? "";
+    final String username =
+        await AppStorage().retrieveValue(AppStorage.USER_NAME);
     var project = globalVariableController.PROJECT_NAME.value;
     return {
       "ARMSessionId": sessionId,
@@ -1575,7 +1652,7 @@ class InwardEntryDynamicController extends GetxController {
       final isOnline = await Get.find<InternetConnectivity>().check();
       var forceOffline = schema["force_offline"];
       submitStatus.value = "Generating form data...";
-      final Map<String, dynamic> mainBody = generateSubmitPayload();
+      final Map<String, dynamic> mainBody = await generateSubmitPayload();
       log(mainBody.toString(), name: "MAIN_BODY");
       submitStatus.value = "Submitting Master Form...";
 

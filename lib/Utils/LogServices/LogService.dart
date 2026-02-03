@@ -15,58 +15,79 @@ import 'package:ubbottleapp/Constants/GlobalVariableController.dart';
 
 class LogService {
   static GlobalVariableController gvcontroller = Get.find();
-
-  static File? localFile;
-
   static Future<String> _localPath() async {
-    var directory = await getExternalStorageDirectory();
-    directory ??= await getApplicationDocumentsDirectory();
+    var directory = await getApplicationDocumentsDirectory();
     return directory.path;
   }
 
   static Future<File> _localFile() async {
     final path = await _localPath();
-    debugPrint(" log_path : $path");
     var fullPath = '$path/AxpertLog.txt';
-    debugPrint(" log_fullPath : $fullPath");
     Const.LOG_FILE_PATH = fullPath;
-    // gvcontroller.LOG_PATH.value = fullPath;
-    debugPrint(" const_log_fullPath : ${Const.LOG_FILE_PATH}");
-    return File(fullPath);
+    gvcontroller.LOG_PATH.value = fullPath;
+    var file = File(fullPath);
+    if (!await file.exists()) {
+      await file.create();
+    }
+
+    return file;
   }
 
-  static getVersion() async {
+  static setLogValue(value) async {
+    await AppStorage().storeValue(AppStorage.isLogEnabled, value) ?? false;
+  }
+
+  static getVersionName() async {
     PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    // String appName = packageInfo.appName;
+    // String packageName = packageInfo.packageName;
     var version = packageInfo.version;
-    Const.APP_VERSION = version;
+    // String buildNumber = packageInfo.buildNumber;
+    var versionInfo =
+        version + "." + Const.APP_RELEASE_ID + "_" + Const.APP_RELEASE_DATE;
+    return versionInfo;
   }
 
   static initLogs() async {
-    localFile = await _localFile();
+    setLogValue(false);
+    var file = await _localFile();
     try {
       var isTraceOn =
           await AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? false;
       Const.isLogEnabled = isTraceOn;
 
-      var isExists = await localFile!.exists();
+      var isExists = await file.parent.exists();
       if (!isExists) {
-        if (Const.APP_VERSION == "") {
-          await getVersion();
-        }
-        await localFile?.writeAsString('Axpert Android Log File\n',
+        await file.parent.create(recursive: true);
+      }
+      // if (!await file.exists()) {
+      //   await file.create();
+      // }
+      print("offline_trace init file exists? $isExists\nPath: ${file.path}");
+      print("offline_trace init file exists? $isExists\nPath: ${file.path}");
+      log("init file exists? $isExists\nPath: ${file.path}",
+          name: 'offline_trace');
+      if (isExists) {
+        // if (Const.APP_VERSION == "") {
+        //   await getVersion();
+        // }
+        await file.writeAsString('Axpert Android Log File\n',
             mode: FileMode.write, flush: true);
-        await localFile?.writeAsString('App Version: ${Const.APP_VERSION}\n',
+        await file.writeAsString('App Version: ${await getVersionName()}\n',
             mode: FileMode.append, flush: true);
-        await localFile?.writeAsString(
+        await file.writeAsString(
             'File Creation Date: ${DateFormat("dd-MMM-yyyy HH:mm:ss").format(DateTime.now())}\n',
             mode: FileMode.append,
             flush: true);
-        await localFile?.writeAsString(
+        await file.writeAsString(
             '------------------------------------------------------------------- \n\n',
             mode: FileMode.append,
             flush: true);
       }
-    } catch (e) {}
+    } catch (e) {
+      print("offline_trace init error $e");
+      log("init error $e", name: 'offline_trace');
+    }
   }
 
   static writeOnConsole({String message = ""}) async {
@@ -78,11 +99,11 @@ class LogService {
   static writeLog({String message = ""}) async {
     _logWithColor(message, yellow);
     if (Const.isLogEnabled) {
-      // final file = await _localFile();
+      final file = await _localFile();
       var formatedDateTime =
           DateFormat("dd-MMM-yyyy HH:mm:ss:SSS").format(DateTime.now());
       try {
-        await localFile?.writeAsString('$formatedDateTime: $message\n',
+        await file.writeAsString('$formatedDateTime: $message\n',
             mode: FileMode.append);
       } catch (e) {}
     }
@@ -92,13 +113,28 @@ class LogService {
   static const String skyBlue = '\u001B[38;5;39m';
 
   static clearLog() async {
+    print(
+      "offline_trace Clear log called",
+    );
+    log("Clear log called", name: 'offline_trace');
+
     try {
-      var isExists = await localFile?.exists() ?? false;
+      final file = await _localFile();
+      var isExists = await file.exists();
+      print("offline_trace Clear log Exists? : $isExists \nPath: ${file.path}");
+      log("Clear log Exists? : $isExists \nPath: ${file.path}",
+          name: 'offline_trace');
+
       if (isExists) {
-        localFile?.delete();
+        file.delete();
         initLogs();
       }
-    } catch (e) {}
+    } catch (e) {
+      print(
+        "offline_trace Clear log error $e",
+      );
+      log("Clear log error $e", name: 'offline_trace');
+    }
   }
 
   // Experimental------------->
@@ -107,10 +143,11 @@ class LogService {
     String message = '',
   }) async {
     if (Const.isLogEnabled) {
+      final file = await _localFile();
       var formatedDateTime =
           DateFormat("dd-MMM-yyyy HH:mm:ss:SSS").format(DateTime.now());
       try {
-        await localFile?.writeAsString('$formatedDateTime: $log\n',
+        await file.writeAsString('$formatedDateTime: $log\n',
             mode: FileMode.append);
       } catch (e) {}
     }

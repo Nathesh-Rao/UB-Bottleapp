@@ -1265,7 +1265,7 @@ class OfflineFormController extends GetxController {
 
       // _showSimpleSuccessDialog(title: "Upload Complete", message: resultMsg);
       refreshPendingCount();
-      LogService.writeLog(message: "$tag[DONE] $resultMsg");
+      // LogService.writeLog(message: "$tag[DONE] $resultMsg");
     } catch (e, st) {
       // Get.back(); // Ensure dialog closes
       LogService.writeLog(message: "$tag[FAILED] $e \n$st");
