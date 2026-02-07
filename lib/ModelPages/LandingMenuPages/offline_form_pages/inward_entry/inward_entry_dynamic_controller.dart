@@ -1462,9 +1462,11 @@ class InwardEntryDynamicController extends GetxController {
     final String username =
         await AppStorage().retrieveValue(AppStorage.USER_NAME);
     var project = globalVariableController.PROJECT_NAME.value;
+
+    String publicKey = schema["submit_data_publickey"] ?? "KEY_NOT_FOUND";
     return {
       "ARMSessionId": sessionId,
-      "publickey": "InwardEntry",
+      "publickey": publicKey,
       "project": project,
       "submitdata": {
         "username": username,

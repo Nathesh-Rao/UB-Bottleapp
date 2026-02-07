@@ -27,32 +27,54 @@ class UpdatedHomeCardDataModel {
     required this.cardDatasource,
     required this.width,
     required this.height,
-   required this.autorefresh,
+    required this.autorefresh,
     required this.context,
     required this.orderno,
     required this.carddata,
   });
 
-  factory UpdatedHomeCardDataModel.fromRawJson(String str) => UpdatedHomeCardDataModel.fromJson(json.decode(str));
+  factory UpdatedHomeCardDataModel.fromRawJson(String str) =>
+      UpdatedHomeCardDataModel.fromJson(json.decode(str));
 
   String toRawJson() => json.encode(toJson());
 
-  factory UpdatedHomeCardDataModel.fromJson(Map<String, dynamic> json) => UpdatedHomeCardDataModel(
-        axpCardsid: json["axp_cardsid"],
-        cardtype: json["cardtype"],
-        cardname: json["cardname"],
-        cardicon: json["cardicon"],
-        charttype: json["charttype"],
-        pluginname: json["pluginname"] ?? '',
-        htmlEditorCard: json["html_editor_card"],
-        cardDatasource: json["card_datasource"],
-        width: json["width"],
-        height: json["height"],
-       autorefresh: json["autorefresh"],
-        context: json["context"],
-        orderno: json["orderno"],
-        carddata: json["carddata"] ?? [],
-      );
+  factory UpdatedHomeCardDataModel.fromJson(Map<String, dynamic> json) {
+    List<dynamic> parseCardData(dynamic data) {
+      if (data == null) return [];
+
+      if (data is List) return data;
+
+      if (data is String && data.trim().isNotEmpty) {
+        try {
+          final decoded = jsonDecode(data);
+          if (decoded is List) {
+            return decoded;
+          }
+        } catch (e) {
+          return [];
+        }
+      }
+
+      return [];
+    }
+
+    return UpdatedHomeCardDataModel(
+      axpCardsid: json["axp_cardsid"],
+      cardtype: json["cardtype"],
+      cardname: json["cardname"],
+      cardicon: json["cardicon"],
+      charttype: json["charttype"],
+      pluginname: json["pluginname"] ?? '',
+      htmlEditorCard: json["html_editor_card"],
+      cardDatasource: json["card_datasource"],
+      width: json["width"],
+      height: json["height"],
+      autorefresh: json["autorefresh"],
+      context: json["context"],
+      orderno: json["orderno"],
+      carddata: parseCardData(json["carddata"] ?? ''),
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         "axp_cardsid": axpCardsid,

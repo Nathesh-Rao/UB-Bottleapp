@@ -42,11 +42,6 @@ class MenuDashboardController extends GetxController {
       "HomePageCards": false,
       "RefreshData": false,
       "IsMobile": true
-      /* "AppName": appStorage.retrieveValue(AppStorage.PROJECT_NAME),
-      "Roles": "default",
-      "UserName": appStorage.retrieveValue(AppStorage.USER_NAME),
-      "AxSessionId": "jbxqzz5tie2y3yujshe3k1x5",
-      "GlobalParams": ServerConnections.SAMPLE_GET_CARDS_WITH_DATA_GLOBAL_PARAMS*/
     };
     var resp = await serverConnections.postToServer(
         url: url, body: jsonEncode(getCardsBody), isBearer: true);
@@ -134,7 +129,7 @@ class MenuDashboardController extends GetxController {
           // bannerCardData.add(data);
           LogService.writeLog(message: "${data.carddata}");
           dashBoardWidgetList.add(WidgetBannerCard1(cardModel: data));
-
+ 
           break;
         case "TASK LIST":
           // taskListData.add(data);

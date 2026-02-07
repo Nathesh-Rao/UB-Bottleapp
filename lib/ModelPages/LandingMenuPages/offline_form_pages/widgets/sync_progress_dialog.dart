@@ -121,40 +121,47 @@ class SyncProgressDialog extends StatelessWidget {
 
   Widget _buildProgress() {
     return Obx(() {
-      return Column(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Stack(
+      return !progressModel.isCompleted.value
+          ? Column(
               children: [
-                LinearProgressIndicator(
-                  minHeight: 5,
-                  backgroundColor: Colors.grey.shade200,
-                  color: Color(0xFF2563EB).withAlpha(100),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Stack(
+                    children: [
+                      LinearProgressIndicator(
+                        stopIndicatorRadius: 30,
+                        borderRadius: BorderRadius.circular(10),
+                        minHeight: 5,
+                        backgroundColor: Color(0xFF2563EB).withAlpha(40),
+                        color: Color(0xFF2563EB),
+                      ),
+                      LinearProgressIndicator(
+                        stopIndicatorRadius: 30,
+                        borderRadius: BorderRadius.circular(10),
+                        value: progressModel.progressValue,
+                        minHeight: 5,
+                        backgroundColor: Colors.transparent,
+                        valueColor:
+                            const AlwaysStoppedAnimation(Color(0xFF2563EB)),
+                      ),
+                    ],
+                  ),
                 ),
-                LinearProgressIndicator(
-                  value: progressModel.progressValue,
-                  minHeight: 5,
-                  backgroundColor: Colors.transparent,
-                  valueColor: const AlwaysStoppedAnimation(Color(0xFF2563EB)),
+                const SizedBox(height: 6),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    "${progressModel.processedItems.value} / ${progressModel.totalItems.value}",
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade500,
+                    ),
+                  ),
                 ),
               ],
-            ),
-          ),
-          const SizedBox(height: 6),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              "${progressModel.processedItems.value} / ${progressModel.totalItems.value}",
-              style: GoogleFonts.poppins(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey.shade500,
-              ),
-            ),
-          ),
-        ],
-      );
+            )
+          : SizedBox.shrink();
     });
   }
 

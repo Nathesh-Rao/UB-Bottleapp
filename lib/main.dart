@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:io';
-
+import 'package:upgrader/upgrader.dart';
 import 'package:ubbottleapp/Constants/CommonMethods.dart';
 import 'package:ubbottleapp/Constants/MyColors.dart';
 import 'package:ubbottleapp/Constants/Routes.dart';
@@ -54,7 +54,7 @@ var hasNotificationPermission = true;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   LogService.writeOnConsole(message: "Main method started.......");
-  await CommonMethods.requestLocationPermission();
+  // await CommonMethods.requestLocationPermission();
   await GetStorage.init();
   await FlutterDownloader.initialize(debug: true);
   await Firebase.initializeApp();

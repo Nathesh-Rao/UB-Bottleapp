@@ -84,9 +84,10 @@ class WidgetBannerCard extends StatelessWidget {
     );
   }
 
-  _bannerCard(dynamic cardData, String? cardname) {
+  _bannerCard(Map<String, dynamic> cardData, String? cardname) {
     // print(cardData);
-
+    // _bannercard recent error
+    // return SizedBox.shrink();
     var bannerData = BannerCard.fromJson(cardData);
     return Container(
       margin: EdgeInsets.all(15),

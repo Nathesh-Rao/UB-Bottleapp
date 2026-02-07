@@ -1,9 +1,27 @@
+import 'package:ubbottleapp/Constants/AppStorage.dart';
+
 class OfflineDBConstants {
   OfflineDBConstants._();
 
   // COMMON
-  static const String OFFLINE_PAGES_URL =
-      "https://raw.githubusercontent.com/amrith4agile/offline_sample_pages/refs/heads/main/offline_pages.json";
+  // static const String OFFLINE_PAGES_URL =
+  //     "https://raw.githubusercontent.com/amrith4agile/offline_sample_pages/refs/heads/main/offline_pages.json";
+
+  // static const String OFFLINE_PAGES_URL =
+  //     "https://agileqa.agilecloud.biz/MobileOfflineStruct/offline_pages.json";
+
+  static String OFFLINE_PAGES_URL() {
+    String userEnteredUrl = AppStorage().retrieveValue(AppStorage.PROJECT_URL);
+    if (!userEnteredUrl.startsWith('http')) {
+      userEnteredUrl = 'https://$userEnteredUrl';
+    }
+    Uri uri = Uri.parse(userEnteredUrl);
+
+    String baseUrl = "${uri.scheme}://${uri.host}";
+
+    return "$baseUrl/MobileOfflineStruct/offline_pages.json";
+  }
+
   static const String CREATE_QUERY = 'CREATE TABLE IF NOT EXISTS ';
 
   static const int STATUS_PENDING = 0;
@@ -73,7 +91,7 @@ class OfflineDBConstants {
     ''';
 
   // -------- DATASOURCE NAMES (PER USER+PROJECT) --------
-static final String CREATE_DATASOURCES_TABLE = CREATE_QUERY +
+  static final String CREATE_DATASOURCES_TABLE = CREATE_QUERY +
       TABLE_DATASOURCES +
       '''
       (

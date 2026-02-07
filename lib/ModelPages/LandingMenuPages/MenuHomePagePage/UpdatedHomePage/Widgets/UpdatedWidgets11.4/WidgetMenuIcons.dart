@@ -288,6 +288,9 @@ class _MenuIconsPanelState extends State<MenuIconsPanel> {
   }
 
   Widget _gridTile(cardData, Color color) {
+    if (cardData is! Map<String, dynamic>) {
+      return const SizedBox.shrink();
+    }
     MenuIconsModel menuIconData = MenuIconsModel.fromJson(cardData);
 
     return InkWell(

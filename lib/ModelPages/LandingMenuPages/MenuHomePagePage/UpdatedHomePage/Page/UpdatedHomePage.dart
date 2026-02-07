@@ -75,7 +75,7 @@ class UpdatedHomePage extends StatelessWidget {
                 WidgetKPIList(),
                 WidgetNewsCard(),
 
-                WidgetActivityList(),
+                // WidgetActivityList(),
 
                 // WidgetBannerCard(),
                 //NOTE===================================>

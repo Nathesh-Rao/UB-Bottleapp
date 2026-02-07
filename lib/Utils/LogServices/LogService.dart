@@ -14,7 +14,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:ubbottleapp/Constants/GlobalVariableController.dart';
 
 class LogService {
-  static GlobalVariableController gvcontroller = Get.find();
+  // static GlobalVariableController gvcontroller = Get.find();
   static Future<String> _localPath() async {
     var directory = await getApplicationDocumentsDirectory();
     return directory.path;
@@ -24,7 +24,7 @@ class LogService {
     final path = await _localPath();
     var fullPath = '$path/AxpertLog.txt';
     Const.LOG_FILE_PATH = fullPath;
-    gvcontroller.LOG_PATH.value = fullPath;
+    // gvcontroller.LOG_PATH.value = fullPath;
     var file = File(fullPath);
     if (!await file.exists()) {
       await file.create();

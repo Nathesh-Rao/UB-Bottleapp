@@ -271,6 +271,9 @@ class _KPICardsPanelState extends State<KPICardsPanel> {
   }
 
   Widget _gridTile(cardData, Color color) {
+    if (cardData is! Map<String, dynamic>) {
+      return const SizedBox.shrink();
+    }
     KpiListModel kpiListData = KpiListModel.fromJson(cardData);
     String itemName = kpiListData.name.toString();
     String itemValue = kpiListData.value

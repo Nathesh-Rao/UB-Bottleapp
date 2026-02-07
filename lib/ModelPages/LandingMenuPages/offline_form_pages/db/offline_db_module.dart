@@ -376,7 +376,7 @@ class OfflineDbModule {
       LogService.writeLog(message: "$tag[START] Fetching offline pages...");
 
       final res =
-          await http.get(Uri.parse(OfflineDBConstants.OFFLINE_PAGES_URL));
+          await http.get(Uri.parse(OfflineDBConstants.OFFLINE_PAGES_URL()));
 
       if (res.statusCode != 200) return [];
 
@@ -450,7 +450,6 @@ class OfflineDbModule {
   static Future<int> getOfflinePagesCount() async {
     final scope = await _getLastOfflineUserScope();
     if (scope == null) return 0;
-
     return _getOfflinePagesCountInternal(
       username: scope['username']!,
       projectName: scope['projectName']!,
@@ -506,58 +505,6 @@ class OfflineDbModule {
         .toList();
   }
 
-  // }
-  // static String _extractDatasourceString(List<Map<String, dynamic>> pages) {
-  //   final Set<String> globalSet = {};
-
-  //   for (final page in pages) {
-  //     globalSet.addAll(_getAllUniqueDatasourcesInPage(page));
-  //   }
-
-  //   return globalSet.join(',');
-  // }
-
-  // static Future<void> _saveDatasourceString({
-  //   required String username,
-  //   required String projectName,
-  //   required String value,
-  // }) async {
-  //   await _database.insert(
-  //     OfflineDBConstants.TABLE_DATASOURCES,
-  //     {
-  //       OfflineDBConstants.COL_USERNAME: username,
-  //       OfflineDBConstants.COL_PROJECT_NAME: projectName,
-  //       OfflineDBConstants.COL_DATASOURCE_NAMES: value,
-  //     },
-  //     conflictAlgorithm: ConflictAlgorithm.replace,
-  //   );
-  // }
-
-  // static Future<List<String>> _getDatasourceList({
-  //   required String username,
-  //   required String projectName,
-  // }) async {
-  //   final result = await _database.query(
-  //     OfflineDBConstants.TABLE_DATASOURCES,
-  //     where: '''
-  //     ${OfflineDBConstants.COL_USERNAME} = ? AND
-  //     ${OfflineDBConstants.COL_PROJECT_NAME} = ?
-  //   ''',
-  //     whereArgs: [username, projectName],
-  //     limit: 1,
-  //   );
-
-  //   if (result.isEmpty) return [];
-
-  //   final raw =
-  //       result.first[OfflineDBConstants.COL_DATASOURCE_NAMES] as String? ?? '';
-
-  //   return raw
-  //       .split(',')
-  //       .map((e) => e.trim())
-  //       .where((e) => e.isNotEmpty)
-  //       .toList();
-  // }
 
   static Future<List<String>> _getDatasourceList({
     required String username,
@@ -603,77 +550,6 @@ class OfflineDbModule {
     );
   }
 
-  // static Future<void> _fetchAndStoreAllDatasourcesInternal({
-  //   required String username,
-  //   required String projectName,
-  //   required String transId,
-  //   SyncProgressModel? progress,
-  // }) async {
-  //   try {
-  //     final datasources = await _getDatasourceList(
-  //       username: username,
-  //       projectName: projectName,
-  //     );
-  //     progress?.totalItems.value = datasources.length;
-  //     for (final ds in datasources) {
-  //       // Check if already cached for this user+project+form+ds
-  //       progress?.updateMessage("Fetching: $ds\n(Form: $transId)");
-  //       final exists = await _database.query(
-  //         OfflineDBConstants.TABLE_DATASOURCE_DATA,
-  //         where: '''
-  //       ${OfflineDBConstants.COL_USERNAME} = ? AND
-  //       ${OfflineDBConstants.COL_PROJECT_NAME} = ? AND
-  //       ${OfflineDBConstants.COL_TRANS_ID} = ? AND
-  //       ${OfflineDBConstants.COL_DATASOURCE_NAME} = ?
-  //     ''',
-  //         whereArgs: [username, projectName, transId, ds],
-  //         limit: 1,
-  //       );
-
-  //       if (exists.isNotEmpty) {
-  //         progress?.increment();
-  //         continue;
-  //       }
-
-  //       final scope = await _getLastOfflineUserScope();
-  //       if (scope == null) continue;
-
-  //       final session = AppStorage().retrieveValue(AppStorage.SESSIONID) ?? "";
-
-  //       final res = await OfflineDatasources.fetchDatasource(
-  //         datasourceName: ds,
-  //         sessionId: session,
-  //         username: scope['username']!,
-  //         appName: scope['projectName']!,
-  //         sqlParams: {
-  //           "username": scope['username']!,
-  //         },
-  //       );
-  //       debugPrint("DATA_SOURCE res=> $res");
-  //       if (res == null || res.isEmpty) {
-  //         progress?.increment(isSuccess: false);
-  //         continue;
-  //       } else {
-  //         progress?.increment();
-  //       }
-
-  //       await _database.insert(
-  //         OfflineDBConstants.TABLE_DATASOURCE_DATA,
-  //         {
-  //           OfflineDBConstants.COL_USERNAME: username,
-  //           OfflineDBConstants.COL_PROJECT_NAME: projectName,
-  //           OfflineDBConstants.COL_TRANS_ID: transId,
-  //           OfflineDBConstants.COL_DATASOURCE_NAME: ds,
-  //           OfflineDBConstants.COL_RESPONSE_JSON: res,
-  //         },
-  //         conflictAlgorithm: ConflictAlgorithm.replace,
-  //       );
-  //     }
-
-  //   } catch (e) {
-  //     progress?.increment(isSuccess: false);
-  //   }
-  // }
 
   static Future<void> _fetchAndStoreAllDatasourcesInternal({
     required String username,
