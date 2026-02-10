@@ -16,6 +16,9 @@ class SyncProgressModel {
     title.value = initialTitle;
   }
 
+
+  
+
   void init({required int total, String msg = "Starting..."}) {
     totalItems.value = total;
     processedItems.value = 0;

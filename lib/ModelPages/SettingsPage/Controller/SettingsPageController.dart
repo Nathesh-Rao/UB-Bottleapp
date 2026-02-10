@@ -230,25 +230,34 @@ class SettingsPageController extends GetxController {
         title: "Upload Trace Log",
         message:
             "Would you like to upload your offline activity log? This helps the support team analyze and troubleshoot any issues.");
-
-    if (!ok) return;
-
     final SyncProgressModel progress = SyncProgressModel();
     progress.init(total: 1, msg: "Preparing trace log...");
+    if (ok) {
+      Get.dialog(
+        SyncProgressDialog(
+            progressModel: progress,
+            onComplete: downloadFileSafely,
+            onCompleteTitle: "Download to device"),
+        barrierDismissible: false,
+      );
 
-    Get.dialog(
-      SyncProgressDialog(
-          progressModel: progress,
-          onComplete: downloadFileSafely,
-          onCompleteTitle: "Download to device"),
-      barrierDismissible: false,
-    );
-
-    await OfflineDbModule.uploadTraceFile(
-      isInternetAvailable: true,
-      progress: progress,
-    );
-    progress.complete();
+      await OfflineDbModule.uploadTraceFile(
+        isInternetAvailable: true,
+        progress: progress,
+      );
+      progress.complete();
+    } else {
+      Get.dialog(
+        SyncProgressDialog(
+            progressModel: progress,
+            onComplete: downloadFileSafely,
+            onCompleteTitle: "Download to device"),
+        barrierDismissible: false,
+      );
+      progress.complete();
+      progress.title.value = "Upload trace declined";
+      progress.message.value = "You can export the trace to your local device";
+    }
 
     // await Future.delayed(const Duration(seconds: 1));
     // if (Get.isDialogOpen ?? false) Get.back();
