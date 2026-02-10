@@ -505,7 +505,6 @@ class OfflineDbModule {
         .toList();
   }
 
-
   static Future<List<String>> _getDatasourceList({
     required String username,
     required String projectName,
@@ -549,7 +548,6 @@ class OfflineDbModule {
       progress: progress,
     );
   }
-
 
   static Future<void> _fetchAndStoreAllDatasourcesInternal({
     required String username,
@@ -1121,7 +1119,28 @@ class OfflineDbModule {
             name: processPendingQueTag);
         progress?.updateMessage(
             "Uploading${_isAssetHelper(uploadPayload)}record ${i + 1} of $total...");
-//  LogService.writeLog(message: "Process Pending que ");
+
+        if (_isAsset(uploadPayload)) {
+          try {
+            var data = uploadPayload["submitdata"]["dataarray"]["data"];
+            var fileMap =
+                data["dc1"]["row1"]["axpfile_file"] as Map<String, dynamic>;
+            fileMap.forEach((key, value) {
+              if (value is Map && value.containsKey("filename")) {
+                value["filename"] =
+                    value["filename"].toString().replaceAll("/", "_");
+
+                log(value["filename"], name: "file_name_change");
+              }
+            });
+
+            log("Payload filenames changed for offline upload",
+                name: processPendingQueTag);
+          } catch (e) {
+            log("Error changing asset payload: $e", name: "file_name_change");
+          }
+        }
+
         final dynamic res = await serverConnections.postToServer(
           url: url,
           body: jsonEncode(uploadPayload),
@@ -1176,6 +1195,11 @@ class OfflineDbModule {
     return "Processed: $successCount success, $failCount failed ";
   }
 
+  static bool _isAsset(Map<String, dynamic> pl) {
+    String publicKey = (pl["publickey"] ?? '').toString().toLowerCase();
+    return publicKey == "inwardattach";
+  }
+
   static Future<void> _markAsError(int id) async {
     await _database.update(
       OfflineDBConstants.TABLE_PENDING_REQUESTS,
@@ -1200,7 +1224,7 @@ class OfflineDbModule {
     if (publicKey.toLowerCase() == "inwardentry") {
       var ubge = pl["submitdata"]["dataarray"]["data"]["dc1"]["row1"]
               ["ub_ge_no"] ??
-          "Asset";
+          "";
       return ubge.isEmpty ? " Master " : " UBGE: $ubge ";
     } else if (publicKey.toLowerCase() == "inwardattach") {
       var ubge = pl["submitdata"]["dataarray"]["data"]["dc1"]["row1"]

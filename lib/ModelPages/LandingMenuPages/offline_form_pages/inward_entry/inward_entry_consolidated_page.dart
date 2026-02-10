@@ -791,7 +791,7 @@ class InwardEntryConsolidatedPage
 
       final String fileName =
           '${DateTime.now().millisecondsSinceEpoch}.${(image.path.split(".").last)}';
-      final String localPath = '${directory.path}/$fileName';
+      final String localPath = '${directory.path}_$fileName';
 
       await File(image.path).copy(localPath);
 
