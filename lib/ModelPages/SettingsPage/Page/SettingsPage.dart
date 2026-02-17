@@ -265,6 +265,7 @@ class SettingsPage extends StatelessWidget {
                                         onToggle: (bool values) {
                                           settingsPageController
                                               .onChangeLogStatus();
+                                          // log(Const.LOG_FILE_PATH);
                                         },
                                       ),
                                     )),

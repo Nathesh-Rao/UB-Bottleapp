@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
+import 'package:share_plus/share_plus.dart';
 import 'package:ubbottleapp/Constants/AppStorage.dart';
 import 'package:ubbottleapp/Constants/Const.dart';
 import 'package:ubbottleapp/ModelPages/InApplicationWebView/controller/webview_controller.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_bundle_service.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_constants.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_module.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/sync_progress_model.dart';
@@ -19,6 +21,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart';
 
 class OfflineFormController extends GetxController {
   late OfflineFormPageModel page;
@@ -42,7 +45,6 @@ class OfflineFormController extends GetxController {
     super.onInit();
     refreshPendingCount();
     listenInternetState();
-    // loadOfflineDashboard(); // 👈 THIS WAS MISSING
   }
 
   Future<void> refreshPendingCount() async {
@@ -111,36 +113,7 @@ class OfflineFormController extends GetxController {
     }
   }
 
-  // ---------------- LOAD PAGE ----------------
-
-  // Future<void> loadPage(OfflineFormPageModel pageModel) async {
-  //   page = pageModel;
-  //   fieldMap.clear();
-  //   attachments.clear();
-
-  //   final sortedFields = [...page.fields]
-  //     ..sort((a, b) => a.order.compareTo(b.order));
-
-  //   for (final field in sortedFields) {
-  //     field.value = field.defValue;
-  //     field.errorText = null;
-  //     fieldMap[field.fldName] = field;
-  //   }
-
-  //   await OfflineDbModule.fetchAndStoreAllDatasources(
-  //           transId: pageModel.transId)
-  //       .then((_) async {
-  //     await OfflineDbModule.mapDatasourceOptionsIntoPages(
-  //       pages: [pageModel],
-  //     );
-  //     update();
-  //   });
-
-  //   Get.toNamed(Routes.OfflineFormPage);
-  // }
-
   Future<void> loadPage(OfflineFormPageModel pageModel) async {
-    // await OfflineDbModule.fetchAndStoreAllDatasources(transId: page.transId);
     var tempPage =
         await OfflineDbModule.mapDatasourceOptionsIntoPages(pages: [pageModel]);
     page = tempPage.first;
@@ -158,42 +131,6 @@ class OfflineFormController extends GetxController {
     Get.toNamed(Routes.OfflineFormPage);
   }
 
-  // void updateFieldValue(OfflineFormFieldModel field, dynamic newValue) {
-  //   switch (field.fldType) {
-  //     case 'cb':
-  //       field.value =
-  //           (newValue == true || newValue.toString().toLowerCase() == 'true')
-  //               .toString();
-  //       break;
-
-  //     case 'cl':
-  //       if (newValue is List<String>) {
-  //         field.value = newValue.join(',');
-  //       }
-  //       break;
-
-  //     case 'rb':
-  //     case 'rl':
-  //     case 'dd':
-  //     case 'c':
-  //     case 'n':
-  //     case 'm':
-  //     case 'd':
-  //       field.value = newValue.toString();
-  //       break;
-  //     case 'image':
-  //       field.value = newValue.toString();
-  //       break;
-
-  //     default:
-  //       field.value = newValue.toString();
-  //       break;
-  //   }
-
-  //   field.errorText = null;
-  //   fieldMap[field.fldName] = field;
-  //   update([field.fldName]);
-  // }
   void updateFieldValue(OfflineFormFieldModel field, dynamic newValue) {
     final bool isDs = field.datasource != null && field.datasource!.isNotEmpty;
 
@@ -477,25 +414,6 @@ class OfflineFormController extends GetxController {
     return parts.join(', ');
   }
 
-  // Future<void> loadOfflineDashboard() async {
-  //   const String tag = "[OFFLINE_DASHBOARD_001]";
-
-  //   try {
-  //     LogService.writeLog(message: "$tag[START] Loading offline dashboard");
-
-  //     offlineUser = await OfflineDbModule.getLastUser();
-  //     offlineFormsCount.value = await OfflineDbModule.getOfflinePagesCount();
-  //     pendingCount = await OfflineDbModule.getPendingCount();
-
-  //     update();
-
-  //     LogService.writeLog(message: "$tag[SUCCESS] Dashboard loaded");
-  //   } catch (e, st) {
-  //     LogService.writeLog(message: "$tag[FAILED] $e");
-  //     LogService.writeLog(message: "$tag[STACK] $st");
-  //   }
-  // }
-
   Future<bool> guardOnlineOrShowDialog() async {
     final connectivity = Get.find<InternetConnectivity>();
 
@@ -581,7 +499,7 @@ class OfflineFormController extends GetxController {
       title: "Refetch Forms",
       message: "This will re-download all forms. Continue?",
       action: () async {
-        // await OfflineDbModule.refetchOnlyForms();
+        await OfflineDbModule.refetchOnlyForms();
       },
     );
   }
@@ -639,51 +557,10 @@ class OfflineFormController extends GetxController {
       title: "Clear Pending Uploads",
       message: "This will delete all pending uploads. Continue?",
       action: () async {
-        // await OfflineDbModule.clearPendingRequests();
         refreshPendingCount();
       },
     );
   }
-
-  // Future<void> actionSyncAll() async {
-  //   const tag = "[OFFLINE_ACTION_SYNCALL_001]";
-  //   LogService.writeLog(message: "$tag[START]");
-
-  //   if (!await _isInternetAvailable()) {
-  //     _showNeedInternetDialog();
-  //     return;
-  //   }
-
-  //   final ok = await _confirm(
-  //     title: "Sync All Data",
-  //     message:
-  //         "This will upload pending data and refetch all offline data. Continue?",
-  //   );
-  //   if (!ok) return;
-
-  //   try {
-  //     isLoading.value = true;
-
-  //     // TODO: push pending queue
-  //     // await OfflineDbModule.pushPending();
-
-  //     // Refetch everything
-  //     await OfflineDbModule.fetchAndStoreOfflinePages();
-  //     // await OfflineDbModule.fetchAndStoreAllDatasources();
-
-  //     await getAllPages();
-  //     // await loadOfflineDashboard();
-
-  //     Get.snackbar("Success", "Offline data synced successfully");
-  //     LogService.writeLog(message: "$tag[SUCCESS]");
-  //   } catch (e, st) {
-  //     LogService.writeLog(message: "$tag[FAILED] $e");
-  //     LogService.writeLog(message: "$tag[STACK] $st");
-  //     Get.snackbar("Error", "Failed to sync offline data");
-  //   } finally {
-  //     isLoading.value = false;
-  //   }
-  // }
 
   Future<void> actionRefetchForms() async {
     const tag = "[OFFLINE_ACTION_REFETCH_FORMS_001]";
@@ -716,36 +593,6 @@ class OfflineFormController extends GetxController {
       isLoading.value = false;
     }
   }
-
-  // Future<void> actionRefetchDatasources() async {
-  //   const tag = "[OFFLINE_ACTION_REFETCH_DS_001]";
-
-  //   if (!await _isInternetAvailable()) {
-  //     _showNeedInternetDialog();
-  //     return;
-  //   }
-
-  //   final ok = await _confirm(
-  //     title: "Refetch Datasources",
-  //     message: "This will replace all cached datasources. Continue?",
-  //   );
-  //   if (!ok) return;
-
-  //   try {
-  //     isLoading.value = true;
-
-  //     // await OfflineDbModule.fetchAndStoreAllDatasources();
-
-  //     Get.snackbar("Success", "Datasources refreshed");
-  //     LogService.writeLog(message: "$tag[SUCCESS]");
-  //   } catch (e, st) {
-  //     LogService.writeLog(message: "$tag[FAILED] $e");
-  //     LogService.writeLog(message: "$tag[STACK] $st");
-  //     Get.snackbar("Error", "Failed to refetch datasources");
-  //   } finally {
-  //     isLoading.value = false;
-  //   }
-  // }
 
   void actionShowPending() {}
   Future<void> actionClearForms() async {
@@ -852,172 +699,6 @@ class OfflineFormController extends GetxController {
       isLoading.value = false;
     }
   }
-
-  // Future<bool> _confirm({
-  //   required String title,
-  //   required String message,
-  //   String okText = "Yes",
-  //   String cancelText = "Cancel",
-  // }) async {
-  //   bool result = false;
-
-  //   await Get.dialog(
-  //     AlertDialog(
-  //       title: Text(title),
-  //       content: Text(message),
-  //       actions: [
-  //         TextButton(
-  //           onPressed: () {
-  //             result = false;
-  //             Get.back();
-  //           },
-  //           child: Text(cancelText),
-  //         ),
-  //         ElevatedButton(
-  //           onPressed: () {
-  //             result = true;
-  //             Get.back();
-  //           },
-  //           child: Text(okText),
-  //         ),
-  //       ],
-  //     ),
-  //     barrierDismissible: false,
-  //   );
-
-  //   return result;
-  // }
-
-  // Future<bool> _confirm({
-  //   required String title,
-  //   required String message,
-  //   String subtitle = '',
-  //   String okText = "Yes",
-  //   String cancelText = "Cancel",
-  //   IconData icon = Icons.help_outline_rounded,
-  //   Color confirmColor = const Color(0xFF2563EB),
-  // }) async {
-  //   bool result = false;
-
-  //   await Get.dialog(
-  //     Dialog(
-  //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-  //       elevation: 0,
-  //       backgroundColor: Colors.white,
-  //       child: Padding(
-  //         padding: const EdgeInsets.all(24.0),
-  //         child: Column(
-  //           mainAxisSize: MainAxisSize.min,
-  //           children: [
-  //             // --- Icon Circle ---
-  //             Container(
-  //               width: 60,
-  //               height: 60,
-  //               decoration: BoxDecoration(
-  //                 color: confirmColor.withOpacity(0.1),
-  //                 shape: BoxShape.circle,
-  //               ),
-  //               child: Icon(icon, size: 30, color: confirmColor),
-  //             ),
-  //             const SizedBox(height: 20),
-
-  //             // --- Title ---
-  //             Text(
-  //               title,
-  //               textAlign: TextAlign.center,
-  //               style: GoogleFonts.poppins(
-  //                 fontSize: 18,
-  //                 fontWeight: FontWeight.w600,
-  //                 color: Colors.black87,
-  //               ),
-  //             ),
-  //             const SizedBox(height: 10),
-  //             Visibility(
-  //               visible: subtitle.isNotEmpty,
-  //               child: Padding(
-  //                 padding: EdgeInsetsGeometry.only(bottom: 10),
-  //                 child: Text(
-  //                   subtitle,
-  //                   textAlign: TextAlign.center,
-  //                   style: GoogleFonts.poppins(
-  //                     fontSize: 14,
-  //                     color: Colors.grey[900],
-  //                     // height: 1,
-  //                   ),
-  //                 ),
-  //               ),
-  //             ),
-  //             // --- Message ---
-  //             Text(
-  //               message,
-  //               textAlign: TextAlign.center,
-  //               style: GoogleFonts.poppins(
-  //                 fontSize: 14,
-  //                 color: Colors.grey[600],
-  //                 height: 1.5,
-  //               ),
-  //             ),
-  //             const SizedBox(height: 24),
-
-  //             // --- Buttons ---
-  //             Row(
-  //               children: [
-  //                 // Cancel Button
-  //                 Expanded(
-  //                   child: TextButton(
-  //                     onPressed: () {
-  //                       result = false;
-  //                       Get.back();
-  //                     },
-  //                     style: TextButton.styleFrom(
-  //                       padding: const EdgeInsets.symmetric(vertical: 14),
-  //                       foregroundColor: Colors.grey[700],
-  //                       shape: RoundedRectangleBorder(
-  //                         borderRadius: BorderRadius.circular(12),
-  //                         side: BorderSide(color: Colors.grey.shade300),
-  //                       ),
-  //                     ),
-  //                     child: Text(
-  //                       cancelText,
-  //                       style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-  //                     ),
-  //                   ),
-  //                 ),
-  //                 const SizedBox(width: 12),
-
-  //                 // Confirm Button
-  //                 Expanded(
-  //                   child: ElevatedButton(
-  //                     onPressed: () {
-  //                       result = true;
-  //                       Get.back();
-  //                     },
-  //                     style: ElevatedButton.styleFrom(
-  //                       backgroundColor: confirmColor,
-  //                       foregroundColor: Colors.white,
-  //                       padding: const EdgeInsets.symmetric(vertical: 14),
-  //                       elevation: 0,
-  //                       shape: RoundedRectangleBorder(
-  //                         borderRadius: BorderRadius.circular(12),
-  //                       ),
-  //                     ),
-  //                     child: Text(
-  //                       okText,
-  //                       style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-  //                     ),
-  //                   ),
-  //                 ),
-  //               ],
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //     ),
-  //     barrierDismissible: false,
-  //   );
-
-  //   return result;
-  // }
 
   Future<bool> _confirm({
     required String title,
@@ -1184,46 +865,6 @@ class OfflineFormController extends GetxController {
     );
   }
 
-  // ... inside OfflineFormController class ...
-
-  // =================================================
-  // ACTION: PUSH PENDING UPLOADS
-  // =================================================
-  // Future<void> actionPushPending() async {
-  //   const tag = "[OFFLINE_ACTION_PUSH_PENDING]";
-
-  //   if (!await _isInternetAvailable()) {
-  //     _showNeedInternetDialog();
-  //     return;
-  //   }
-
-  //   final ok = await _confirm(
-  //     title: "Upload Pending Data",
-  //     message: "This will attempt to upload all queued submissions. Continue?",
-  //     okText: "Upload",
-  //   );
-  //   if (!ok) return;
-
-  //   try {
-  //     isLoading.value = true;
-  //     Get.snackbar("Syncing", "Uploading pending records...",
-  //         showProgressIndicator: true);
-
-  //     final resultMsg =
-  //         await OfflineDbModule.processPendingQueue(isInternetAvailable: true);
-
-  //     Get.back();
-  //     Get.snackbar("Sync Complete", resultMsg,
-  //         duration: const Duration(seconds: 4));
-  //     LogService.writeLog(message: "$tag[DONE] $resultMsg");
-  //   } catch (e, st) {
-  //     LogService.writeLog(message: "$tag[FAILED] $e");
-  //     Get.snackbar("Error", "Failed during upload process");
-  //   } finally {
-  //     isLoading.value = false;
-  //   }
-  // }
-
   Future<void> actionPushPending() async {
     const tag = "[OFFLINE_ACTION_PUSH_PENDING]";
 
@@ -1251,11 +892,6 @@ class OfflineFormController extends GetxController {
       barrierDismissible: false,
     );
     try {
-      // _showSyncProgressDialog();
-      // syncStatusText.value = "Uploading queued submissions...";
-
-      // await Future.delayed(const Duration(milliseconds: 800));
-
       final resultMsg = await OfflineDbModule.processPendingQueue(
         isInternetAvailable: true,
         progress: progressModel,
@@ -1402,9 +1038,6 @@ class OfflineFormController extends GetxController {
           progressModel: progressModel);
 
       progressModel.complete();
-
-      // Get.back();
-      // Get.snackbar("Success", "Datasources updated successfully");
     } catch (e) {
       Get.snackbar("Error", "Failed to update datasources");
     } finally {
@@ -1419,5 +1052,138 @@ class OfflineFormController extends GetxController {
         "&pname=" +
         transId;
     webViewController.openWebView(url: Const.getFullWebUrl(urlNew));
+  }
+
+  Future<void> saveAudit({
+    required String action,
+    bool isError = false,
+    String? response,
+    String? remarks,
+  }) async {
+    await OfflineDbModule.logAudit(
+      action: action,
+      isError: isError,
+      response: response,
+      remarks: remarks,
+    );
+  }
+
+  Future<void> actionExportDatabase() async {
+    try {
+      isLoading.value = true;
+      final bundle = await OfflineBundleService.createExportBundle();
+
+      if (bundle != null) {
+        await SharePlus.instance.share(ShareParams(
+            files: [XFile(bundle.path)], text: 'Secure Offline Bundle'));
+        await OfflineDbModule.logAudit(
+            action: "DB_BUNDLE_EXPORT", remarks: "Bundled DB and images.");
+      }
+    } catch (e) {
+      Get.snackbar("Export Error", e.toString());
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Future<void> actionImportDatabase() async {
+  //   try {
+  //     FilePickerResult? result = await FilePicker.platform.pickFiles();
+  //     if (result == null) return;
+
+  //     isLoading.value = true;
+  //     File bundleFile = File(result.files.single.path!);
+
+  //     await OfflineBundleService.importBundle(bundleFile);
+  //     await OfflineDbModule.init();
+
+  //     await refreshPendingCount();
+  //     await getAllPages();
+  //     Get.snackbar("Success", "Database and assets restored and remapped.",
+  //         backgroundColor: Colors.green);
+  //   } catch (e) {
+  //     Get.snackbar("Import Error", e.toString(), backgroundColor: Colors.red);
+  //   } finally {
+  //     isLoading.value = false;
+  //   }
+  // }
+
+  Future<void> actionImportDatabase() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['axbundle'],
+      );
+
+      if (result == null || result.files.single.path == null) return;
+
+      File bundleFile = File(result.files.single.path!);
+      String fileName = basename(bundleFile.path);
+      bool? ok = await _confirm(
+        title: "Import Data Bundle",
+        subtitle: "Selected: $fileName",
+        message:
+            "**CAUTION:** This will permanently **DELETE** your current local data and logs. You must login with the **SAME credentials** to use this data. Proceed?",
+        icon: Icons.settings_backup_restore_rounded,
+        confirmColor: Colors.redAccent,
+        okText: "RESTORE NOW",
+        cancelText: "KEEP CURRENT",
+      );
+
+      if (ok == true) {
+        await _executeImport(bundleFile);
+      }
+    } catch (e) {
+      Get.snackbar("Error", "Could not process bundle: $e");
+    }
+  }
+
+  // Private helper to keep the logic clean
+  Future<void> _executeImport(File file) async {
+    try {
+      isLoading.value = true;
+
+      await OfflineBundleService.importBundle(file);
+
+      await OfflineDbModule.init();
+
+      await getAllPages();
+      await refreshPendingCount();
+
+      // Get.defaultDialog(
+      //   title: "Success",
+      //   middleText:
+      //       "Database restored and remapped successfully. Please ensure you are logged in as the correct user.",
+      //   textConfirm: "OK",
+      //   onConfirm: () => Get.back(),
+      // );
+
+      await OfflineDbModule.logAudit(
+          action: "DB_IMPORT_SUCCESS",
+          remarks: "User successfully imported and remapped a bundle.");
+
+      _confirm(
+          title: "Success",
+          message:
+              "Database restored and remapped successfully. Please ensure you are logged in as the correct user.",
+          okText: "Done");
+    } catch (e) {
+      Get.snackbar("Import Failed", e.toString());
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Widget _bulletPoint(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("• ", style: TextStyle(fontWeight: FontWeight.bold)),
+          Expanded(child: Text(text, style: const TextStyle(fontSize: 13))),
+        ],
+      ),
+    );
   }
 }

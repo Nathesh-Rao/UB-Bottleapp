@@ -1,10 +1,12 @@
 import 'dart:async';
 
+import 'package:ubbottleapp/Constants/Const.dart';
 import 'package:ubbottleapp/Constants/MyColors.dart';
 import 'package:ubbottleapp/ModelPages/InApplicationWebView/controller/webview_controller.dart';
 import 'package:ubbottleapp/ModelPages/InApplicationWebView/page/InApplicationWebView.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuActiveListPage/Controllers/UpdatedActiveTaskListController/ActiveTaskListController.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/audit_logs/page/offline_audit_log_page.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/controller/offline_form_controller.dart';
 import 'package:ubbottleapp/ModelPages/LandingPage/Controller/LandingPageController.dart';
 import 'package:ubbottleapp/ModelPages/LandingPage/Widgets/WidgetBottomNavigation.dart';
@@ -106,7 +108,6 @@ class LandingPage extends StatelessWidget {
                   const Divider(),
                   _sectionHeader("Queue"),
                   Obx(
-              
                     () => _simpleRow(
                         icon: Icons.upload_file,
                         color: Colors.deepOrange,
@@ -129,43 +130,84 @@ class LandingPage extends StatelessWidget {
                                 ),
                               )),
                   ),
-                  _simpleRow(
-                    isDisabled: true,
-                    icon: Icons.clear_all,
-                    color: Colors.brown,
-                    title: "Clear Pending Queue",
-                    subtitle: "Delete all pending submissions",
-                    onTap: offlineFormController.actionClearPending,
-                  ),
-                  const Divider(),
-                  _sectionHeader("Storage"),
-                  _simpleRow(
-                    isDisabled: true,
-                    icon: Icons.delete_outline,
-                    color: Colors.redAccent,
-                    title: "Clear Forms Cache",
-                    subtitle: "Remove offline forms",
-                    onTap: offlineFormController.actionClearForms,
-                  ),
-                  _simpleRow(
-                    isDisabled: true,
-                    icon: Icons.delete_sweep,
-                    color: Colors.red,
-                    title: "Clear Datasources Cache",
-                    subtitle: "Remove cached datasources",
-                    onTap: offlineFormController.actionClearDatasources,
-                  ),
-                  const Divider(),
-                  _sectionHeader("Danger Zone"),
-                  _simpleRow(
-                    isDisabled: true,
-                    icon: Icons.warning,
-                    color: Colors.red.shade900,
-                    title: "Clear ALL Offline Data",
-                    subtitle: "Deletes everything except user",
-                    onTap: offlineFormController.actionClearAll,
-                    isDanger: true,
-                  ),
+                  Obx(
+                    () => globalVariableController.USER_ROLE.value == 'default'
+                        ? Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Divider(),
+                              Row(
+                                children: [
+                                  _sectionHeader("Admin Panel"),
+                                ],
+                              ),
+                              // _simpleRow(
+                              //   icon: Icons.delete_outline,
+                              //   color: Colors.redAccent,
+                              //   title: "Clear Forms Cache",
+                              //   subtitle: "Remove offline forms",
+                              //   onTap: offlineFormController.actionClearForms,
+                              // ),
+                              // _simpleRow(
+                              //   icon: Icons.delete_sweep,
+                              //   color: Colors.red,
+                              //   title: "Clear Datasources Cache",
+                              //   subtitle: "Remove cached datasources",
+                              //   onTap: offlineFormController
+                              //       .actionClearDatasources,
+                              // ),
+                              _simpleRow(
+                                icon: Icons.clear_all,
+                                color: Colors.brown,
+                                title: "Clear Pending Queue",
+                                subtitle: "Delete all pending submissions",
+                                onTap: offlineFormController.actionClearPending,
+                              ),
+                              _simpleRow(
+                                icon: Icons.history_edu_rounded,
+                                color: Colors.blueGrey,
+                                title: "View Audit Logs",
+                                subtitle:
+                                    "Track user actions and system events",
+                                onTap: () => Get.to(() => AuditLogPage()),
+                              ),
+                              _simpleRow(
+                                icon: Icons.unarchive_rounded,
+                                color: Colors.teal,
+                                title: "Export Database",
+                                subtitle: "Backup offline DB for debugging",
+                                onTap:
+                                    offlineFormController.actionExportDatabase,
+                              ),
+                              _simpleRow(
+                                icon: Icons.archive_rounded,
+                                color: Colors.deepOrange,
+                                title: "Import Database",
+                                subtitle: "Restore or overwrite local DB file",
+                                onTap:
+                                    offlineFormController.actionImportDatabase,
+                              ),
+                              const Divider(),
+                              Row(
+                                children: [
+                                  _sectionHeader("Danger zone"),
+                                ],
+                              ),
+                              _simpleRow(
+                                icon: Icons.warning,
+                                color: Colors.red.shade900,
+                                title: "Clear ALL Offline Data",
+                                subtitle: "Deletes everything except user",
+                                onTap: offlineFormController.actionClearAll,
+                                isDanger: true,
+                              ),
+                            ],
+                          )
+                        : SizedBox.shrink(),
+                    // : Center(
+                    //     child:
+                    //         Text(globalVariableController.USER_ROLE.value)),
+                  )
                 ],
               ),
             ),

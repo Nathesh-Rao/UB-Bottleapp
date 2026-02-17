@@ -7,4 +7,5 @@ class GlobalVariableController extends GetxController {
   var PROJECT_NAME = ''.obs;
   var ARM_URL = ''.obs;
   var LOG_PATH = ''.obs;
+  var USER_ROLE = ''.obs;
 }

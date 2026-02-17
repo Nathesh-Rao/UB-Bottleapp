@@ -476,7 +476,7 @@ class LoginController extends GetxController {
     String packageName = packageInfo.packageName;
     var version = packageInfo.version;
     String buildNumber = packageInfo.buildNumber;
-    Const.APP_VERSION = version + "." + Const.APP_RELEASE_ID ;
+    Const.APP_VERSION = version + "." + Const.APP_RELEASE_ID;
     return Const.APP_VERSION;
   }
 
@@ -704,6 +704,12 @@ class LoginController extends GetxController {
     debugPrint("User Offline Authenticated? => $isUserAuthenticated");
 
     if (isUserAuthenticated) {
+      await OfflineDbModule.logAudit(
+        action: "LOGIN_OFFLINE",
+        response: "Local Validation Success",
+        remarks:
+            "User [${userNameController.text.toString().trim()}] logged in via local database cache (No Internet).",
+      );
       Get.offAllNamed(Routes.LandingPage);
     } else {
       errPassword.value = "Incorrect Password";
@@ -739,6 +745,14 @@ class LoginController extends GetxController {
         var json = jsonDecode(response);
         if (json["result"]["success"].toString().toLowerCase() == "true") {
           if (json["result"]["message"].toString() == "Login Successful.") {
+            globalVariableController.USER_ROLE.value =
+                json["result"]["role"].toString().toLowerCase();
+            await OfflineDbModule.logAudit(
+              action: "LOGIN_ONLINE",
+              response: json.toString(),
+              remarks:
+                  "User [${userNameController.text.toString().trim()}] logged in successfully via Server.",
+            );
             await OfflineDbModule.saveUser(
                 projectName: globalVariableController.PROJECT_NAME.value,
                 username: userNameController.text.toString().trim(),
@@ -761,6 +775,13 @@ class LoginController extends GetxController {
           if (Get.isDialogOpen ?? false) {
             Get.back(); // closes the dialog
           }
+          await OfflineDbModule.logAudit(
+            action: "LOGIN_ONLINE",
+            response: json["result"]["message"],
+            isError: true,
+            remarks:
+                "User [${userNameController.text.toString().trim()}] logging in failed",
+          );
           Get.snackbar("Error ", json["result"]["message"],
               snackPosition: SnackPosition.BOTTOM,
               backgroundColor: Colors.redAccent,

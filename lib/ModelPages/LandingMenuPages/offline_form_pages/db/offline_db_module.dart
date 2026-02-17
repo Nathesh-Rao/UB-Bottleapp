@@ -24,6 +24,8 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 enum SubmitStatus { success, savedOffline, apiFailure }
 
+//TODO check role and save to globalvar and show the audit manage screen
+//( (role == admin ) = all data)
 class OfflineDbModule {
   OfflineDbModule._();
   // static ServerConnections serverConnections = ServerConnections();
@@ -43,7 +45,10 @@ class OfflineDbModule {
     await appstrg.storeValue(AppStorage.AUTO_SYNC, newValue);
 
     autoSync = newValue;
-
+    await logAudit(
+      action: "TOGGLE_AUTOSYNC",
+      remarks: "AutoSync changed to: $newValue",
+    );
     return newValue;
   }
 
@@ -53,31 +58,30 @@ class OfflineDbModule {
 
     _db = await openDatabase(
       dbPath,
-      version: 4,
+      version: 5,
       onCreate: (db, _) async {
         await _createTables(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        const tag = "[OFFLINE_DB_UPGRADE_002]";
+        const tag = "[OFFLINE_DB_UPGRADE_005]";
         LogService.writeLog(
             message: "$tag[START] Upgrading DB $oldVersion → $newVersion");
 
-        await db.execute(
-            "DROP TABLE IF EXISTS ${OfflineDBConstants.TABLE_OFFLINE_PAGES}");
-        await db.execute(
-            "DROP TABLE IF EXISTS ${OfflineDBConstants.TABLE_DATASOURCES}");
-        await db.execute(
-            "DROP TABLE IF EXISTS ${OfflineDBConstants.TABLE_DATASOURCE_DATA}");
-        await db.execute(
-            "DROP TABLE IF EXISTS ${OfflineDBConstants.TABLE_PENDING_REQUESTS}");
-        await db.execute(
-            "DROP TABLE IF EXISTS ${OfflineDBConstants.TABLE_OFFLINE_USER}");
+        await db.execute(OfflineDBConstants.CREATE_AUDIT_LOGS_TABLE);
 
-        await _createTables(db);
+        await db.insert(OfflineDBConstants.TABLE_AUDIT_LOGS, {
+          OfflineDBConstants.COL_ACTION: "DB_UPGRADE",
+          OfflineDBConstants.COL_REMARKS:
+              "Upgraded from $oldVersion to $newVersion successfully.",
+          OfflineDBConstants.COL_CREATED_AT: DateTime.now().toIso8601String(),
+          OfflineDBConstants.COL_IS_ERROR: 0,
+        });
 
-        LogService.writeLog(message: "$tag[SUCCESS] DB recreated");
+        LogService.writeLog(
+            message: "$tag[SUCCESS] Audit table added, data preserved.");
       },
     );
+    await maintenanceDeleteOldLogs();
   }
 
   static Database get _database {
@@ -93,6 +97,22 @@ class OfflineDbModule {
     await db.execute(OfflineDBConstants.CREATE_DATASOURCE_DATA_TABLE);
     await db.execute(OfflineDBConstants.CREATE_PENDING_REQUESTS_TABLE);
     await db.execute(OfflineDBConstants.CREATE_OFFLINE_USER_TABLE);
+    await db.execute(OfflineDBConstants.CREATE_AUDIT_LOGS_TABLE);
+  }
+
+  static Future<void> maintenanceDeleteOldLogs() async {
+    final thirtyDaysAgo =
+        DateTime.now().subtract(const Duration(days: 30)).toIso8601String();
+
+    int deletedCount = await _database.delete(
+      OfflineDBConstants.TABLE_AUDIT_LOGS,
+      where: '${OfflineDBConstants.COL_CREATED_AT} < ?',
+      whereArgs: [thirtyDaysAgo],
+    );
+
+    if (deletedCount > 0) {
+      debugPrint("Audit Maintenance: Deleted $deletedCount old logs.");
+    }
   }
 
   static Future<void> handlePostLogin({
@@ -228,11 +248,21 @@ class OfflineDbModule {
       final res =
           await http.get(Uri.parse(OfflineDBConstants.OFFLINE_PAGES_URL()));
 
+      LogService.writeLog(
+          message:
+              "$tag[URL] Offline pages URL => ${Uri.parse(OfflineDBConstants.OFFLINE_PAGES_URL())} \n[URI] => ");
+
+      log(res.body, name: tag);
       if (res.statusCode != 200) return [];
 
       final decoded = jsonDecode(utf8.decode(res.bodyBytes)) as List<dynamic>;
       final pages = decoded.map((e) => e as Map<String, dynamic>).toList();
-
+      await logAudit(
+        action: "FETCH_OFFLINE_FORMS",
+        response: res.toString(),
+        remarks:
+            "Tried fetching offline pages from server :Res Forms: ${pages.length} forms",
+      );
       if (pages.isEmpty) return [];
 
       final batchDelete = _database.batch();
@@ -285,7 +315,10 @@ class OfflineDbModule {
       }
 
       await batchInsert.commit(noResult: true);
-
+      await logAudit(
+        action: "FETCH_OFFLINE_FORMS",
+        remarks: "Successfully downloaded and stored ${pages.length} forms",
+      );
       return pages;
     } catch (e) {
       LogService.writeLog(message: "$tag[FAILED] $e");
@@ -470,8 +503,20 @@ class OfflineDbModule {
         );
 
         progress?.increment();
+        // After commit
+        await logAudit(
+          action: "FETCH_ALL_DATA_SOURCES",
+          remarks:
+              "Successfully downloaded and stored ${datasources.length} datasources",
+        );
       }
     } catch (e) {
+      await logAudit(
+        action: "FETCH_ALL_DATA_SOURCES",
+        isError: true,
+        response: e.toString(),
+        remarks: "_fetchAndStoreAllDatasourcesInternal catch block",
+      );
       debugPrint("Error fetching datasources for $transId: $e");
       progress?.increment(isSuccess: false);
     }
@@ -647,35 +692,56 @@ class OfflineDbModule {
 
           if (decoded is Map<String, dynamic>) {
             if (decoded['success'] == true) {
+              await logAudit(
+                action: "API_SUBMIT_FORM",
+                response: responseStr,
+                remarks: "Form: ${submitBody['publickey'] ?? "NO_PUBLIC_KEY"}",
+              );
               await _deletePayloadFiles(submitBody);
               return SubmitStatus.success;
             } else {
               final msg = decoded['message'] ?? "Unknown Error";
               LogService.writeLog(
                   message: "[API_FAIL] Server returned false: $msg");
+              await logAudit(
+                action: "API_SUBMIT_FORM",
+                isError: true,
+                response: responseStr,
+                remarks: "Form: ${submitBody['publickey'] ?? "NO_PUBLIC_KEY"}",
+              );
               return SubmitStatus.apiFailure;
             }
           }
         }
       } catch (e) {
+        await logAudit(
+            action: "API_SUBMIT_FORM",
+            isError: true,
+            response: e.toString(),
+            remarks: "Form: ${submitBody['publickey'] ?? "NO_PUBLIC_KEY"}");
         LogService.writeLog(message: "[API_EXCEPTION] $e");
       }
 
       return SubmitStatus.apiFailure;
     }
 
-    await _database.insert(
+    final int rowId = await _database.insert(
       OfflineDBConstants.TABLE_PENDING_REQUESTS,
       {
         OfflineDBConstants.COL_USERNAME: username,
         OfflineDBConstants.COL_PROJECT_NAME: projectName,
-        OfflineDBConstants.COL_REQUEST_JSON:
-            jsonEncode(submitBody), // Saving Paths
+        OfflineDBConstants.COL_REQUEST_JSON: jsonEncode(submitBody),
         OfflineDBConstants.COL_STATUS: OfflineDBConstants.STATUS_PENDING,
         OfflineDBConstants.COL_CREATED_AT: DateTime.now().toIso8601String(),
       },
     );
-
+    await logAudit(
+      action: "OFFLINE_SUBMIT_FORM",
+      remarks:
+          "Record ID: $rowId | Form: ${submitBody['publickey'] ?? "NO_PUBLIC_KEY"}",
+      response:
+          "Saved locally due to ${force_offline ? 'Force Offline' : 'No Internet'}",
+    );
     return SubmitStatus.savedOffline;
   }
 
@@ -694,7 +760,10 @@ class OfflineDbModule {
     final projectName = scope['projectName']!;
     log("processpendingque scope Username $username",
         name: processPendingQueTag);
-
+    await logAudit(
+      action: processPendingQueTag,
+      remarks: "Started background sync for user: $username",
+    );
     final String currentSessionId =
         AppStorage().retrieveValue(AppStorage.SESSIONID) ?? "";
     if (currentSessionId.isEmpty) return "No active session to sync";
@@ -717,6 +786,10 @@ class OfflineDbModule {
 
     if (idRows.isEmpty) {
       progress?.complete();
+      await logAudit(
+          action: processPendingQueTag,
+          response: "SYNC_QUEUE_EMPTY",
+          remarks: "No pending records found to sync");
       return "Queue is empty";
     }
 
@@ -750,6 +823,11 @@ class OfflineDbModule {
           await _markAsError(id);
           progress?.addFailedRecord(id, "Empty payload");
           progress?.increment(isSuccess: false);
+          await logAudit(
+            action: processPendingQueTag,
+            isError: true,
+            remarks: "(ID: $id) Empty payload found in local DB",
+          );
           continue;
         }
 
@@ -825,9 +903,21 @@ class OfflineDbModule {
           progress?.addFailedRecord(id, errorMsg ?? "Unknown error");
           failCount++;
         }
-
+        await logAudit(
+          action: processPendingQueTag,
+          isError: !isSuccess,
+          response: res?.toString() ?? "Empty Response",
+          remarks:
+              "[ID: $id] Status: ${isSuccess ? 'SUCCESS' : 'FAILED'} | Key: ${uploadPayload['publickey']}",
+        );
         progress?.increment(isSuccess: isSuccess);
       } catch (e) {
+        await logAudit(
+          action: processPendingQueTag,
+          isError: true,
+          response: e.toString(),
+          remarks: "Exception processing record ID: $id",
+        );
         await _markAsError(id);
         progress?.addFailedRecord(id, e.toString());
         progress?.increment(isSuccess: false);
@@ -886,6 +976,7 @@ class OfflineDbModule {
     required bool isInternetAvailable,
     required SyncProgressModel progress,
   }) async {
+    const String forcePushAction = "FORCE_PUSH_RECORDS";
     if (!isInternetAvailable) {
       Get.snackbar("Error", "No internet connection");
       return;
@@ -928,6 +1019,11 @@ class OfflineDbModule {
 
         if (bodyStr == null || bodyStr.isEmpty) {
           progress.increment(isSuccess: false);
+          await logAudit(
+            action: forcePushAction,
+            isError: true,
+            remarks: "Record $id: Skipped (Payload empty)",
+          );
           continue;
         }
 
@@ -1000,15 +1096,34 @@ class OfflineDbModule {
           failCount++;
           LogService.writeLog(message: "[FORCE_FAIL] ID: $id - $res");
         }
-
+        await logAudit(
+          action: forcePushAction,
+          isError: !isSuccess,
+          response: res?.toString() ?? "Empty Response",
+          remarks:
+              "Record $id: ${isSuccess ? 'SUCCESS' : 'FAILED'} | Previous Error: $prevError",
+        );
         progress.increment(isSuccess: isSuccess);
       } catch (e) {
+        failCount++;
+        await logAudit(
+          action: forcePushAction,
+          isError: true,
+          response: e.toString(),
+          remarks: "Exception on Record $id force push",
+        );
         progress.increment(isSuccess: false);
         LogService.writeLog(message: "[FORCE_FAIL] ID: $id - $e");
       }
     }
 
     progress.complete();
+    await logAudit(
+      action: forcePushAction,
+      response: "COMPLETED",
+      remarks:
+          "COMPLETED: $successCount Success, $failCount Failed out of $total total.",
+    );
     if (successCount > 0 && failCount == 0) {
       progress.updateMessage(
           "Force Push Successful! \nOffloaded all $successCount records.");
@@ -1052,6 +1167,7 @@ class OfflineDbModule {
     required bool isInternetAvailable,
     SyncProgressModel? progress,
   }) async {
+    const String uploadAction = "UPLOAD_TRACE_FILE";
     if (!isInternetAvailable) {
       progress?.updateMessage("Error: No internet connection");
       progress?.increment(isSuccess: false);
@@ -1062,6 +1178,11 @@ class OfflineDbModule {
     if (!await traceFile.exists()) {
       progress?.updateMessage("No trace file found to upload.");
       progress?.increment(isSuccess: false);
+      await logAudit(
+        action: uploadAction,
+        isError: true,
+        remarks: "Trace file not found at path: ${Const.LOG_FILE_PATH}",
+      );
       return;
     }
     var isTraceOn =
@@ -1127,14 +1248,34 @@ class OfflineDbModule {
         final decoded = jsonDecode(res);
         if (decoded is Map && decoded['success'] == true) {
           progress?.updateMessage("Upload Successful!");
+
+          await logAudit(
+              action: uploadAction,
+              response: res?.toString() ?? "Empty Response",
+              remarks:
+                  "Successfully uploaded trace file: ${Const.LOG_FILE_PATH.split("/").last}");
+
           LogService.writeLog(message: "[TRACE_UPLOAD] Success");
         } else {
+          await logAudit(
+            action: uploadAction,
+            isError: true,
+            response: res?.toString() ?? "Empty Response",
+            remarks:
+                "Failed to upload trace file: ${Const.LOG_FILE_PATH.split("/").last}",
+          );
           progress?.increment(isSuccess: false);
           progress?.updateMessage("Upload Failed.");
           LogService.writeLog(message: "[TRACE_UPLOAD] Server Failed: $res");
         }
       }
     } catch (e) {
+      await logAudit(
+        action: uploadAction,
+        isError: true,
+        response: e.toString(),
+        remarks: "Exception occurred during trace file upload",
+      );
       progress?.increment(isSuccess: false);
       progress?.updateMessage("Upload Failed.");
       LogService.writeLog(message: "[TRACE_UPLOAD] Exception: $e");
@@ -1145,10 +1286,14 @@ class OfflineDbModule {
     if (value is String && value.startsWith('/')) {
       final file = File(value);
       if (await file.exists()) {
+        log("File found at $value, converting to base64",
+            name: "AX_BUNDLE_LOG");
         var b64 = await fileToBase64Correct(file);
 
         return b64;
       } else {
+        log("CRITICAL: File MISSING at $value during conversion!",
+            name: "AX_BUNDLE_LOG");
         return "";
       }
     }
@@ -1312,6 +1457,7 @@ class OfflineDbModule {
     required String projectName,
     required bool isInternetAvailable,
   }) async {
+    const String syncAction = "SYNC_BEFORE_LOGIN";
     if (!isInternetAvailable) return;
 
     final String currentSessionId =
@@ -1338,7 +1484,10 @@ class OfflineDbModule {
     final ServerConnections serverConnections = ServerConnections();
     final String url =
         Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
-
+    await logAudit(
+      action: syncAction,
+      remarks: "Found ${rows.length} pending records to sync during login.",
+    );
     for (final row in rows) {
       final id = row[OfflineDBConstants.COL_ID] as int;
       try {
@@ -1374,8 +1523,22 @@ class OfflineDbModule {
           where: '${OfflineDBConstants.COL_ID} = ?',
           whereArgs: [id],
         );
+
+        await logAudit(
+          action: syncAction,
+          isError: !isSuccess,
+          response: res?.toString() ?? "Empty Response",
+          remarks:
+              "Auto-Sync Record ID: $id | Result: ${isSuccess ? 'SUCCESS' : 'FAILED'}",
+        );
       } catch (e) {
         LogService.writeLog(message: "[SYNC_LOGIN_ERR] $e");
+        await logAudit(
+          action: syncAction,
+          isError: true,
+          response: e.toString(),
+          remarks: "Exception during auto-sync of record ID: $id",
+        );
       }
     }
   }
@@ -1402,36 +1565,59 @@ class OfflineDbModule {
     required String projectName,
     required bool isInternetAvailable,
   }) async {
-    if (!isInternetAvailable) return;
+    const String syncAction = "SYNC_ALL_DATA";
+    try {
+      if (!isInternetAvailable) return;
+      await logAudit(
+        action: syncAction,
+        remarks: "Full sync initiated: clearing cache and refetching all data.",
+      );
+      await _syncPendingBeforeLogin(
+        username: username,
+        projectName: projectName,
+        isInternetAvailable: true,
+      );
 
-    await _syncPendingBeforeLogin(
-      username: username,
-      projectName: projectName,
-      isInternetAvailable: true,
-    );
+      int deletedPages = await _database.delete(
+        OfflineDBConstants.TABLE_OFFLINE_PAGES,
+        where: 'username = ? AND project_name = ?',
+        whereArgs: [username, projectName],
+      );
 
-    await _database.delete(
-      OfflineDBConstants.TABLE_OFFLINE_PAGES,
-      where: 'username = ? AND project_name = ?',
-      whereArgs: [username, projectName],
-    );
+      await _database.delete(
+        OfflineDBConstants.TABLE_DATASOURCES,
+        where: 'username = ? AND project_name = ?',
+        whereArgs: [username, projectName],
+      );
 
-    await _database.delete(
-      OfflineDBConstants.TABLE_DATASOURCES,
-      where: 'username = ? AND project_name = ?',
-      whereArgs: [username, projectName],
-    );
-
-    await _database.delete(
-      OfflineDBConstants.TABLE_DATASOURCE_DATA,
-      where: 'username = ? AND project_name = ?',
-      whereArgs: [username, projectName],
-    );
-
-    final pages = await fetchAndStoreOfflinePages();
-
-    if (pages.isNotEmpty) {
-      // datasources will be fetched lazily per form
+      await _database.delete(
+        OfflineDBConstants.TABLE_DATASOURCE_DATA,
+        where: 'username = ? AND project_name = ?',
+        whereArgs: [username, projectName],
+      );
+      await logAudit(
+        action: syncAction,
+        remarks:
+            "Cache cleared for user $username. Previous pages removed: $deletedPages",
+      );
+      final pages = await fetchAndStoreOfflinePages();
+      await logAudit(
+        action: syncAction,
+        isError: pages.isEmpty,
+        remarks: pages.isNotEmpty
+            ? "Full sync completed successfully. Fetched ${pages.length} forms."
+            : "Full sync completed but no forms were found on the server.",
+      );
+      if (pages.isNotEmpty) {
+        // datasources will be fetched lazily per form
+      }
+    } catch (e) {
+      await logAudit(
+        action: syncAction,
+        isError: true,
+        response: e.toString(),
+        remarks: "Critical error during full sync process.",
+      );
     }
   }
 
@@ -1447,6 +1633,9 @@ class OfflineDbModule {
       where: 'username = ? AND project_name = ?',
       whereArgs: [username, projectName],
     );
+    await logAudit(
+        action: "CLEAR_PENDING_QUEUE",
+        remarks: "User manually cleared all pending uploads.");
   }
 
   static Future<void> clearOfflineCache({
@@ -1470,6 +1659,10 @@ class OfflineDbModule {
       where: 'username = ? AND project_name = ?',
       whereArgs: [username, projectName],
     );
+
+    await logAudit(
+        action: "CLEAR_LOCAL_CACHE",
+        remarks: "All offline forms and datasources cleared.");
   }
 
   static Future<void> clearAllData({
@@ -1516,10 +1709,12 @@ class OfflineDbModule {
     );
   }
 
-  static Future<void> refetchOnlyForms({
-    required String username,
-    required String projectName,
-  }) async {
+  static Future<void> refetchOnlyForms() async {
+    String username =
+        await AppStorage().retrieveValue(AppStorage.USER_NAME) ?? '';
+    String projectName =
+        await AppStorage().retrieveValue(AppStorage.PROJECT_NAME) ?? '';
+
     await _database.delete(
       OfflineDBConstants.TABLE_OFFLINE_PAGES,
       where: 'username = ? AND project_name = ?',
@@ -1666,7 +1861,11 @@ class OfflineDbModule {
       whereArgs: [projectName, username, passwordHash],
       limit: 1,
     );
-
+    await logAudit(
+        action: "OFFLINE_LOGIN_VALIDATION",
+        response: res.toString(),
+        isError: res.isEmpty,
+        remarks: res.isNotEmpty ? "VALIDATED" : "NOT_VALIDATED");
     return res.isNotEmpty;
   }
 
@@ -1693,15 +1892,29 @@ class OfflineDbModule {
         OfflineDBConstants.COL_LAST_LOGIN_AT: DateTime.now().toIso8601String(),
       };
 
-      await _database.insert(
+      final int rowId = await _database.insert(
         OfflineDBConstants.TABLE_OFFLINE_USER,
         data,
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
 
+      await logAudit(
+        action: "SAVE_USER",
+        response: "Success",
+        remarks:
+            "[${OfflineDBConstants.TABLE_OFFLINE_USER}] (ID: $rowId) User $username saved for offline login",
+      );
+
       LogService.writeLog(
           message: "$tag[SUCCESS] User saved for offline login");
     } catch (e, st) {
+      await logAudit(
+        action: "SAVE_USER",
+        response: st.toString(),
+        isError: true,
+        remarks:
+            "[${OfflineDBConstants.TABLE_OFFLINE_USER}] User $username saving failed for offline login",
+      );
       LogService.writeLog(message: "$tag[FAILED] $e");
       LogService.writeLog(message: "$tag[STACK] $st");
     }
@@ -1734,5 +1947,67 @@ class OfflineDbModule {
             transId: transId, progress: progressModel);
       }
     }
+  }
+
+  static Future<void> logAudit({
+    required String action,
+    bool isError = false,
+    String? response,
+    String? remarks,
+  }) async {
+    try {
+      final scope = await _getLastOfflineUserScope();
+      final String? username = scope?['username'] ??
+          await AppStorage().retrieveValue(AppStorage.USER_NAME);
+      final String? projectName = scope?['projectName'] ??
+          await AppStorage().retrieveValue(AppStorage.PROJECT_NAME);
+
+      await _database.insert(
+        OfflineDBConstants.TABLE_AUDIT_LOGS,
+        {
+          OfflineDBConstants.COL_USERNAME: username ?? 'Unknown',
+          OfflineDBConstants.COL_PROJECT_NAME: projectName ?? 'Unknown',
+          OfflineDBConstants.COL_ACTION: action,
+          OfflineDBConstants.COL_CREATED_AT: DateTime.now().toIso8601String(),
+          OfflineDBConstants.COL_IS_ERROR: isError ? 1 : 0,
+          OfflineDBConstants.COL_RESPONSE: response ?? '',
+          OfflineDBConstants.COL_REMARKS: remarks ?? '',
+        },
+      );
+    } catch (e) {
+      debugPrint("Audit Log failed: $e");
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getAuditLogs() async {
+    final res = await _database.query(
+      OfflineDBConstants.TABLE_AUDIT_LOGS,
+      orderBy: '${OfflineDBConstants.COL_ID} DESC',
+      limit: 100,
+    );
+    return res;
+  }
+
+  static Future<void> clearAuditLogs() async {
+    await _database.delete(OfflineDBConstants.TABLE_AUDIT_LOGS);
+  }
+
+  static Future<File> getDatabaseFile() async {
+    final dbPath = join(await getDatabasesPath(), 'offline_forms.db');
+    return File(dbPath);
+  }
+
+  static Future<void> importDatabaseFile(File sourceFile) async {
+    final dbPath = join(await getDatabasesPath(), 'offline_forms.db');
+
+    await _db?.close();
+
+    await sourceFile.copy(dbPath);
+
+    await init();
+  }
+
+  static Future<List<Map<String, dynamic>>> getRawPendingRequests() async {
+    return await _database.query(OfflineDBConstants.TABLE_PENDING_REQUESTS);
   }
 }

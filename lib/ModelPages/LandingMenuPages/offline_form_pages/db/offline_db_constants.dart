@@ -3,13 +3,6 @@ import 'package:ubbottleapp/Constants/AppStorage.dart';
 class OfflineDBConstants {
   OfflineDBConstants._();
 
-  // COMMON
-  // static const String OFFLINE_PAGES_URL =
-  //     "https://raw.githubusercontent.com/amrith4agile/offline_sample_pages/refs/heads/main/offline_pages.json";
-
-  // static const String OFFLINE_PAGES_URL =
-  //     "https://agileqa.agilecloud.biz/MobileOfflineStruct/offline_pages.json";
-
   static String OFFLINE_PAGES_URL() {
     String userEnteredUrl = AppStorage().retrieveValue(AppStorage.PROJECT_URL);
     if (!userEnteredUrl.startsWith('http')) {
@@ -36,7 +29,7 @@ class OfflineDBConstants {
   static const String TABLE_DATASOURCE_DATA = 'offline_datasource_data';
   static const String TABLE_PENDING_REQUESTS = 'offline_pending_requests';
   static const String TABLE_OFFLINE_USER = 'offline_user';
-
+  static const String TABLE_AUDIT_LOGS = 'ax_audit_logs';
   // ================= COMMON COLUMNS =================
 
   static const String COL_ID = 'id';
@@ -65,6 +58,13 @@ class OfflineDBConstants {
 
   static const String COL_REQUEST_JSON = 'request_json';
   static const String COL_STATUS = 'status';
+
+  // ================= Audit TABLE =================
+  static const String COL_ACTION = 'action';
+  static const String COL_IS_ERROR = 'is_error';
+  static const String COL_RESPONSE = 'response';
+  static const String COL_REMARKS = 'remarks';
+  static const String COL_DEVICE_INFO = 'device_info';
 
   // ================= USER TABLE =================
 
@@ -144,6 +144,23 @@ class OfflineDBConstants {
       $COL_SESSION_ID TEXT,
       $COL_RAW_JSON TEXT,
       $COL_LAST_LOGIN_AT TEXT
+    );
+  ''';
+
+  // -------- AUDIT LOGS --------
+  static final String CREATE_AUDIT_LOGS_TABLE = CREATE_QUERY +
+      TABLE_AUDIT_LOGS +
+      '''
+    (
+      $COL_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+      $COL_USERNAME TEXT,
+      $COL_PROJECT_NAME TEXT,
+      $COL_ACTION TEXT,
+      $COL_CREATED_AT TEXT,
+      $COL_IS_ERROR INTEGER,
+      $COL_RESPONSE TEXT,
+      $COL_REMARKS TEXT,
+      $COL_DEVICE_INFO TEXT
     );
   ''';
 }
