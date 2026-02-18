@@ -6,6 +6,7 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:ubbottleapp/Constants/AppStorage.dart';
+import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
 import 'offline_db_constants.dart';
 import 'offline_db_module.dart';
 
@@ -13,20 +14,111 @@ class OfflineBundleService {
   static const String bundleExtension = ".axbundle";
   static const String bundleAction = "DB_BUNDLE_OPERATION";
   static const String logTag = "[AX_BUNDLE_LOG]";
+  static const String _backupFileName = "last_import_backup.axbundle";
+  static const String _backupMetaFileName = "last_import_backup.meta.json";
 
-  // ---------------- EXPORT LOGIC ----------------
+  static Future<String> _backupFilePath() async {
+    final dir = await getApplicationDocumentsDirectory();
+    return join(dir.path, _backupFileName);
+  }
+
+  static Future<String> _backupMetaPath() async {
+    final dir = await getApplicationDocumentsDirectory();
+    return join(dir.path, _backupMetaFileName);
+  }
+
+  /// Returns true if a pre-import backup exists.
+  static Future<bool> hasBackup() async {
+    final path = await _backupFilePath();
+    return File(path).exists();
+  }
+
+  static Future<Map<String, dynamic>?> getBackupMeta() async {
+    final metaPath = await _backupMetaPath();
+    final metaFile = File(metaPath);
+    if (!await metaFile.exists()) return null;
+    try {
+      final content = await metaFile.readAsString();
+      return jsonDecode(content) as Map<String, dynamic>;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<void> backupCurrentDatabase() async {
+    LogService.writeLog(
+        message: "$logTag [BACKUP_START] Creating pre-import backup...");
+    try {
+      final dbFile = await OfflineDbModule.getDatabaseFile();
+      final archive = Archive();
+      final List<String> assetPaths = [];
+
+      final List<Map<String, dynamic>> pendingRequests =
+          await OfflineDbModule.getRawPendingRequests();
+
+      for (var row in pendingRequests) {
+        final String jsonStr = row[OfflineDBConstants.COL_REQUEST_JSON] ?? "";
+        if (jsonStr.isNotEmpty) {
+          _findPathsInJson(jsonDecode(jsonStr), assetPaths);
+        }
+      }
+
+      archive.addFile(ArchiveFile(
+          'offline_forms.db', dbFile.lengthSync(), await dbFile.readAsBytes()));
+
+      for (String path in assetPaths.toSet()) {
+        final file = File(path);
+        if (await file.exists()) {
+          archive.addFile(ArchiveFile('assets/${basename(path)}',
+              file.lengthSync(), await file.readAsBytes()));
+        }
+      }
+
+      final zipEncoder = ZipEncoder();
+      final encodedZip = zipEncoder.encode(archive);
+      final backupPath = await _backupFilePath();
+      await File(backupPath).writeAsBytes(encodedZip);
+
+      final user =
+          await AppStorage().retrieveValue(AppStorage.USER_NAME) ?? "Unknown";
+      final now = DateTime.now();
+      final meta = {
+        "timestamp": now.toIso8601String(),
+        "user": user,
+        "displayTime":
+            "${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} "
+                "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}",
+      };
+      await File(await _backupMetaPath()).writeAsString(jsonEncode(meta));
+
+      LogService.writeLog(
+          message: "$logTag [BACKUP_SUCCESS] Backup saved to $backupPath");
+    } catch (e) {
+      LogService.writeLog(message: "$logTag [BACKUP_CRASH] $e");
+      rethrow;
+    }
+  }
+
+  static Future<void> restoreBackup() async {
+    final path = await _backupFilePath();
+    final backupFile = File(path);
+    if (!await backupFile.exists()) {
+      throw Exception("No backup found to restore.");
+    }
+    debugPrint("$logTag [RESTORE_BACKUP] Restoring from $path");
+    await importBundle(backupFile);
+  }
 
   static Future<File?> createExportBundle() async {
     try {
-      debugPrint(
-          "$logTag [EXPORT_START] Packaging DB and underscore-pathed assets...");
-      final scope = await OfflineDbModule
-          .getRawPendingRequests(); // or use your GetLastScope helper
+      LogService.writeLog(
+          message:
+              "$logTag [EXPORT_START] Packaging DB and underscore-pathed assets...");
+
       final String user =
           await AppStorage().retrieveValue(AppStorage.USER_NAME) ??
               "UnknownUser";
 
-      // 2. Format Timestamp: YYYYMMDD_HHMM
       final now = DateTime.now();
       final String timestamp =
           "${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_"
@@ -62,67 +154,45 @@ class OfflineBundleService {
         }
       }
 
-      //   final zipEncoder = ZipEncoder();
-      //   final encodedZip = zipEncoder.encode(archive);
-      //   final tempDir = await getTemporaryDirectory();
-      //   final bundleFile = File(
-      //       '${tempDir.path}/Export_${DateTime.now().millisecondsSinceEpoch}$bundleExtension');
-      //   await bundleFile.writeAsBytes(encodedZip);
-
-      //   debugPrint(
-      //       "$logTag [EXPORT_SUCCESS] Bundled $addedCount assets into ${bundleFile.path}");
-      //   return bundleFile;
-      // } catch (e) {
-      //   debugPrint("$logTag [EXPORT_CRASH] $e");
-      //   return null;
-      // }
-
       final zipEncoder = ZipEncoder();
       final encodedZip = zipEncoder.encode(archive);
       final tempDir = await getTemporaryDirectory();
-
-      // 3. New Descriptive Filename: Export_uidev1_20260213_1305.axbundle
       final String fileName = "Export_${user}_$timestamp$bundleExtension";
       final bundleFile = File('${tempDir.path}/$fileName');
-
       await bundleFile.writeAsBytes(encodedZip);
 
-      debugPrint(
-          "$logTag [EXPORT_SUCCESS] Bundled $addedCount assets into ${bundleFile.path}");
+      LogService.writeLog(
+          message:
+              "$logTag [EXPORT_SUCCESS] Bundled $addedCount assets into ${bundleFile.path}");
       return bundleFile;
     } catch (e) {
-      debugPrint("$logTag [EXPORT_CRASH] $e");
+      LogService.writeLog(message: "$logTag [EXPORT_CRASH] $e");
       return null;
     }
   }
 
-  // ---------------- IMPORT LOGIC ----------------
   static Future<void> importBundle(File bundleFile) async {
     try {
       final bytes = await bundleFile.readAsBytes();
       final archive = ZipDecoder().decodeBytes(bytes);
 
       final appDocDir = await getApplicationDocumentsDirectory();
-      // This is exactly /data/user/0/com.agile.ub_bottleapp/app_flutter
       final String currentAppFlutterPath = appDocDir.path;
-      // This is /data/user/0/com.agile.ub_bottleapp
       final String packageRoot = appDocDir.parent.path;
 
       String? oldPathToReplace;
 
-      // 1. Extract Assets to the PARENT (package root)
       for (final file in archive) {
         if (file.name.startsWith('assets/')) {
           final String fileName = basename(file.name);
-          // Files are saved as /data/user/0/com.agile.ub_bottleapp/app_flutter_123.jpg
           final outFile = File(join(packageRoot, fileName));
           await outFile.create(recursive: true);
           await outFile.writeAsBytes(file.content as List<int>);
-          debugPrint("$logTag [EXTRACT] Physical file: ${outFile.path}");
+          LogService.writeLog(
+              message: "$logTag [EXTRACT] Physical file: ${outFile.path}");
         }
       }
 
-      // 2. Database Remapping
       for (final file in archive) {
         if (file.name == 'offline_forms.db') {
           final tempDbPath =
@@ -158,11 +228,10 @@ class OfflineBundleService {
         }
       }
     } catch (e) {
-      debugPrint("$logTag [IMPORT_CRASH] $e");
+      LogService.writeLog(message: "$logTag [IMPORT_CRASH] $e");
       rethrow;
     }
   }
-  // ---------------- HELPERS ----------------
 
   static void _findPathsInJson(dynamic data, List<String> paths) {
     if (data is Map) {
@@ -187,5 +256,29 @@ class OfflineBundleService {
       UPDATE ${OfflineDBConstants.TABLE_PENDING_REQUESTS} 
       SET ${OfflineDBConstants.COL_REQUEST_JSON} = REPLACE(${OfflineDBConstants.COL_REQUEST_JSON}, ?, ?)
     ''', [oldRoot, newRoot]);
+  }
+
+  static Future<void> deleteBackup() async {
+    try {
+      final backupPath = await _backupFilePath();
+      final metaPath = await _backupMetaPath();
+
+      final backupFile = File(backupPath);
+      final metaFile = File(metaPath);
+
+      if (await backupFile.exists()) {
+        await backupFile.delete();
+        debugPrint("$logTag [BACKUP_DELETE] Deleted backup: $backupPath");
+      }
+
+      if (await metaFile.exists()) {
+        await metaFile.delete();
+        LogService.writeLog(
+            message: "$logTag [BACKUP_DELETE] Deleted metadata: $metaPath");
+      }
+    } catch (e) {
+      LogService.writeLog(
+          message: "$logTag [BACKUP_DELETE_WARN] Failed to delete backup: $e");
+    }
   }
 }

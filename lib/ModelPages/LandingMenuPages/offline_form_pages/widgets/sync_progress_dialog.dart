@@ -40,7 +40,9 @@ class SyncProgressDialog extends StatelessWidget {
               _buildMessage(),
               const SizedBox(height: 20),
               _buildProgress(),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
+              _errorCards(),
+              const SizedBox(height: 8),
               _buildStats(),
               _buildBottomAction(),
             ],
@@ -350,5 +352,20 @@ class SyncProgressDialog extends StatelessWidget {
         ],
       );
     });
+  }
+
+  Widget _errorCards() {
+    if (progressModel.syncErrors.isEmpty) return SizedBox.shrink();
+    return Obx(
+      () => SizedBox(
+        height: 20,
+        child: PageView.builder(
+            itemCount: progressModel.syncErrors.length,
+            itemBuilder: (context, index) => Container(
+                  height: 20,
+                  child: Text(progressModel.syncErrors[index].title),
+                )),
+      ),
+    );
   }
 }

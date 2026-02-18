@@ -96,6 +96,11 @@ class LandingPageController extends GetxController with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     initController();
     listenInternetState();
+    globalVariableController.OFFLINE_FORMS_COUNT.listen((count) {
+      if (count == 0) {
+        bottomIndex.value = 0;
+      }
+    });
   }
 
   void listenInternetState() async {

@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/sync_error_model.dart';
 
 class SyncProgressModel {
   RxInt totalItems = 0.obs;
@@ -12,12 +13,10 @@ class SyncProgressModel {
   RxBool isLoading = true.obs;
   RxBool isCompleted = false.obs;
   List<Map<String, dynamic>> failedRecords = [];
+  List<SyncErrorModel> syncErrors = [];
   SyncProgressModel({String initialTitle = "Processing"}) {
     title.value = initialTitle;
   }
-
-
-  
 
   void init({required int total, String msg = "Starting..."}) {
     totalItems.value = total;
@@ -25,11 +24,13 @@ class SyncProgressModel {
     successCount.value = 0;
     failureCount.value = 0;
     message.value = msg;
+    syncErrors.clear();
     isLoading.value = true;
     isCompleted.value = false;
   }
 
   void addFailedRecord(int id, String error) {
+    addErrors(title: "Record Failed", errorText: error);
     failedRecords.add({
       "id": id,
       "error": error,
@@ -65,5 +66,12 @@ class SyncProgressModel {
     if (totalItems.value == 0) return 0.0;
     if (processedItems.value > totalItems.value) return 1.0;
     return processedItems.value / totalItems.value;
+  }
+
+  addErrors({
+    required String title,
+    required String errorText,
+  }) {
+    syncErrors.add(SyncErrorModel(title: title, errorText: errorText));
   }
 }

@@ -1,3 +1,4 @@
+import 'package:ubbottleapp/Constants/GlobalVariableController.dart';
 import 'package:ubbottleapp/Constants/MyColors.dart';
 import 'package:ubbottleapp/ModelPages/LandingPage/Controller/LandingPageController.dart';
 import 'package:flutter/material.dart';
@@ -6,7 +7,7 @@ import 'package:get/get.dart';
 class AppBottomNavigation extends StatelessWidget {
   AppBottomNavigation({super.key});
   LandingPageController landingPageController = Get.find();
-
+  GlobalVariableController globalVariableController = Get.find();
   @override
   Widget build(BuildContext context) {
     return Obx(
@@ -43,9 +44,10 @@ class AppBottomNavigation extends StatelessWidget {
                   icon: Icon(Icons.calendar_month_outlined), label: "Calendar"),
               BottomNavigationBarItem(
                   icon: Icon(Icons.analytics_outlined), label: "Analytics"),
-              BottomNavigationBarItem(
-                  icon: Icon(Icons.insert_page_break_outlined),
-                  label: "Offline Pages"),
+              if (globalVariableController.OFFLINE_FORMS_COUNT.value != 0)
+                BottomNavigationBarItem(
+                    icon: Icon(Icons.insert_page_break_outlined),
+                    label: "Offline Pages"),
               // BottomNavigationBarItem(icon: Icon(Icons.dashboard_customize_outlined), label: "More"),
             ],
           ),

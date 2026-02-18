@@ -18,6 +18,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../LandingMenuPages/MenuDashboardPage/Controllers/MenuDashboaardController.dart';
+import '../../LandingMenuPages/offline_form_pages/audit_logs/page/offline_audit_log_page.dart';
 
 class LandingPage extends StatelessWidget {
   LandingPage({super.key});

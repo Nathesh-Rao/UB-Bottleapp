@@ -969,12 +969,20 @@ class OfflineFormController extends GetxController {
     try {
       progressModel.updateMessage("Step 1/3: Uploading pending data...");
 
-      final pushResult =
-          await OfflineDbModule.processPendingQueue(isInternetAvailable: true);
+      final pushResult = await OfflineDbModule.processPendingQueue(
+        isInternetAvailable: true,
+      );
       LogService.writeLog(message: "$tag[STEP_1] $pushResult");
       progressModel.increment();
       progressModel.updateMessage("Step 2/3: Checking for new forms...");
       final pages = await OfflineDbModule.fetchAndStoreOfflinePages();
+      if (pages.isEmpty) {
+        progressModel.increment(isSuccess: false);
+        progressModel.updateMessage("Sync Failed: NO OFFLINE PAGES");
+        isLoading.value = false;
+        progressModel.complete();
+        return;
+      }
       await getAllPages(); // Refresh the list in memory
       LogService.writeLog(
           message: "$tag[STEP_2] Fetched ${pages.length} forms");
@@ -1086,44 +1094,54 @@ class OfflineFormController extends GetxController {
     }
   }
 
-  // Future<void> actionImportDatabase() async {
-  //   try {
-  //     FilePickerResult? result = await FilePicker.platform.pickFiles();
-  //     if (result == null) return;
-
-  //     isLoading.value = true;
-  //     File bundleFile = File(result.files.single.path!);
-
-  //     await OfflineBundleService.importBundle(bundleFile);
-  //     await OfflineDbModule.init();
-
-  //     await refreshPendingCount();
-  //     await getAllPages();
-  //     Get.snackbar("Success", "Database and assets restored and remapped.",
-  //         backgroundColor: Colors.green);
-  //   } catch (e) {
-  //     Get.snackbar("Import Error", e.toString(), backgroundColor: Colors.red);
-  //   } finally {
-  //     isLoading.value = false;
-  //   }
-  // }
-
   Future<void> actionImportDatabase() async {
     try {
+      final bool backupExists = await OfflineBundleService.hasBackup();
+
+      if (backupExists) {
+        final meta = await OfflineBundleService.getBackupMeta();
+        final String backupInfo = meta != null
+            ? "Made on ${meta['displayTime']} by ${meta['user']}"
+            : "A previous backup is available.";
+
+        final String? choice = await _showBackupChoiceDialog(backupInfo);
+
+        if (choice == null) return;
+
+        if (choice == "restore") {
+          final bool? ok = await _confirm(
+            title: "Restore Previous Backup",
+            subtitle: backupInfo,
+            message:
+                "**CAUTION:** This will replace your current data with the backup. Proceed?",
+            icon: Icons.history_rounded,
+            confirmColor: Colors.orange,
+            okText: "RESTORE BACKUP",
+            cancelText: "CANCEL",
+          );
+          if (ok == true) {
+            await _executeRestore();
+          }
+          return;
+        }
+      }
+
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['axbundle'],
       );
-
       if (result == null || result.files.single.path == null) return;
 
       File bundleFile = File(result.files.single.path!);
       String fileName = basename(bundleFile.path);
-      bool? ok = await _confirm(
+
+      final bool? ok = await _confirm(
         title: "Import Data Bundle",
         subtitle: "Selected: $fileName",
         message:
-            "**CAUTION:** This will permanently **DELETE** your current local data and logs. You must login with the **SAME credentials** to use this data. Proceed?",
+            "**CAUTION:** This will permanently **DELETE** your current local data and logs. "
+            "Your current data will be auto-backed up first. "
+            "You must login with the **SAME credentials** to use this data. Proceed?",
         icon: Icons.settings_backup_restore_rounded,
         confirmColor: Colors.redAccent,
         okText: "RESTORE NOW",
@@ -1138,35 +1156,256 @@ class OfflineFormController extends GetxController {
     }
   }
 
-  // Private helper to keep the logic clean
+  // Future<String?> _showBackupChoiceDialog(String backupInfo) async {
+  //   return await Get.dialog<String>(
+  //     AlertDialog(
+  //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+  //       title: Row(
+  //         children: const [
+  //           Icon(Icons.history_rounded, color: Colors.orange),
+  //           SizedBox(width: 8),
+  //           Text("Previous Backup Found"),
+  //         ],
+  //       ),
+  //       content: Column(
+  //         mainAxisSize: MainAxisSize.min,
+  //         crossAxisAlignment: CrossAxisAlignment.start,
+  //         children: [
+  //           Text(backupInfo,
+  //               style: const TextStyle(fontSize: 13, color: Colors.grey)),
+  //           const SizedBox(height: 12),
+  //           const Divider(),
+  //           const SizedBox(height: 8),
+  //           const Text(
+  //             "What would you like to do?",
+  //             style: TextStyle(fontWeight: FontWeight.w600),
+  //           ),
+  //           const SizedBox(height: 4),
+  //           _bulletPoint(
+  //               "Restore Backup — rolls back to the snapshot taken before your last import."),
+  //           _bulletPoint(
+  //               "Import New File — pick a new .axbundle (your current data will be backed up first)."),
+  //         ],
+  //       ),
+  //       actionsPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Get.back(result: null),
+  //           child: const Text("CANCEL", style: TextStyle(color: Colors.grey)),
+  //         ),
+  //         OutlinedButton.icon(
+  //           icon: const Icon(Icons.history_rounded, color: Colors.orange),
+  //           label: const Text("RESTORE BACKUP",
+  //               style: TextStyle(color: Colors.orange)),
+  //           onPressed: () => Get.back(result: "restore"),
+  //         ),
+  //         ElevatedButton.icon(
+  //           icon: const Icon(Icons.folder_open_rounded),
+  //           label: const Text("IMPORT NEW"),
+  //           style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
+  //           onPressed: () => Get.back(result: "import_new"),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
+  Future<String?> _showBackupChoiceDialog(String backupInfo) async {
+    String? result;
+
+    await Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        elevation: 0,
+        backgroundColor: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ── Icon Circle ──────────────────────────────────────────────
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.history_rounded,
+                    size: 30, color: Colors.orange),
+              ),
+              const SizedBox(height: 20),
+
+              // ── Title ────────────────────────────────────────────────────
+              Text(
+                "Previous Backup Found",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // ── Backup Info Subtitle ─────────────────────────────────────
+              Text(
+                backupInfo,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.orange[700],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // ── Body Message ─────────────────────────────────────────────
+              Text(
+                "What would you like to do?",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 6),
+              _bulletPoint(
+                  "Restore Backup — rolls back to the snapshot taken before your last import."),
+              _bulletPoint(
+                  "Import New File — pick a new .axbundle (your current data will be backed up first)."),
+              const SizedBox(height: 24),
+
+              // ── Cancel ───────────────────────────────────────────────────
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () {
+                    result = null;
+                    Get.back();
+                  },
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    foregroundColor: Colors.grey[700],
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                  child: Text(
+                    "CANCEL",
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // ── Restore Backup ───────────────────────────────────────────
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.history_rounded),
+                  label: Text(
+                    "RESTORE BACKUP",
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                  ),
+                  onPressed: () {
+                    result = "restore";
+                    Get.back();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // ── Import New ───────────────────────────────────────────────
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.folder_open_rounded),
+                  label: Text(
+                    "IMPORT NEW FILE",
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                  ),
+                  onPressed: () {
+                    result = "import_new";
+                    Get.back();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      barrierDismissible: false,
+    );
+
+    return result;
+  }
+
+  Future<void> _executeRestore() async {
+    try {
+      isLoading.value = true;
+      await OfflineBundleService.restoreBackup();
+      await OfflineDbModule.init();
+      await getAllPages();
+      await refreshPendingCount();
+      await OfflineBundleService.deleteBackup();
+      await OfflineDbModule.logAudit(
+          action: "DB_BACKUP_RESTORE",
+          remarks: "User restored the pre-import backup.");
+      _confirm(
+        title: "Backup Restored",
+        message:
+            "Your previous data has been restored successfully. Please ensure you are logged in as the correct user.",
+        okText: "Done",
+      );
+    } catch (e) {
+      Get.snackbar("Restore Failed", e.toString());
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   Future<void> _executeImport(File file) async {
     try {
       isLoading.value = true;
 
+      debugPrint("[IMPORT] Backing up current DB before import...");
+      await OfflineBundleService.backupCurrentDatabase();
+
       await OfflineBundleService.importBundle(file);
-
       await OfflineDbModule.init();
-
       await getAllPages();
       await refreshPendingCount();
-
-      // Get.defaultDialog(
-      //   title: "Success",
-      //   middleText:
-      //       "Database restored and remapped successfully. Please ensure you are logged in as the correct user.",
-      //   textConfirm: "OK",
-      //   onConfirm: () => Get.back(),
-      // );
-
       await OfflineDbModule.logAudit(
           action: "DB_IMPORT_SUCCESS",
           remarks: "User successfully imported and remapped a bundle.");
-
       _confirm(
-          title: "Success",
-          message:
-              "Database restored and remapped successfully. Please ensure you are logged in as the correct user.",
-          okText: "Done");
+        title: "Success",
+        message:
+            "Database restored and remapped successfully. A backup of your previous data was saved automatically. "
+            "Please ensure you are logged in as the correct user.",
+        okText: "Done",
+      );
     } catch (e) {
       Get.snackbar("Import Failed", e.toString());
     } finally {

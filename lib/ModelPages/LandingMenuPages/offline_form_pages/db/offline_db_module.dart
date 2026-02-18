@@ -253,8 +253,10 @@ class OfflineDbModule {
               "$tag[URL] Offline pages URL => ${Uri.parse(OfflineDBConstants.OFFLINE_PAGES_URL())} \n[URI] => ");
 
       log(res.body, name: tag);
-      if (res.statusCode != 200) return [];
-
+      if (res.statusCode != 200) {
+        globalVariableController.OFFLINE_FORMS_COUNT.value = 0;
+        return [];
+      }
       final decoded = jsonDecode(utf8.decode(res.bodyBytes)) as List<dynamic>;
       final pages = decoded.map((e) => e as Map<String, dynamic>).toList();
       await logAudit(
@@ -263,8 +265,12 @@ class OfflineDbModule {
         remarks:
             "Tried fetching offline pages from server :Res Forms: ${pages.length} forms",
       );
-      if (pages.isEmpty) return [];
-
+      if (pages.isEmpty) {
+        globalVariableController.OFFLINE_FORMS_COUNT.value = 0;
+        return [];
+      }
+      globalVariableController.OFFLINE_FORMS_COUNT.value = pages.length;
+      log("OFFLINE_FORMS_COUNT = ${pages.length}", name: tag);
       final batchDelete = _database.batch();
       batchDelete.delete(
         OfflineDBConstants.TABLE_OFFLINE_PAGES,
@@ -1869,6 +1875,57 @@ class OfflineDbModule {
     return res.isNotEmpty;
   }
 
+  // static Future<void> saveUser({
+  //   required String projectName,
+  //   required String username,
+  //   required String passwordHash,
+  //   required Map<String, dynamic> loginResult,
+  // }) async {
+  //   const tag = "[OFFLINE_USER_SAVE_002]";
+
+  //   try {
+  //     final result = loginResult['result'] ?? loginResult;
+
+  //     final data = {
+  //       OfflineDBConstants.COL_PROJECT_NAME: projectName,
+  //       OfflineDBConstants.COL_USERNAME: username,
+  //       OfflineDBConstants.COL_PASSWORD_HASH: passwordHash,
+  //       OfflineDBConstants.COL_DISPLAY_NAME:
+  //           result['nickname']?.toString() ?? username,
+  //       OfflineDBConstants.COL_SESSION_ID:
+  //           result['ARMSessionId']?.toString() ?? '',
+  //       OfflineDBConstants.COL_RAW_JSON: jsonEncode(result),
+  //       OfflineDBConstants.COL_LAST_LOGIN_AT: DateTime.now().toIso8601String(),
+  //     };
+
+  //     final int rowId = await _database.insert(
+  //       OfflineDBConstants.TABLE_OFFLINE_USER,
+  //       data,
+  //       conflictAlgorithm: ConflictAlgorithm.replace,
+  //     );
+
+  //     // await logAudit(
+  //     //   action: "SAVE_USER",
+  //     //   response: "Success",
+  //     //   remarks:
+  //     //       "[${OfflineDBConstants.TABLE_OFFLINE_USER}] (ID: $rowId) User $username saved for offline login",
+  //     // );
+
+  //     LogService.writeLog(
+  //         message: "$tag[SUCCESS] User saved for offline login");
+  //   } catch (e, st) {
+  //     await logAudit(
+  //       action: "SAVE_USER",
+  //       response: st.toString(),
+  //       isError: true,
+  //       remarks:
+  //           "[${OfflineDBConstants.TABLE_OFFLINE_USER}] User $username saving failed for offline login",
+  //     );
+  //     LogService.writeLog(message: "$tag[FAILED] $e");
+  //     LogService.writeLog(message: "$tag[STACK] $st");
+  //   }
+  // }
+
   static Future<void> saveUser({
     required String projectName,
     required String username,
@@ -1876,10 +1933,8 @@ class OfflineDbModule {
     required Map<String, dynamic> loginResult,
   }) async {
     const tag = "[OFFLINE_USER_SAVE_002]";
-
     try {
       final result = loginResult['result'] ?? loginResult;
-
       final data = {
         OfflineDBConstants.COL_PROJECT_NAME: projectName,
         OfflineDBConstants.COL_USERNAME: username,
@@ -1892,21 +1947,33 @@ class OfflineDbModule {
         OfflineDBConstants.COL_LAST_LOGIN_AT: DateTime.now().toIso8601String(),
       };
 
-      final int rowId = await _database.insert(
+      // ── Upsert: update if (projectName + username) already exists ─────────
+      final List<Map<String, dynamic>> existing = await _database.query(
         OfflineDBConstants.TABLE_OFFLINE_USER,
-        data,
-        conflictAlgorithm: ConflictAlgorithm.replace,
+        where:
+            '${OfflineDBConstants.COL_PROJECT_NAME} = ? AND ${OfflineDBConstants.COL_USERNAME} = ?',
+        whereArgs: [projectName, username],
+        limit: 1,
       );
 
-      await logAudit(
-        action: "SAVE_USER",
-        response: "Success",
-        remarks:
-            "[${OfflineDBConstants.TABLE_OFFLINE_USER}] (ID: $rowId) User $username saved for offline login",
-      );
+      if (existing.isNotEmpty) {
+        await _database.update(
+          OfflineDBConstants.TABLE_OFFLINE_USER,
+          data,
+          where:
+              '${OfflineDBConstants.COL_PROJECT_NAME} = ? AND ${OfflineDBConstants.COL_USERNAME} = ?',
+          whereArgs: [projectName, username],
+        );
+      } else {
+        await _database.insert(
+          OfflineDBConstants.TABLE_OFFLINE_USER,
+          data,
+        );
+      }
 
       LogService.writeLog(
-          message: "$tag[SUCCESS] User saved for offline login");
+          message:
+              "$tag[SUCCESS] User saved for offline login [${existing.isNotEmpty ? "Updated" : "Created"}]");
     } catch (e, st) {
       await logAudit(
         action: "SAVE_USER",

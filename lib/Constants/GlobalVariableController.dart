@@ -8,4 +8,5 @@ class GlobalVariableController extends GetxController {
   var ARM_URL = ''.obs;
   var LOG_PATH = ''.obs;
   var USER_ROLE = ''.obs;
+  var OFFLINE_FORMS_COUNT = 0.obs;
 }
