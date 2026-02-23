@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:ubbottleapp/Constants/AppStorage.dart';
 import 'package:ubbottleapp/Constants/Const.dart';
+import 'package:ubbottleapp/Constants/GlobalVariableController.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/data_source_model.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/form_page_model.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/sync_progress_model.dart';
@@ -56,29 +57,100 @@ class OfflineDbModule {
     autoSync = await AppStorage().retrieveValue(AppStorage.AUTO_SYNC) ?? false;
     final dbPath = join(await getDatabasesPath(), 'offline_forms.db');
 
+    //   _db = await openDatabase(
+    //     dbPath,
+    //     version: 5,
+    //     onCreate: (db, _) async {
+    //       await _createTables(db);
+    //     },
+    //     onUpgrade: (db, oldVersion, newVersion) async {
+    //       const tag = "[OFFLINE_DB_UPGRADE_005]";
+    //       LogService.writeLog(
+    //           message: "$tag[START] Upgrading DB $oldVersion → $newVersion");
+
+    //       await db.execute(OfflineDBConstants.CREATE_AUDIT_LOGS_TABLE);
+
+    //       await db.insert(OfflineDBConstants.TABLE_AUDIT_LOGS, {
+    //         OfflineDBConstants.COL_ACTION: "DB_UPGRADE",
+    //         OfflineDBConstants.COL_REMARKS:
+    //             "Upgraded from $oldVersion to $newVersion successfully.",
+    //         OfflineDBConstants.COL_CREATED_AT: DateTime.now().toIso8601String(),
+    //         OfflineDBConstants.COL_IS_ERROR: 0,
+    //       });
+
+    //       LogService.writeLog(
+    //           message: "$tag[SUCCESS] Audit table added, data preserved.");
+    //     },
+    //   );
+    //   await maintenanceDeleteOldLogs();
+    // }
+
     _db = await openDatabase(
       dbPath,
-      version: 5,
+      version: 6, // ← bumped from 5 → 6
       onCreate: (db, _) async {
         await _createTables(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        const tag = "[OFFLINE_DB_UPGRADE_005]";
+        const tag = "[OFFLINE_DB_UPGRADE_006]";
         LogService.writeLog(
-            message: "$tag[START] Upgrading DB $oldVersion → $newVersion");
+          message: "$tag[START] Upgrading DB $oldVersion → $newVersion",
+        );
 
-        await db.execute(OfflineDBConstants.CREATE_AUDIT_LOGS_TABLE);
+        if (oldVersion < 5) {
+          await db.execute(OfflineDBConstants.CREATE_AUDIT_LOGS_TABLE);
+          LogService.writeLog(message: "$tag[V5] Audit logs table ensured.");
+        }
 
-        await db.insert(OfflineDBConstants.TABLE_AUDIT_LOGS, {
-          OfflineDBConstants.COL_ACTION: "DB_UPGRADE",
-          OfflineDBConstants.COL_REMARKS:
-              "Upgraded from $oldVersion to $newVersion successfully.",
-          OfflineDBConstants.COL_CREATED_AT: DateTime.now().toIso8601String(),
-          OfflineDBConstants.COL_IS_ERROR: 0,
-        });
+        if (oldVersion < 6) {
+          try {
+            await db.execute(
+              'ALTER TABLE ${OfflineDBConstants.TABLE_AUDIT_LOGS} '
+              'ADD COLUMN ${OfflineDBConstants.COL_IS_SYNCED} INTEGER NOT NULL DEFAULT 0',
+            );
+            LogService.writeLog(
+              message:
+                  "$tag[V6] Added '${OfflineDBConstants.COL_IS_SYNCED}' to audit_logs.",
+            );
+          } catch (e) {
+            LogService.writeLog(
+              message: "$tag[V6][SKIP] is_synced already present: $e",
+            );
+          }
+
+          try {
+            await db.execute(
+              'ALTER TABLE ${OfflineDBConstants.TABLE_OFFLINE_USER} '
+              'ADD COLUMN ${OfflineDBConstants.COL_LAST_SYNCED} TEXT',
+            );
+            LogService.writeLog(
+              message:
+                  "$tag[V6] Added '${OfflineDBConstants.COL_LAST_SYNCED}' to offline_user.",
+            );
+          } catch (e) {
+            LogService.writeLog(
+              message: "$tag[V6][SKIP] last_synced already present: $e",
+            );
+          }
+        }
+
+        // Audit the upgrade itself
+        try {
+          await db.insert(OfflineDBConstants.TABLE_AUDIT_LOGS, {
+            OfflineDBConstants.COL_USERNAME: 'system',
+            OfflineDBConstants.COL_PROJECT_NAME: 'system',
+            OfflineDBConstants.COL_ACTION: 'DB_UPGRADE',
+            OfflineDBConstants.COL_REMARKS:
+                'Upgraded from $oldVersion to $newVersion.',
+            OfflineDBConstants.COL_CREATED_AT: DateTime.now().toIso8601String(),
+            OfflineDBConstants.COL_IS_ERROR: 0,
+            OfflineDBConstants.COL_IS_SYNCED: 0, // new column — default 0
+          });
+        } catch (_) {}
 
         LogService.writeLog(
-            message: "$tag[SUCCESS] Audit table added, data preserved.");
+          message: "$tag[SUCCESS] Migration complete. Data preserved.",
+        );
       },
     );
     await maintenanceDeleteOldLogs();
@@ -266,10 +338,21 @@ class OfflineDbModule {
             "Tried fetching offline pages from server :Res Forms: ${pages.length} forms",
       );
       if (pages.isEmpty) {
-        globalVariableController.OFFLINE_FORMS_COUNT.value = 0;
-        return [];
+        try {
+          if (Get.isRegistered<GlobalVariableController>()) {
+            globalVariableController.OFFLINE_FORMS_COUNT.value = 0;
+            return [];
+          }
+        } catch (_) {
+          return [];
+        }
       }
-      globalVariableController.OFFLINE_FORMS_COUNT.value = pages.length;
+
+      try {
+        if (Get.isRegistered<GlobalVariableController>()) {
+          globalVariableController.OFFLINE_FORMS_COUNT.value = pages.length;
+        }
+      } catch (_) {}
       log("OFFLINE_FORMS_COUNT = ${pages.length}", name: tag);
       final batchDelete = _database.batch();
       batchDelete.delete(
@@ -1875,57 +1958,6 @@ class OfflineDbModule {
     return res.isNotEmpty;
   }
 
-  // static Future<void> saveUser({
-  //   required String projectName,
-  //   required String username,
-  //   required String passwordHash,
-  //   required Map<String, dynamic> loginResult,
-  // }) async {
-  //   const tag = "[OFFLINE_USER_SAVE_002]";
-
-  //   try {
-  //     final result = loginResult['result'] ?? loginResult;
-
-  //     final data = {
-  //       OfflineDBConstants.COL_PROJECT_NAME: projectName,
-  //       OfflineDBConstants.COL_USERNAME: username,
-  //       OfflineDBConstants.COL_PASSWORD_HASH: passwordHash,
-  //       OfflineDBConstants.COL_DISPLAY_NAME:
-  //           result['nickname']?.toString() ?? username,
-  //       OfflineDBConstants.COL_SESSION_ID:
-  //           result['ARMSessionId']?.toString() ?? '',
-  //       OfflineDBConstants.COL_RAW_JSON: jsonEncode(result),
-  //       OfflineDBConstants.COL_LAST_LOGIN_AT: DateTime.now().toIso8601String(),
-  //     };
-
-  //     final int rowId = await _database.insert(
-  //       OfflineDBConstants.TABLE_OFFLINE_USER,
-  //       data,
-  //       conflictAlgorithm: ConflictAlgorithm.replace,
-  //     );
-
-  //     // await logAudit(
-  //     //   action: "SAVE_USER",
-  //     //   response: "Success",
-  //     //   remarks:
-  //     //       "[${OfflineDBConstants.TABLE_OFFLINE_USER}] (ID: $rowId) User $username saved for offline login",
-  //     // );
-
-  //     LogService.writeLog(
-  //         message: "$tag[SUCCESS] User saved for offline login");
-  //   } catch (e, st) {
-  //     await logAudit(
-  //       action: "SAVE_USER",
-  //       response: st.toString(),
-  //       isError: true,
-  //       remarks:
-  //           "[${OfflineDBConstants.TABLE_OFFLINE_USER}] User $username saving failed for offline login",
-  //     );
-  //     LogService.writeLog(message: "$tag[FAILED] $e");
-  //     LogService.writeLog(message: "$tag[STACK] $st");
-  //   }
-  // }
-
   static Future<void> saveUser({
     required String projectName,
     required String username,
@@ -2039,6 +2071,7 @@ class OfflineDbModule {
           OfflineDBConstants.COL_IS_ERROR: isError ? 1 : 0,
           OfflineDBConstants.COL_RESPONSE: response ?? '',
           OfflineDBConstants.COL_REMARKS: remarks ?? '',
+          OfflineDBConstants.COL_IS_SYNCED: 0,
         },
       );
     } catch (e) {
@@ -2076,5 +2109,70 @@ class OfflineDbModule {
 
   static Future<List<Map<String, dynamic>>> getRawPendingRequests() async {
     return await _database.query(OfflineDBConstants.TABLE_PENDING_REQUESTS);
+  }
+
+  static Future<void> updateLastSyncedTimestamp() async {
+    try {
+      final scope = await _getLastOfflineUserScope();
+      if (scope == null) return;
+
+      final now = DateTime.now().toIso8601String();
+
+      await _database.update(
+        OfflineDBConstants.TABLE_OFFLINE_USER,
+        {OfflineDBConstants.COL_LAST_SYNCED: now},
+        where: '${OfflineDBConstants.COL_USERNAME} = ? AND '
+            '${OfflineDBConstants.COL_PROJECT_NAME} = ?',
+        whereArgs: [scope['username'], scope['projectName']],
+      );
+
+      debugPrint("[OFFLINE_DB] last_synced updated → $now");
+    } catch (e) {
+      debugPrint("[OFFLINE_DB] updateLastSyncedTimestamp failed: $e");
+    }
+  }
+
+  static Future<String?> getLastSyncedTimestamp() async {
+    try {
+      final scope = await _getLastOfflineUserScope();
+      if (scope == null) return null;
+
+      final res = await _database.query(
+        OfflineDBConstants.TABLE_OFFLINE_USER,
+        columns: [OfflineDBConstants.COL_LAST_SYNCED],
+        where: '${OfflineDBConstants.COL_USERNAME} = ? AND '
+            '${OfflineDBConstants.COL_PROJECT_NAME} = ?',
+        whereArgs: [scope['username'], scope['projectName']],
+        limit: 1,
+      );
+
+      if (res.isEmpty) return null;
+      return res.first[OfflineDBConstants.COL_LAST_SYNCED] as String?;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  static Future<int> markAuditLogsAsSynced(List<int> ids) async {
+    if (ids.isEmpty) return 0;
+
+    final placeholders = ids.map((_) => '?').join(',');
+    return await _database.rawUpdate(
+      'UPDATE ${OfflineDBConstants.TABLE_AUDIT_LOGS} '
+      'SET ${OfflineDBConstants.COL_IS_SYNCED} = 1 '
+      'WHERE ${OfflineDBConstants.COL_ID} IN ($placeholders)',
+      ids,
+    );
+  }
+
+  static Future<List<Map<String, dynamic>>> getUnsyncedAuditLogs({
+    int limit = 200,
+  }) async {
+    return await _database.query(
+      OfflineDBConstants.TABLE_AUDIT_LOGS,
+      where: '${OfflineDBConstants.COL_IS_SYNCED} = 0',
+      orderBy: '${OfflineDBConstants.COL_ID} ASC',
+      limit: limit,
+    );
   }
 }

@@ -34,12 +34,11 @@ class OfflineDBConstants {
 
   static const String COL_ID = 'id';
   static const String COL_CREATED_AT = 'created_at';
-
   static const String COL_USERNAME = 'username';
   static const String COL_PROJECT_NAME = 'project_name';
-
   static const String COL_TRANS_ID = 'trans_id';
-
+  static const String COL_IS_SYNCED = 'is_synced';
+  static const String COL_LAST_SYNCED = 'last_synced';
   // ================= OFFLINE PAGES =================
 
   static const String COL_PAGE_JSON = 'page_json';
@@ -132,35 +131,64 @@ class OfflineDBConstants {
     ''';
 
   // -------- OFFLINE USER --------
-  static final String CREATE_OFFLINE_USER_TABLE = CREATE_QUERY +
-      TABLE_OFFLINE_USER +
-      '''
-    (
-      $COL_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-      $COL_PROJECT_NAME TEXT,
-      $COL_USERNAME TEXT,
-      $COL_PASSWORD_HASH TEXT,
-      $COL_DISPLAY_NAME TEXT,
-      $COL_SESSION_ID TEXT,
-      $COL_RAW_JSON TEXT,
-      $COL_LAST_LOGIN_AT TEXT
-    );
-  ''';
+  // static final String CREATE_OFFLINE_USER_TABLE = CREATE_QUERY +
+  //     TABLE_OFFLINE_USER +
+  //     '''
+  //   (
+  //     $COL_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+  //     $COL_PROJECT_NAME TEXT,
+  //     $COL_USERNAME TEXT,
+  //     $COL_PASSWORD_HASH TEXT,
+  //     $COL_DISPLAY_NAME TEXT,
+  //     $COL_SESSION_ID TEXT,
+  //     $COL_RAW_JSON TEXT,
+  //     $COL_LAST_LOGIN_AT TEXT
+  //   );
+  // ''';
 
   // -------- AUDIT LOGS --------
-  static final String CREATE_AUDIT_LOGS_TABLE = CREATE_QUERY +
-      TABLE_AUDIT_LOGS +
-      '''
-    (
-      $COL_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-      $COL_USERNAME TEXT,
-      $COL_PROJECT_NAME TEXT,
-      $COL_ACTION TEXT,
-      $COL_CREATED_AT TEXT,
-      $COL_IS_ERROR INTEGER,
-      $COL_RESPONSE TEXT,
-      $COL_REMARKS TEXT,
-      $COL_DEVICE_INFO TEXT
-    );
-  ''';
+  // static final String CREATE_AUDIT_LOGS_TABLE = CREATE_QUERY +
+  //     TABLE_AUDIT_LOGS +
+  //     '''
+  //   (
+  //     $COL_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+  //     $COL_USERNAME TEXT,
+  //     $COL_PROJECT_NAME TEXT,
+  //     $COL_ACTION TEXT,
+  //     $COL_CREATED_AT TEXT,
+  //     $COL_IS_ERROR INTEGER,
+  //     $COL_RESPONSE TEXT,
+  //     $COL_REMARKS TEXT,
+  //     $COL_DEVICE_INFO TEXT
+  //   );
+  // ''';
+
+  static const String CREATE_OFFLINE_USER_TABLE = '''
+  CREATE TABLE IF NOT EXISTS $TABLE_OFFLINE_USER (
+    $COL_ID               INTEGER PRIMARY KEY AUTOINCREMENT,
+    $COL_PROJECT_NAME     TEXT NOT NULL,
+    $COL_USERNAME         TEXT NOT NULL,
+    $COL_PASSWORD_HASH    TEXT NOT NULL,
+    $COL_DISPLAY_NAME     TEXT,
+    $COL_SESSION_ID       TEXT,
+    $COL_RAW_JSON         TEXT,
+    $COL_LAST_LOGIN_AT    TEXT,
+    $COL_LAST_SYNCED      TEXT,
+    UNIQUE($COL_PROJECT_NAME, $COL_USERNAME)
+  )
+''';
+
+  static const String CREATE_AUDIT_LOGS_TABLE = '''
+  CREATE TABLE IF NOT EXISTS $TABLE_AUDIT_LOGS (
+    $COL_ID           INTEGER PRIMARY KEY AUTOINCREMENT,
+    $COL_USERNAME     TEXT    NOT NULL DEFAULT '',
+    $COL_PROJECT_NAME TEXT    NOT NULL DEFAULT '',
+    $COL_ACTION       TEXT    NOT NULL,
+    $COL_CREATED_AT   TEXT    NOT NULL,
+    $COL_IS_ERROR     INTEGER NOT NULL DEFAULT 0,
+    $COL_RESPONSE     TEXT             DEFAULT '',
+    $COL_REMARKS      TEXT             DEFAULT '',
+    $COL_IS_SYNCED    INTEGER NOT NULL DEFAULT 0
+  )
+''';
 }

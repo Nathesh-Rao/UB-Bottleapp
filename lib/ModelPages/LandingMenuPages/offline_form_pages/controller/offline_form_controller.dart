@@ -1156,60 +1156,6 @@ class OfflineFormController extends GetxController {
     }
   }
 
-  // Future<String?> _showBackupChoiceDialog(String backupInfo) async {
-  //   return await Get.dialog<String>(
-  //     AlertDialog(
-  //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-  //       title: Row(
-  //         children: const [
-  //           Icon(Icons.history_rounded, color: Colors.orange),
-  //           SizedBox(width: 8),
-  //           Text("Previous Backup Found"),
-  //         ],
-  //       ),
-  //       content: Column(
-  //         mainAxisSize: MainAxisSize.min,
-  //         crossAxisAlignment: CrossAxisAlignment.start,
-  //         children: [
-  //           Text(backupInfo,
-  //               style: const TextStyle(fontSize: 13, color: Colors.grey)),
-  //           const SizedBox(height: 12),
-  //           const Divider(),
-  //           const SizedBox(height: 8),
-  //           const Text(
-  //             "What would you like to do?",
-  //             style: TextStyle(fontWeight: FontWeight.w600),
-  //           ),
-  //           const SizedBox(height: 4),
-  //           _bulletPoint(
-  //               "Restore Backup — rolls back to the snapshot taken before your last import."),
-  //           _bulletPoint(
-  //               "Import New File — pick a new .axbundle (your current data will be backed up first)."),
-  //         ],
-  //       ),
-  //       actionsPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-  //       actions: [
-  //         TextButton(
-  //           onPressed: () => Get.back(result: null),
-  //           child: const Text("CANCEL", style: TextStyle(color: Colors.grey)),
-  //         ),
-  //         OutlinedButton.icon(
-  //           icon: const Icon(Icons.history_rounded, color: Colors.orange),
-  //           label: const Text("RESTORE BACKUP",
-  //               style: TextStyle(color: Colors.orange)),
-  //           onPressed: () => Get.back(result: "restore"),
-  //         ),
-  //         ElevatedButton.icon(
-  //           icon: const Icon(Icons.folder_open_rounded),
-  //           label: const Text("IMPORT NEW"),
-  //           style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
-  //           onPressed: () => Get.back(result: "import_new"),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
   Future<String?> _showBackupChoiceDialog(String backupInfo) async {
     String? result;
 
