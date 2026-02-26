@@ -25,8 +25,6 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 enum SubmitStatus { success, savedOffline, apiFailure }
 
-//TODO check role and save to globalvar and show the audit manage screen
-//( (role == admin ) = all data)
 class OfflineDbModule {
   OfflineDbModule._();
   // static ServerConnections serverConnections = ServerConnections();
@@ -55,35 +53,7 @@ class OfflineDbModule {
 
   static Future<void> init() async {
     autoSync = await AppStorage().retrieveValue(AppStorage.AUTO_SYNC) ?? false;
-    final dbPath = join(await getDatabasesPath(), 'offline_forms.db');
-
-    //   _db = await openDatabase(
-    //     dbPath,
-    //     version: 5,
-    //     onCreate: (db, _) async {
-    //       await _createTables(db);
-    //     },
-    //     onUpgrade: (db, oldVersion, newVersion) async {
-    //       const tag = "[OFFLINE_DB_UPGRADE_005]";
-    //       LogService.writeLog(
-    //           message: "$tag[START] Upgrading DB $oldVersion → $newVersion");
-
-    //       await db.execute(OfflineDBConstants.CREATE_AUDIT_LOGS_TABLE);
-
-    //       await db.insert(OfflineDBConstants.TABLE_AUDIT_LOGS, {
-    //         OfflineDBConstants.COL_ACTION: "DB_UPGRADE",
-    //         OfflineDBConstants.COL_REMARKS:
-    //             "Upgraded from $oldVersion to $newVersion successfully.",
-    //         OfflineDBConstants.COL_CREATED_AT: DateTime.now().toIso8601String(),
-    //         OfflineDBConstants.COL_IS_ERROR: 0,
-    //       });
-
-    //       LogService.writeLog(
-    //           message: "$tag[SUCCESS] Audit table added, data preserved.");
-    //     },
-    //   );
-    //   await maintenanceDeleteOldLogs();
-    // }
+    final dbPath = join(await getDatabasesPath(), 'AxpertMobileDB.db');
 
     _db = await openDatabase(
       dbPath,
@@ -813,7 +783,7 @@ class OfflineDbModule {
 
       return SubmitStatus.apiFailure;
     }
-
+//-----------------------OFFLINE--------------------------------------->
     final int rowId = await _database.insert(
       OfflineDBConstants.TABLE_PENDING_REQUESTS,
       {
@@ -835,6 +805,7 @@ class OfflineDbModule {
   }
 
   static var processPendingQueTag = "PROCESS_PENDING_QUE";
+
   static Future<String> processPendingQueue({
     required bool isInternetAvailable,
     SyncProgressModel? progress,
@@ -870,6 +841,7 @@ class OfflineDbModule {
       whereArgs: [username, projectName],
       orderBy: OfflineDBConstants.COL_CREATED_AT,
     );
+
     log("processpendingque idRows.isEmpty ${idRows.isEmpty}",
         name: processPendingQueTag);
 
@@ -895,6 +867,7 @@ class OfflineDbModule {
         Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
     var isTraceOn =
         await AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? false;
+
     for (int i = 0; i < total; i++) {
       final id = idRows[i][OfflineDBConstants.COL_ID] as int;
 
@@ -1057,7 +1030,6 @@ class OfflineDbModule {
           "";
       return ubge.isEmpty ? " Asset " : " UBGE: $ubge ";
     }
-
     return ' ';
   }
 
@@ -2093,12 +2065,12 @@ class OfflineDbModule {
   }
 
   static Future<File> getDatabaseFile() async {
-    final dbPath = join(await getDatabasesPath(), 'offline_forms.db');
+    final dbPath = join(await getDatabasesPath(), 'AxpertMobileDB.db');
     return File(dbPath);
   }
 
   static Future<void> importDatabaseFile(File sourceFile) async {
-    final dbPath = join(await getDatabasesPath(), 'offline_forms.db');
+    final dbPath = join(await getDatabasesPath(), 'AxpertMobileDB.db');
 
     await _db?.close();
 

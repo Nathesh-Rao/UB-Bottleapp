@@ -277,29 +277,6 @@ class ServerConnections {
     return "";
   }
 
-  // parseData(http.Response response) async {
-  //   try {
-  //     if (response.statusCode == 200) return response.body;
-  //     if (response.statusCode == 404) {
-  //       Get.snackbar("Error " + response.statusCode.toString(), "Invalid Url",
-  //           snackPosition: SnackPosition.BOTTOM,
-  //           backgroundColor: Colors.redAccent,
-  //           colorText: Colors.white);
-  //     } else {
-  //       Get.snackbar(
-  //           "Error " + response.statusCode.toString(), "Internal server error",
-  //           snackPosition: SnackPosition.BOTTOM,
-  //           backgroundColor: Colors.redAccent,
-  //           colorText: Colors.white);
-  //     }
-  //   } catch (e) {
-  //     Get.snackbar("Error ", e.toString(),
-  //         snackPosition: SnackPosition.BOTTOM,
-  //         backgroundColor: Colors.redAccent,
-  //         colorText: Colors.white);
-  //   }
-  // }
-
   getFromServer(
       {String url = '', var header = '', var show_errorSnackbar = true}) async {
     var API_NAME = url.substring(url.lastIndexOf("/") + 1, url.length);
