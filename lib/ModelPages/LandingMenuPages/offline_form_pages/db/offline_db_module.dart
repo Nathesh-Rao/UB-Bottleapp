@@ -933,11 +933,18 @@ class OfflineDbModule {
         bool isSuccess = false;
         String? errorMsg;
 
-        if (res != null && res.isNotEmpty) {
+        if (res.toString() != "") {
           LogService.writeLog(message: "[API ERROR]||[API SUCCESS] $res");
           try {
             final decoded = jsonDecode(res);
-            if (decoded is Map<String, dynamic> && decoded['success'] == true) {
+
+            // if (decoded is Map<String, dynamic> && decoded['success'] == true) {
+            //   isSuccess = true;
+            // } else {
+            //   errorMsg = decoded['message'] ?? "Unknown server error";
+            // }
+
+            if (decoded['success'] == true) {
               isSuccess = true;
             } else {
               errorMsg = decoded['message'] ?? "Unknown server error";
@@ -950,8 +957,6 @@ class OfflineDbModule {
         }
 
         if (isSuccess) {
-          // ── DEBUG-APK: do NOT delete payload files. Do NOT call _markAsSuccess.
-          // Mark with STATUS_PUSHED_DEBUG so records stay queryable for replay.
           await _markAsPushedDebug(id);
           successCount++;
         } else {
