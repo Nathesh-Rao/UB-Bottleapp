@@ -52,7 +52,7 @@ class OfflineDbModule {
 
   static Future<void> init() async {
     autoSync = await AppStorage().retrieveValue(AppStorage.AUTO_SYNC) ?? false;
-    final dbPath = join(await getDatabasesPath(), 'offline_forms.db');
+    final dbPath = join(await getDatabasesPath(), 'AxpertMobileDB.db');
 
     _db = await openDatabase(
       dbPath,
@@ -2287,12 +2287,12 @@ class OfflineDbModule {
   }
 
   static Future<File> getDatabaseFile() async {
-    final dbPath = join(await getDatabasesPath(), 'offline_forms.db');
+    final dbPath = join(await getDatabasesPath(), 'AxpertMobileDB.db');
     return File(dbPath);
   }
 
   static Future<void> importDatabaseFile(File sourceFile) async {
-    final dbPath = join(await getDatabasesPath(), 'offline_forms.db');
+    final dbPath = join(await getDatabasesPath(), 'AxpertMobileDB.db');
 
     await _db?.close();
 
