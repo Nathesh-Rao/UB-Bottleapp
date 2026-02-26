@@ -29,10 +29,7 @@ enum SubmitStatus { success, savedOffline, apiFailure }
 //( (role == admin ) = all data)
 class OfflineDbModule {
   OfflineDbModule._();
-  // static ServerConnections serverConnections = ServerConnections();
   static Database? _db;
-
-  // INIT
 
   static var autoSync = false;
 
@@ -57,37 +54,9 @@ class OfflineDbModule {
     autoSync = await AppStorage().retrieveValue(AppStorage.AUTO_SYNC) ?? false;
     final dbPath = join(await getDatabasesPath(), 'offline_forms.db');
 
-    //   _db = await openDatabase(
-    //     dbPath,
-    //     version: 5,
-    //     onCreate: (db, _) async {
-    //       await _createTables(db);
-    //     },
-    //     onUpgrade: (db, oldVersion, newVersion) async {
-    //       const tag = "[OFFLINE_DB_UPGRADE_005]";
-    //       LogService.writeLog(
-    //           message: "$tag[START] Upgrading DB $oldVersion → $newVersion");
-
-    //       await db.execute(OfflineDBConstants.CREATE_AUDIT_LOGS_TABLE);
-
-    //       await db.insert(OfflineDBConstants.TABLE_AUDIT_LOGS, {
-    //         OfflineDBConstants.COL_ACTION: "DB_UPGRADE",
-    //         OfflineDBConstants.COL_REMARKS:
-    //             "Upgraded from $oldVersion to $newVersion successfully.",
-    //         OfflineDBConstants.COL_CREATED_AT: DateTime.now().toIso8601String(),
-    //         OfflineDBConstants.COL_IS_ERROR: 0,
-    //       });
-
-    //       LogService.writeLog(
-    //           message: "$tag[SUCCESS] Audit table added, data preserved.");
-    //     },
-    //   );
-    //   await maintenanceDeleteOldLogs();
-    // }
-
     _db = await openDatabase(
       dbPath,
-      version: 6, // ← bumped from 5 → 6
+      version: 6,
       onCreate: (db, _) async {
         await _createTables(db);
       },
@@ -134,7 +103,6 @@ class OfflineDbModule {
           }
         }
 
-        // Audit the upgrade itself
         try {
           await db.insert(OfflineDBConstants.TABLE_AUDIT_LOGS, {
             OfflineDBConstants.COL_USERNAME: 'system',
@@ -144,7 +112,7 @@ class OfflineDbModule {
                 'Upgraded from $oldVersion to $newVersion.',
             OfflineDBConstants.COL_CREATED_AT: DateTime.now().toIso8601String(),
             OfflineDBConstants.COL_IS_ERROR: 0,
-            OfflineDBConstants.COL_IS_SYNCED: 0, // new column — default 0
+            OfflineDBConstants.COL_IS_SYNCED: 0,
           });
         } catch (_) {}
 
@@ -255,7 +223,7 @@ class OfflineDbModule {
       for (final ds in dsSet) {
         final exists = await _database.query(
           OfflineDBConstants.TABLE_DATASOURCE_DATA,
-          columns: [OfflineDBConstants.COL_ID], // Optimization: Select ID only
+          columns: [OfflineDBConstants.COL_ID],
           where: '''
           ${OfflineDBConstants.COL_USERNAME} = ? AND
           ${OfflineDBConstants.COL_PROJECT_NAME} = ? AND
@@ -486,7 +454,7 @@ class OfflineDbModule {
       ${OfflineDBConstants.COL_PROJECT_NAME} = ? AND 
       ${OfflineDBConstants.COL_TRANS_ID} = ? 
     ''',
-      whereArgs: [username, projectName, transId], // <--- FILTER BY ID
+      whereArgs: [username, projectName, transId],
       limit: 1,
     );
 
@@ -592,7 +560,6 @@ class OfflineDbModule {
         );
 
         progress?.increment();
-        // After commit
         await logAudit(
           action: "FETCH_ALL_DATA_SOURCES",
           remarks:
@@ -695,7 +662,6 @@ class OfflineDbModule {
 
       debugPrint("fetchDatasource : getDatasourceOptions => $decoded");
 
-      // 1. Extract the List
       List<dynamic> rawList = [];
       if (decoded is Map<String, dynamic> && decoded.containsKey('result')) {
         rawList = decoded['result']['data'] ?? [];
@@ -703,7 +669,6 @@ class OfflineDbModule {
         rawList = decoded;
       }
 
-      // 2. CONVERT List<dynamic> -> List<Map<String, dynamic>> (THE FIX)
       return rawList.map((e) => Map<String, dynamic>.from(e)).toList();
     } catch (e) {
       LogService.writeLog(message: "[DS_PARSE_ERROR] $datasource: $e");
@@ -711,7 +676,6 @@ class OfflineDbModule {
     }
   }
 
-  // MAP OPTIONS INTO FIELD MODELS
   static Future<List<OfflineFormPageModel>> mapDatasourceOptionsIntoPages({
     required List<OfflineFormPageModel> pages,
   }) async {
@@ -786,7 +750,8 @@ class OfflineDbModule {
                 response: responseStr,
                 remarks: "Form: ${submitBody['publickey'] ?? "NO_PUBLIC_KEY"}",
               );
-              await _deletePayloadFiles(submitBody);
+              // ── DEBUG-APK: skip _deletePayloadFiles so images stay on disk ──
+              // _deletePayloadFiles intentionally NOT called in this build.
               return SubmitStatus.success;
             } else {
               final msg = decoded['message'] ?? "Unknown Error";
@@ -835,6 +800,7 @@ class OfflineDbModule {
   }
 
   static var processPendingQueTag = "PROCESS_PENDING_QUE";
+
   static Future<String> processPendingQueue({
     required bool isInternetAvailable,
     SyncProgressModel? progress,
@@ -984,8 +950,9 @@ class OfflineDbModule {
         }
 
         if (isSuccess) {
-          await _deletePayloadFiles(uploadPayload);
-          await _markAsSuccess(id);
+          // ── DEBUG-APK: do NOT delete payload files. Do NOT call _markAsSuccess.
+          // Mark with STATUS_PUSHED_DEBUG so records stay queryable for replay.
+          await _markAsPushedDebug(id);
           successCount++;
         } else {
           await _markAsError(id);
@@ -997,7 +964,7 @@ class OfflineDbModule {
           isError: !isSuccess,
           response: res?.toString() ?? "Empty Response",
           remarks:
-              "[ID: $id] Status: ${isSuccess ? 'SUCCESS' : 'FAILED'} | Key: ${uploadPayload['publickey']}",
+              "[ID: $id] Status: ${isSuccess ? 'PUSHED_DEBUG (kept)' : 'FAILED'} | Key: ${uploadPayload['publickey']}",
         );
         progress?.increment(isSuccess: isSuccess);
       } catch (e) {
@@ -1042,6 +1009,21 @@ class OfflineDbModule {
       whereArgs: [id],
     );
   }
+
+  /// ── DEBUG-APK ONLY ──────────────────────────────────────────────────────
+  /// Marks a record as [STATUS_PUSHED_DEBUG] instead of deleting it.
+  /// The row stays in the DB and all local image files remain on disk.
+  static Future<void> _markAsPushedDebug(int id) async {
+    await _database.update(
+      OfflineDBConstants.TABLE_PENDING_REQUESTS,
+      {OfflineDBConstants.COL_STATUS: OfflineDBConstants.STATUS_PUSHED_DEBUG},
+      where: '${OfflineDBConstants.COL_ID} = ?',
+      whereArgs: [id],
+    );
+    log("[DEBUG_APK] Record $id marked STATUS_PUSHED_DEBUG — files kept.",
+        name: "DEBUG_APK");
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   static String _isAssetHelper(Map<String, dynamic> pl) {
     String publicKey = pl["publickey"] ?? '';
@@ -1170,17 +1152,8 @@ class OfflineDbModule {
         if (isSuccess) {
           successCount++;
 
-          await _deletePayloadFiles(payloadWithBase64);
-
-          await _database.update(
-            OfflineDBConstants.TABLE_PENDING_REQUESTS,
-            {
-              OfflineDBConstants.COL_STATUS:
-                  OfflineDBConstants.STATUS_FORCE_PUSHED
-            },
-            where: '${OfflineDBConstants.COL_ID} = ?',
-            whereArgs: [id],
-          );
+          // ── DEBUG-APK: skip _deletePayloadFiles, use STATUS_PUSHED_DEBUG ──
+          await _markAsPushedDebug(id);
         } else {
           failCount++;
           LogService.writeLog(message: "[FORCE_FAIL] ID: $id - $res");
@@ -1190,7 +1163,7 @@ class OfflineDbModule {
           isError: !isSuccess,
           response: res?.toString() ?? "Empty Response",
           remarks:
-              "Record $id: ${isSuccess ? 'SUCCESS' : 'FAILED'} | Previous Error: $prevError",
+              "Record $id: ${isSuccess ? 'PUSHED_DEBUG (kept)' : 'FAILED'} | Previous Error: $prevError",
         );
         progress.increment(isSuccess: isSuccess);
       } catch (e) {
@@ -1226,6 +1199,232 @@ class OfflineDbModule {
       progress.updateMessage("Operation completed. No records processed.");
     }
   }
+
+  // =================================================
+  // DEBUG-APK: REPLAY ALREADY-PUSHED RECORDS
+  // =================================================
+
+  /// Returns all records that were successfully pushed in this debug build
+  /// (status == STATUS_PUSHED_DEBUG) so the UI can list them.
+  static Future<List<Map<String, dynamic>>> getDebugPushedRecords() async {
+    final scope = await _getLastOfflineUserScope();
+    if (scope == null) return [];
+
+    final rows = await _database.query(
+      OfflineDBConstants.TABLE_PENDING_REQUESTS,
+      columns: [
+        OfflineDBConstants.COL_ID,
+        OfflineDBConstants.COL_CREATED_AT,
+        OfflineDBConstants.COL_STATUS,
+        // Intentionally NOT selecting COL_REQUEST_JSON here — can be huge.
+        // Callers that need the payload should call _readLargeString.
+      ],
+      where: '''
+        ${OfflineDBConstants.COL_STATUS} = ${OfflineDBConstants.STATUS_PUSHED_DEBUG}
+        AND ${OfflineDBConstants.COL_USERNAME} = ?
+        AND ${OfflineDBConstants.COL_PROJECT_NAME} = ?
+      ''',
+      whereArgs: [scope['username'], scope['projectName']],
+      orderBy: OfflineDBConstants.COL_CREATED_AT,
+    );
+
+    return rows;
+  }
+
+  static Future<String> replayDebugPushedRecords({
+    required bool isInternetAvailable,
+    SyncProgressModel? progress,
+    List<int>? onlyIds,
+  }) async {
+    const String replayAction = "DEBUG_REPLAY_PUSHED";
+
+    if (!isInternetAvailable) {
+      progress?.updateMessage("No internet – cannot replay.");
+      return "No internet connection";
+    }
+
+    final scope = await _getLastOfflineUserScope();
+    if (scope == null) return "No user session";
+
+    final username = scope['username']!;
+    final projectName = scope['projectName']!;
+
+    // Build WHERE clause — either filter by supplied IDs or fetch all debug records.
+    String whereClause = '''
+      ${OfflineDBConstants.COL_STATUS} = ${OfflineDBConstants.STATUS_PUSHED_DEBUG}
+      AND ${OfflineDBConstants.COL_USERNAME} = ?
+      AND ${OfflineDBConstants.COL_PROJECT_NAME} = ?
+    ''';
+    List<Object?> whereArgs = [username, projectName];
+
+    if (onlyIds != null && onlyIds.isNotEmpty) {
+      final placeholders = onlyIds.map((_) => '?').join(',');
+      whereClause += ' AND ${OfflineDBConstants.COL_ID} IN ($placeholders)';
+      whereArgs = [...whereArgs, ...onlyIds];
+    }
+
+    final idRows = await _database.query(
+      OfflineDBConstants.TABLE_PENDING_REQUESTS,
+      columns: [OfflineDBConstants.COL_ID],
+      where: whereClause,
+      whereArgs: whereArgs,
+      orderBy: OfflineDBConstants.COL_CREATED_AT,
+    );
+
+    if (idRows.isEmpty) {
+      progress?.updateMessage("No STATUS_PUSHED_DEBUG records found.");
+      progress?.complete();
+      return "Nothing to replay";
+    }
+
+    final int total = idRows.length;
+    progress?.clearFailedRecords();
+    progress?.init(total: total, msg: "Replaying $total record(s)...");
+
+    final String currentSessionId =
+        AppStorage().retrieveValue(AppStorage.SESSIONID) ?? "";
+    final bool isTraceOn =
+        await AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? false;
+
+    final ServerConnections serverConnections = ServerConnections();
+    final String url =
+        Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
+
+    int successCount = 0;
+    int failCount = 0;
+
+    await logAudit(
+      action: replayAction,
+      remarks: "Starting replay of $total debug-pushed records.",
+    );
+
+    for (int i = 0; i < total; i++) {
+      final int id = idRows[i][OfflineDBConstants.COL_ID] as int;
+
+      try {
+        progress?.updateMessage(
+            "Replaying${onlyIds != null ? ' (selected)' : ''} record ${i + 1} of $total  [DB id: $id]...");
+
+        final bodyStr = await _readLargeString(
+          table: OfflineDBConstants.TABLE_PENDING_REQUESTS,
+          column: OfflineDBConstants.COL_REQUEST_JSON,
+          where: '${OfflineDBConstants.COL_ID} = ?',
+          whereArgs: [id],
+        );
+
+        if (bodyStr == null || bodyStr.isEmpty) {
+          progress?.addFailedRecord(id, "Empty payload");
+          progress?.increment(isSuccess: false);
+          await logAudit(
+            action: replayAction,
+            isError: true,
+            remarks: "Record $id: skipped — payload empty.",
+          );
+          failCount++;
+          continue;
+        }
+
+        final Map<String, dynamic> originalPayload = jsonDecode(bodyStr);
+
+        // Always inject a fresh session so the replay is valid.
+        originalPayload['ARMSessionId'] = currentSessionId;
+        originalPayload['submitdata']['trace'] = isTraceOn ? "true" : "false";
+        originalPayload['submitdata']['username'] =
+            (originalPayload['submitdata']['username'] ?? "").isEmpty
+                ? await AppStorage().retrieveValue(AppStorage.USER_NAME)
+                : originalPayload['submitdata']['username'];
+
+        final Map<String, dynamic> uploadPayload =
+            await _convertPayloadPathsToBase64(originalPayload);
+
+        // Same filename sanitisation that the normal queue applies to assets.
+        if (_isAsset(uploadPayload)) {
+          try {
+            final data = uploadPayload["submitdata"]["dataarray"]["data"];
+            final fileMap =
+                data["dc1"]["row1"]["axpfile_file"] as Map<String, dynamic>;
+            fileMap.forEach((key, value) {
+              if (value is Map && value.containsKey("filename")) {
+                value["filename"] =
+                    value["filename"].toString().replaceAll("/", "_");
+              }
+            });
+          } catch (_) {}
+        }
+
+        final dynamic res = await serverConnections.postToServer(
+          url: url,
+          body: jsonEncode(uploadPayload),
+          isBearer: true,
+        );
+
+        bool isSuccess = false;
+        String? errorMsg;
+
+        if (res != null && res.isNotEmpty) {
+          try {
+            final decoded = jsonDecode(res);
+            if (decoded is Map<String, dynamic> && decoded['success'] == true) {
+              isSuccess = true;
+            } else {
+              errorMsg = decoded['message'] ?? "Unknown server error";
+            }
+          } catch (e) {
+            errorMsg = "Response parse error: $e";
+          }
+        } else {
+          errorMsg = "Empty response from server";
+        }
+
+        if (isSuccess) {
+          // Keep at STATUS_PUSHED_DEBUG — do NOT delete anything.
+          successCount++;
+          log("[DEBUG_REPLAY] Record $id re-sent successfully.",
+              name: "DEBUG_APK");
+        } else {
+          // Also keep at STATUS_PUSHED_DEBUG so it stays replayable.
+          progress?.addFailedRecord(id, errorMsg ?? "Unknown error");
+          failCount++;
+          log("[DEBUG_REPLAY] Record $id re-send FAILED: $errorMsg",
+              name: "DEBUG_APK");
+        }
+
+        await logAudit(
+          action: replayAction,
+          isError: !isSuccess,
+          response: res?.toString() ?? "Empty Response",
+          remarks:
+              "[REPLAY][ID: $id] ${isSuccess ? 'SUCCESS' : 'FAILED'} | Key: ${uploadPayload['publickey']}",
+        );
+        progress?.increment(isSuccess: isSuccess);
+      } catch (e) {
+        await logAudit(
+          action: replayAction,
+          isError: true,
+          response: e.toString(),
+          remarks: "Exception replaying record ID: $id",
+        );
+        progress?.addFailedRecord(id, e.toString());
+        progress?.increment(isSuccess: false);
+        failCount++;
+      }
+    }
+
+    progress?.complete();
+
+    final resultMsg =
+        "Replay done: $successCount success, $failCount failed out of $total.";
+    progress?.updateMessage(resultMsg);
+    await logAudit(
+      action: replayAction,
+      response: "COMPLETED",
+      remarks: resultMsg,
+    );
+
+    return resultMsg;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
 
   static Future<Map<String, dynamic>> _convertPayloadPathsToBase64(
       Map<String, dynamic> originalBody) async {
@@ -1492,7 +1691,6 @@ class OfflineDbModule {
     }
   }
 
-  // Helper action: Delete File
   static Future<dynamic> _deleteAction(dynamic value) async {
     if (value is String && value.startsWith('/')) {
       final file = File(value);
@@ -1583,7 +1781,6 @@ class OfflineDbModule {
         final Map<String, dynamic> payload =
             jsonDecode(row[OfflineDBConstants.COL_REQUEST_JSON] as String);
 
-        // 2. OVERRIDE with Fresh Session ID
         payload['ARMSessionId'] = currentSessionId;
 
         final res = await serverConnections.postToServer(
@@ -1602,11 +1799,12 @@ class OfflineDbModule {
           } catch (_) {}
         }
 
+        // ── DEBUG-APK: use STATUS_PUSHED_DEBUG on success, STATUS_ERROR on fail ──
         await _database.update(
           OfflineDBConstants.TABLE_PENDING_REQUESTS,
           {
             OfflineDBConstants.COL_STATUS: isSuccess
-                ? OfflineDBConstants.STATUS_SUCCESS
+                ? OfflineDBConstants.STATUS_PUSHED_DEBUG
                 : OfflineDBConstants.STATUS_ERROR,
           },
           where: '${OfflineDBConstants.COL_ID} = ?',
@@ -1618,7 +1816,7 @@ class OfflineDbModule {
           isError: !isSuccess,
           response: res?.toString() ?? "Empty Response",
           remarks:
-              "Auto-Sync Record ID: $id | Result: ${isSuccess ? 'SUCCESS' : 'FAILED'}",
+              "Auto-Sync Record ID: $id | Result: ${isSuccess ? 'PUSHED_DEBUG (kept)' : 'FAILED'}",
         );
       } catch (e) {
         LogService.writeLog(message: "[SYNC_LOGIN_ERR] $e");
@@ -1697,9 +1895,6 @@ class OfflineDbModule {
             ? "Full sync completed successfully. Fetched ${pages.length} forms."
             : "Full sync completed but no forms were found on the server.",
       );
-      if (pages.isNotEmpty) {
-        // datasources will be fetched lazily per form
-      }
     } catch (e) {
       await logAudit(
         action: syncAction,
@@ -1979,7 +2174,6 @@ class OfflineDbModule {
         OfflineDBConstants.COL_LAST_LOGIN_AT: DateTime.now().toIso8601String(),
       };
 
-      // ── Upsert: update if (projectName + username) already exists ─────────
       final List<Map<String, dynamic>> existing = await _database.query(
         OfflineDBConstants.TABLE_OFFLINE_USER,
         where:

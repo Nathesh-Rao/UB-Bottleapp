@@ -22,6 +22,11 @@ class OfflineDBConstants {
   static const int STATUS_ERROR = 2;
   static const int STATUS_FORCE_PUSHED = 3;
 
+  /// ── DEBUG-APK ONLY ──────────────────────────────────────────────────────
+
+  static const int STATUS_PUSHED_DEBUG = 4;
+  // ─────────────────────────────────────────────────────────────────────────
+
   // ================= TABLE NAMES =================
 
   static const String TABLE_OFFLINE_PAGES = 'offline_pages';
@@ -129,39 +134,6 @@ class OfflineDBConstants {
         $COL_CREATED_AT TEXT
       );
     ''';
-
-  // -------- OFFLINE USER --------
-  // static final String CREATE_OFFLINE_USER_TABLE = CREATE_QUERY +
-  //     TABLE_OFFLINE_USER +
-  //     '''
-  //   (
-  //     $COL_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-  //     $COL_PROJECT_NAME TEXT,
-  //     $COL_USERNAME TEXT,
-  //     $COL_PASSWORD_HASH TEXT,
-  //     $COL_DISPLAY_NAME TEXT,
-  //     $COL_SESSION_ID TEXT,
-  //     $COL_RAW_JSON TEXT,
-  //     $COL_LAST_LOGIN_AT TEXT
-  //   );
-  // ''';
-
-  // -------- AUDIT LOGS --------
-  // static final String CREATE_AUDIT_LOGS_TABLE = CREATE_QUERY +
-  //     TABLE_AUDIT_LOGS +
-  //     '''
-  //   (
-  //     $COL_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-  //     $COL_USERNAME TEXT,
-  //     $COL_PROJECT_NAME TEXT,
-  //     $COL_ACTION TEXT,
-  //     $COL_CREATED_AT TEXT,
-  //     $COL_IS_ERROR INTEGER,
-  //     $COL_RESPONSE TEXT,
-  //     $COL_REMARKS TEXT,
-  //     $COL_DEVICE_INFO TEXT
-  //   );
-  // ''';
 
   static const String CREATE_OFFLINE_USER_TABLE = '''
   CREATE TABLE IF NOT EXISTS $TABLE_OFFLINE_USER (

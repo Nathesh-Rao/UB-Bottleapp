@@ -901,7 +901,7 @@ class OfflineFormController extends GetxController {
 
       // _showSimpleSuccessDialog(title: "Upload Complete", message: resultMsg);
       refreshPendingCount();
-      // LogService.writeLog(message: "$tag[DONE] $resultMsg");
+      refreshReplayPendingCount();
     } catch (e, st) {
       // Get.back(); // Ensure dialog closes
       LogService.writeLog(message: "$tag[FAILED] $e \n$st");
@@ -940,6 +940,78 @@ class OfflineFormController extends GetxController {
       isInternetAvailable: isOnline,
       progress: model,
     );
+  }
+
+  Future<void> actionReplayDebugPushedRecords() async {
+    if (!await _isInternetAvailable()) {
+      _showNeedInternetDialog();
+      return;
+    }
+
+    // Show what's available first
+    final pushedRecords = await OfflineDbModule.getDebugPushedRecords();
+
+    if (pushedRecords.isEmpty) {
+      Get.snackbar(
+        "Nothing to Replay",
+        "No previously pushed records found.",
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    final ok = await _confirm(
+      title: "Replay Pushed Records",
+      message:
+          "This will re-upload **${pushedRecords.length}** already-pushed record${pushedRecords.length > 1 ? 's' : ''} to the server.\n\nUsed for duplicate testing only.",
+      okText: "Replay Now",
+      icon: Icons.replay_rounded,
+      confirmColor: Colors.deepOrange,
+    );
+    if (!ok) return;
+
+    final progressModel = SyncProgressModel(initialTitle: "Replaying Records");
+
+    Get.dialog(
+      SyncProgressDialog(
+        progressModel: progressModel,
+        reTry: actionReplayDebugPushedRecords,
+      ),
+      barrierDismissible: false,
+    );
+
+    try {
+      final resultMsg = await OfflineDbModule.replayDebugPushedRecords(
+        isInternetAvailable: true,
+        progress: progressModel,
+      );
+
+      refreshReplayPendingCount();
+    } catch (e, st) {
+      LogService.writeLog(message: "[DEBUG_REPLAY][FAILED] $e \n$st");
+      Get.snackbar(
+        "Replay Error",
+        "Failed to replay records. Check logs.",
+        backgroundColor: Colors.deepOrange,
+        colorText: Colors.white,
+        icon: const Icon(Icons.warning, color: Colors.white),
+      );
+    } finally {
+      isLoading.value = false;
+      progressModel.complete();
+    }
+  }
+
+  var replayPendingCount = 0.obs;
+
+  Future<void> refreshReplayPendingCount() async {
+    try {
+      int count = await OfflineDbModule.getDebugPushedRecords()
+          .then((list) => list.length);
+      replayPendingCount.value = count;
+    } catch (e) {
+      print("Error fetching replay pending count: $e");
+    }
   }
 
   Future<void> actionSyncAll() async {
