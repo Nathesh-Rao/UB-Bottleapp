@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:ubbottleapp/Constants/AppStorage.dart';
 import 'package:ubbottleapp/Constants/Const.dart';
+import 'package:ubbottleapp/Constants/MyColors.dart';
 import 'package:ubbottleapp/ModelPages/InApplicationWebView/controller/webview_controller.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_bundle_service.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_constants.dart';
@@ -1081,17 +1083,76 @@ class OfflineFormController extends GetxController {
       isLoading.value = true;
       final bundle = await OfflineBundleService.createExportBundle();
 
-      if (bundle != null) {
-        await SharePlus.instance.share(ShareParams(
-            files: [XFile(bundle.path)], text: 'Secure Offline Bundle'));
-        await OfflineDbModule.logAudit(
-            action: "DB_BUNDLE_EXPORT", remarks: "Bundled DB and images.");
-      }
+      if (bundle == null) return;
+
+      Get.dialog(
+        AlertDialog(
+          title: const Text("Export Database"),
+          content:
+              const Text("Choose an action for your secure offline bundle."),
+          actions: [
+            TextButton(
+              child: const Text("Share"),
+              onPressed: () {
+                Get.back();
+                _handleShare(bundle.path);
+              },
+            ),
+            TextButton(
+              child: const Text("Download"),
+              onPressed: () {
+                Get.back();
+                _handleDownload(bundle.path);
+              },
+            ),
+          ],
+        ),
+      );
     } catch (e) {
       Get.snackbar("Export Error", e.toString());
     } finally {
       isLoading.value = false;
     }
+  }
+
+  Future<void> _handleShare(String path) async {
+    await SharePlus.instance.share(
+      ShareParams(files: [XFile(path)], text: 'Secure Offline Bundle'),
+    );
+    await _logAudit();
+  }
+
+  Future<void> _handleDownload(String sourcePath) async {
+    try {
+      File sourceFile = File(sourcePath);
+      if (!await sourceFile.exists()) {
+        throw Exception('Bundle file not found at $sourcePath');
+      }
+
+      String fileName = sourcePath.split('/').last;
+      Uint8List fileBytes = await sourceFile.readAsBytes();
+
+      final String? targetPath = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save Bundle to Downloads',
+        fileName: fileName,
+        bytes: fileBytes,
+      );
+
+      if (targetPath != null) {
+        Get.snackbar("File Saved", "Bundle saved successfully",
+            colorText: Colors.white, backgroundColor: MyColors.green);
+        await _logAudit();
+      }
+    } catch (e) {
+      log(e.toString(), name: "DOWNLOAD BUNDLE");
+      Get.snackbar("Download Error", e.toString(),
+          colorText: Colors.white, backgroundColor: MyColors.maroon);
+    }
+  }
+
+  Future<void> _logAudit() async {
+    await OfflineDbModule.logAudit(
+        action: "DB_BUNDLE_EXPORT", remarks: "Bundled DB and images.");
   }
 
   Future<void> actionImportDatabase() async {

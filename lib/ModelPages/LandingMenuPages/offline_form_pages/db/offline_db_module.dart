@@ -940,11 +940,11 @@ class OfflineDbModule {
         bool isSuccess = false;
         String? errorMsg;
 
-        if (res != null && res.isNotEmpty) {
+        if (res.toString() != "") {
           LogService.writeLog(message: "[API ERROR]||[API SUCCESS] $res");
           try {
             final decoded = jsonDecode(res);
-            if (decoded is Map<String, dynamic> && decoded['success'] == true) {
+            if (decoded['success'] == true) {
               isSuccess = true;
             } else {
               errorMsg = decoded['message'] ?? "Unknown server error";
