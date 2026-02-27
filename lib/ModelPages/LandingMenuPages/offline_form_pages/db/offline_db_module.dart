@@ -990,33 +990,73 @@ class OfflineDbModule {
         failCount++;
       }
     }
+
     if (successIds.isNotEmpty) {
-      await _batchUpdateStatus(
+      var updateSuccessCount = await _batchUpdateStatus(
           successIds, OfflineDBConstants.STATUS_PUSHED_DEBUG);
+
+      logAudit(
+          action: processPendingQueTag,
+          response:
+              "Batch update [Success] complete via IN clause. Status: ${OfflineDBConstants.STATUS_PUSHED_DEBUG}, Ids: ${successIds.toString()} : updateSuccessCount : $updateSuccessCount",
+          remarks: " Total count of success list updated");
     }
     if (failedIds.isNotEmpty) {
-      await _batchUpdateStatus(failedIds, OfflineDBConstants.STATUS_ERROR);
+      var updateFailureCount =
+          await _batchUpdateStatus(failedIds, OfflineDBConstants.STATUS_ERROR);
+
+      logAudit(
+          action: processPendingQueTag,
+          response:
+              "Batch update [Failure] complete via IN clause. Status: ${OfflineDBConstants.STATUS_PUSHED_DEBUG}, Ids: ${failedIds.toString()} : updateFailureCount : $updateFailureCount",
+          remarks: " Total count of failure list updated");
     }
+
     progress?.complete();
     progress?.updateMessage("Completed ");
 
     return "Processed: $successCount success, $failCount failed ";
   }
 
-  static Future<void> _batchUpdateStatus(List<int> ids, int status) async {
-    await _database.transaction((txn) async {
-      final batch = txn.batch();
-      for (var id in ids) {
-        batch.update(
-          OfflineDBConstants.TABLE_PENDING_REQUESTS,
-          {OfflineDBConstants.COL_STATUS: status},
-          where: '${OfflineDBConstants.COL_ID} = ?',
-          whereArgs: [id],
-        );
-      }
-      await batch.commit(noResult: true);
-    });
-    log("Batch update complete for status $status, count: ${ids.length}");
+  // static Future<void> _batchUpdateStatus(List<int> ids, int status) async {
+  //   await _database.transaction((txn) async {
+  //     final batch = txn.batch();
+  //     for (var id in ids) {
+  //       batch.update(
+  //         OfflineDBConstants.TABLE_PENDING_REQUESTS,
+  //         {OfflineDBConstants.COL_STATUS: status},
+  //         where: '${OfflineDBConstants.COL_ID} = ?',
+  //         whereArgs: [id],
+  //       );
+  //     }
+  //     await batch.commit(noResult: true);
+  //   });
+  //   log("Batch update complete for status $status, count: ${ids.length}");
+  // }
+
+  static Future<int> _batchUpdateStatus(List<int> ids, int status) async {
+    if (ids.isEmpty) return 0;
+
+    final String placeholders = List.filled(ids.length, '?').join(',');
+    try {
+      var updateSuccessCount = await _database.rawUpdate(
+        '''
+        UPDATE ${OfflineDBConstants.TABLE_PENDING_REQUESTS}
+        SET ${OfflineDBConstants.COL_STATUS} = ?
+        WHERE ${OfflineDBConstants.COL_ID} IN ($placeholders)
+        ''',
+        [status, ...ids],
+      );
+
+      LogService.writeLog(
+          message:
+              "Batch update complete via IN clause. Status: $status, IDS: ${ids.toString()} : updateSuccessCount : $updateSuccessCount");
+
+      return updateSuccessCount;
+    } catch (e) {
+      log("Error in batch update: $e", name: "DB_ERROR");
+      return -1;
+    }
   }
 
   static bool _isAsset(Map<String, dynamic> pl) {
