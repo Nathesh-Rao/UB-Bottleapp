@@ -850,6 +850,8 @@ class OfflineDbModule {
 
     int successCount = 0;
     int failCount = 0;
+    List<int> successIds = [];
+    List<int> failedIds = [];
     int total = idRows.length;
 
     progress?.clearFailedRecords();
@@ -957,10 +959,12 @@ class OfflineDbModule {
         }
 
         if (isSuccess) {
-          await _markAsPushedDebug(id);
+          // await _markAsPushedDebug(id);
+          successIds.add(id);
           successCount++;
         } else {
-          await _markAsError(id);
+          // await _markAsError(id);
+          failedIds.add(id);
           progress?.addFailedRecord(id, errorMsg ?? "Unknown error");
           failCount++;
         }
@@ -979,17 +983,40 @@ class OfflineDbModule {
           response: e.toString(),
           remarks: "Exception processing record ID: $id",
         );
-        await _markAsError(id);
+        // await _markAsError(id);
+        failedIds.add(id);
         progress?.addFailedRecord(id, e.toString());
         progress?.increment(isSuccess: false);
         failCount++;
       }
     }
-
+    if (successIds.isNotEmpty) {
+      await _batchUpdateStatus(
+          successIds, OfflineDBConstants.STATUS_PUSHED_DEBUG);
+    }
+    if (failedIds.isNotEmpty) {
+      await _batchUpdateStatus(failedIds, OfflineDBConstants.STATUS_ERROR);
+    }
     progress?.complete();
     progress?.updateMessage("Completed ");
 
     return "Processed: $successCount success, $failCount failed ";
+  }
+
+  static Future<void> _batchUpdateStatus(List<int> ids, int status) async {
+    await _database.transaction((txn) async {
+      final batch = txn.batch();
+      for (var id in ids) {
+        batch.update(
+          OfflineDBConstants.TABLE_PENDING_REQUESTS,
+          {OfflineDBConstants.COL_STATUS: status},
+          where: '${OfflineDBConstants.COL_ID} = ?',
+          whereArgs: [id],
+        );
+      }
+      await batch.commit(noResult: true);
+    });
+    log("Batch update complete for status $status, count: ${ids.length}");
   }
 
   static bool _isAsset(Map<String, dynamic> pl) {
