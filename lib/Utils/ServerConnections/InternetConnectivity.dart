@@ -53,28 +53,30 @@ class InternetConnectivity extends GetxController {
   // CORE STATE MACHINE
   // =================================================
   void _handleStateChange(bool nowOnline) {
-    if (_lastConnectionState == nowOnline) {
-      return;
-    }
+    if (_lastConnectionState == nowOnline) return;
 
     _lastConnectionState = nowOnline;
     isConnected.value = nowOnline;
 
-    // Close any existing dialog before showing new one
-    if (Get.isDialogOpen == true) {
-      Get.back();
+    bool isBackground = Get.context == null;
+
+    if (isBackground) {
+      LogService.writeLog(
+          message:
+              "[NET-BG] State changed to: ${nowOnline ? 'ONLINE' : 'OFFLINE'}");
+      return;
     }
+
+    if (Get.isDialogOpen == true) Get.back();
 
     if (nowOnline) {
       LogService.writeLog(message: "[NET] Back online");
-      Future.delayed(const Duration(milliseconds: 200), () {
-        showBackOnlineDialog();
-      });
+      Future.delayed(
+          const Duration(milliseconds: 200), () => showBackOnlineDialog());
     } else {
       LogService.writeLog(message: "[NET] Went offline");
-      Future.delayed(const Duration(milliseconds: 200), () {
-        showNoInternetDialog();
-      });
+      Future.delayed(
+          const Duration(milliseconds: 200), () => showNoInternetDialog());
     }
   }
 

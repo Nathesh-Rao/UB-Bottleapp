@@ -8,6 +8,7 @@ import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuActiveListPage/Contr
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/audit_logs/page/offline_audit_log_page.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/controller/offline_form_controller.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/sync_settings/sync_settings_screen.dart';
 import 'package:ubbottleapp/ModelPages/LandingPage/Controller/LandingPageController.dart';
 import 'package:ubbottleapp/ModelPages/LandingPage/Widgets/WidgetBottomNavigation.dart';
 import 'package:ubbottleapp/ModelPages/LandingPage/Widgets/WidgetDrawer.dart';
@@ -105,6 +106,15 @@ class LandingPage extends StatelessWidget {
                     title: "Refetch Datasources",
                     subtitle: "Reload lookup data",
                     onTap: offlineFormController.actionRefetchDatasources,
+                  ),
+                  _simpleRow(
+                    icon: Icons.restart_alt_rounded,
+                    color: Colors.brown,
+                    title: "Sync Settings",
+                    subtitle: "configure your background sync",
+                    onTap: () {
+                      Get.to(() => SyncSettingsScreen());
+                    },
                   ),
                   const Divider(),
                   _sectionHeader("Queue"),

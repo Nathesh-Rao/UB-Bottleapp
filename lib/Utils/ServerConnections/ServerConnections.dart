@@ -14,7 +14,7 @@ import '../LogServices/LogService.dart';
 
 class ServerConnections {
   static var client = http.Client();
-  InternetConnectivity internetConnectivity = Get.find();
+  // InternetConnectivity internetConnectivity = Get.find();
   static const String API_GET_USERGROUPS = "api/v1/ARMUserGroups";
   static const String API_GET_SIGNINDETAILS = "api/v1/ARMSigninDetails";
   static const String API_SIGNIN = "api/v1/Signin"; //"api/v1/ARMSignIn";
@@ -174,6 +174,13 @@ class ServerConnections {
   String _baseUrl =
       "http://demo.agile-labs.com/axmclientidscripts/asbmenurest.dll/datasnap/rest/Tasbmenurest/getchoices";
 
+  InternetConnectivity get _connectivity {
+    if (Get.isRegistered<InternetConnectivity>()) {
+      return Get.find<InternetConnectivity>();
+    }
+    return InternetConnectivity();
+  }
+
   postToServer(
       {String url = '',
       var header = '',
@@ -182,7 +189,7 @@ class ServerConnections {
       bool isBearer = false,
       var show_errorSnackbar = true}) async {
     var API_NAME = url.substring(url.lastIndexOf("/") + 1, url.length);
-    if (await internetConnectivity.connectionStatus)
+    if (await _connectivity.connectionStatus)
       try {
         if (ClientID != '') _baseBody = _generateBody(ClientID.toLowerCase());
         if (url == '') url = _baseUrl;

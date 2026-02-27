@@ -7,7 +7,7 @@ import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/of
 import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
 import 'package:workmanager/workmanager.dart';
 
-const int _kDefaultIntervalMinutes = 30;
+const int _kDefaultIntervalMinutes = 15;
 const int _kMinIntervalMinutes = 15;
 const String _kWmTaskName = 'offline_bg_sync_task';
 const String _kWmTaskTag = 'offline_bg_sync';
@@ -15,63 +15,60 @@ const String _tag = '[BG_SYNC]';
 
 String _intervalKey(String username, String projectName) =>
     'sync_interval_${username}_$projectName';
-
 @pragma('vm:entry-point')
 void offlineSyncWorkManagerDispatcher() {
   Workmanager().executeTask((taskName, inputData) async {
-    debugPrint('$_tag WM fired: $taskName');
+    // 1. Initialize Bindings first
+    WidgetsFlutterBinding.ensureInitialized();
+
     try {
-      WidgetsFlutterBinding.ensureInitialized();
-
       await OfflineDbModule.init();
+      await LogService.writeLog(message: '$_tag WM INITIALIZED');
+      await _executeSyncCycle(source: "WM_$taskName");
 
-      await _executeSyncCycle(source: taskName ?? 'WorkManager');
-
-      return true;
-    } catch (e, st) {
-      debugPrint('$_tag WM FAILED: $e\n$st');
-
-      return true;
+      return Future.value(true);
+    } catch (e) {
+      await LogService.writeLog(message: '$_tag CRITICAL WM FAIL: $e');
+      return Future.value(false);
     }
   });
 }
 
+// Future<void> _executeSyncCycle({String source = 'WorkManager'}) async {
+//   await LogService.writeLog(message: '$_tag [$source] Push cycle started.');
+
+//   try {
+//     final String result = await OfflineDbModule.processPendingQueue(
+//       isInternetAvailable: true,
+//     );
+
+//     await OfflineDbModule.updateLastSyncedTimestamp();
+//     await OfflineDbModule.logAudit(
+//       action: 'BG_PUSH_ONLY',
+//       remarks: '[$source] Push complete. Result: $result',
+//     );
+
+//     await LogService.writeLog(message: '$_tag [$source] Push Success: $result');
+//   } catch (e) {
+//     await LogService.writeLog(message: '$_tag [$source] Push FAILED: $e');
+//   }
+// }
 Future<void> _executeSyncCycle({String source = 'WorkManager'}) async {
-  await LogService.writeLog(message: '$_tag [$source] Cycle started.');
+  await LogService.writeLog(message: '$_tag [$source] Push cycle started.');
 
   try {
-    final String result = await OfflineDbModule.processPendingQueue(
-      isInternetAvailable: true,
+    final String result = await OfflineDbModule.backgroundPushPendingQueue();
+
+    await OfflineDbModule.updateLastSyncedTimestamp();
+    await OfflineDbModule.logAudit(
+      action: 'BG_PUSH_ONLY',
+      remarks: '[$source] Push complete. Result: $result',
     );
-    log('$_tag [$source] Push: $result', name: _tag);
+
+    await LogService.writeLog(message: '$_tag [$source] Push Success: $result');
   } catch (e) {
     await LogService.writeLog(message: '$_tag [$source] Push FAILED: $e');
   }
-
-  List<Map<String, dynamic>> pages = [];
-  try {
-    pages = await OfflineDbModule.fetchAndStoreOfflinePages();
-    log('$_tag [$source] Forms: ${pages.length}', name: _tag);
-  } catch (e) {
-    await LogService.writeLog(message: '$_tag [$source] Form fetch FAILED: $e');
-  }
-
-  try {
-    await OfflineDbModule.refreshAllDatasourcesFromDownloadedPages();
-  } catch (e) {
-    await LogService.writeLog(message: '$_tag [$source] DS refresh FAILED: $e');
-  }
-
-  await OfflineDbModule.updateLastSyncedTimestamp();
-
-  await OfflineDbModule.logAudit(
-    action: 'BG_SYNC_CYCLE',
-    remarks: '[$source] Cycle complete. Forms: ${pages.length}',
-  );
-
-  await LogService.writeLog(
-    message: '$_tag [$source] Done. Forms: ${pages.length}',
-  );
 }
 
 class OfflineBackgroundSyncService {
@@ -103,23 +100,26 @@ class OfflineBackgroundSyncService {
   }
 
   Future<void> start() async {
-    //TODO cancel the WM if no data is available to perform
-    //TODO check offline db=>pull offline pages => again check and init if pages avaialable
-    await _cancelWmTask();
-    _isRunning = true;
+    var pages = await OfflineDbModule.getOfflinePages();
+    final bool hasOfflineForms = pages.isNotEmpty;
+    if (!hasOfflineForms) {
+      log('$_tag No offline forms found. Skipping WM registration.',
+          name: _tag);
+      await _cancelWmTask();
+      _isRunning = false;
+      return;
+    }
 
+    _isRunning = true;
     final int minutes = await getIntervalMinutes();
     intervalMinutes.value = minutes;
 
     await _registerWmTask(
         minutes: minutes, policy: ExistingPeriodicWorkPolicy.replace);
-
+    await OfflineDbModule.fetchAndStoreOfflinePages();
+    await OfflineDbModule.refreshAllDatasourcesFromDownloadedPages();
     await _refreshStatusFromDb();
-
-    log('$_tag Started for current user. Interval: $minutes min.', name: _tag);
-    await LogService.writeLog(
-      message: '$_tag Started. Interval: $minutes min.',
-    );
+    log('$_tag Background Sync Started. Interval: $minutes min.', name: _tag);
   }
 
   Future<void> stop() async {

@@ -195,7 +195,7 @@ showErrorSnack(
     {title = 'Error',
     message = 'Server busy, Please try again later.',
     show_errorSnackbar = true}) {
-  if (show_errorSnackbar)
+  if (show_errorSnackbar) if (Get.context != null)
     Get.snackbar(title, message,
         snackPosition: SnackPosition.BOTTOM,
         colorText: Colors.white,
