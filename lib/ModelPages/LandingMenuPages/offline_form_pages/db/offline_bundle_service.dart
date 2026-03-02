@@ -63,7 +63,7 @@ class OfflineBundleService {
         }
       }
 
-      archive.addFile(ArchiveFile('AxpertMobileDB.db', dbFile.lengthSync(),
+      archive.addFile(ArchiveFile('offline_forms.db', dbFile.lengthSync(),
           await dbFile.readAsBytes()));
 
       for (String path in assetPaths.toSet()) {
@@ -139,7 +139,7 @@ class OfflineBundleService {
       }
 
       final uniqueAssets = assetPaths.toSet().toList();
-      archive.addFile(ArchiveFile('AxpertMobileDB.db', dbFile.lengthSync(),
+      archive.addFile(ArchiveFile('offline_forms.db', dbFile.lengthSync(),
           await dbFile.readAsBytes()));
 
       int addedCount = 0;
@@ -194,7 +194,7 @@ class OfflineBundleService {
       }
 
       for (final file in archive) {
-        if (file.name == 'AxpertMobileDB.db') {
+        if (file.name == 'offline_forms.db') {
           final tempDbPath =
               join((await getTemporaryDirectory()).path, 'temp_import.db');
           await File(tempDbPath).writeAsBytes(file.content as List<int>);
@@ -222,7 +222,7 @@ class OfflineBundleService {
 
           await tempDb.close();
           final finalDbPath =
-              join(await getDatabasesPath(), 'AxpertMobileDB.db');
+              join(await getDatabasesPath(), 'offline_forms.db');
           await File(tempDbPath).copy(finalDbPath);
           await File(tempDbPath).delete();
         }
