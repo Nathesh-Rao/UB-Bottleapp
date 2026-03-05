@@ -291,173 +291,173 @@ class InwardEntryConsolidatedPage
     );
   }
 
-  Widget _cupertinoStatCard(String key, dynamic value) {
-    return Container(
-      // width: 200,
-      margin: const EdgeInsets.only(right: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: _cardDecoration(),
-      child: Stack(
-        children: [
-          Obx(() {
-            final images = controller.imageAttachmentJson[key] ?? [];
-            final bool hasImages = images.isNotEmpty;
+  // Widget _cupertinoStatCard(String key, dynamic value) {
+  //   return Container(
+  //     // width: 200,
+  //     margin: const EdgeInsets.only(right: 12),
+  //     padding: const EdgeInsets.all(12),
+  //     decoration: _cardDecoration(),
+  //     child: Stack(
+  //       children: [
+  //         Obx(() {
+  //           final images = controller.imageAttachmentJson[key] ?? [];
+  //           final bool hasImages = images.isNotEmpty;
 
-            if (!hasImages) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.label,
-                        size: 12,
-                        color: Color(0xFF2563EB),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        key.replaceAll("_", " ").toUpperCase(),
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Container(
-                        width: 22,
-                        height: 22,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Color(0xFFEFF6FF),
-                        ),
-                        child: const Icon(
-                          Icons.circle,
-                          size: 8,
-                          color: Color(0xFF2563EB),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        value.toString(),
-                        style: GoogleFonts.poppins(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF2563EB),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
+  //           if (!hasImages) {
+  //             return Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 Row(
+  //                   children: [
+  //                     const Icon(
+  //                       Icons.label,
+  //                       size: 12,
+  //                       color: Color(0xFF2563EB),
+  //                     ),
+  //                     const SizedBox(width: 10),
+  //                     Text(
+  //                       key.replaceAll("_", " ").toUpperCase(),
+  //                       style: GoogleFonts.poppins(
+  //                         fontSize: 13,
+  //                         fontWeight: FontWeight.w600,
+  //                         color: Colors.black87,
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ),
+  //                 const SizedBox(height: 6),
+  //                 Row(
+  //                   children: [
+  //                     Container(
+  //                       width: 22,
+  //                       height: 22,
+  //                       decoration: const BoxDecoration(
+  //                         shape: BoxShape.circle,
+  //                         color: Color(0xFFEFF6FF),
+  //                       ),
+  //                       child: const Icon(
+  //                         Icons.circle,
+  //                         size: 8,
+  //                         color: Color(0xFF2563EB),
+  //                       ),
+  //                     ),
+  //                     const SizedBox(width: 10),
+  //                     Text(
+  //                       value.toString(),
+  //                       style: GoogleFonts.poppins(
+  //                         fontSize: 22,
+  //                         fontWeight: FontWeight.w700,
+  //                         color: const Color(0xFF2563EB),
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ),
+  //                 const Spacer(),
 
-                  // Full width add button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 42,
-                    child: OutlinedButton.icon(
-                      onPressed: () => _pickImages(key),
-                      icon: const Icon(CupertinoIcons.add_circled_solid),
-                      label: const Text("Add Images"),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF2563EB),
-                        side: const BorderSide(color: Color(0xFFE2E8F0)),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            }
+  //                 // Full width add button
+  //                 SizedBox(
+  //                   width: double.infinity,
+  //                   height: 42,
+  //                   child: OutlinedButton.icon(
+  //                     onPressed: () => _pickImages(key),
+  //                     icon: const Icon(CupertinoIcons.add_circled_solid),
+  //                     label: const Text("Add Images"),
+  //                     style: OutlinedButton.styleFrom(
+  //                       foregroundColor: const Color(0xFF2563EB),
+  //                       side: const BorderSide(color: Color(0xFFE2E8F0)),
+  //                       shape: RoundedRectangleBorder(
+  //                         borderRadius: BorderRadius.circular(12),
+  //                       ),
+  //                     ),
+  //                   ),
+  //                 ),
+  //               ],
+  //             );
+  //           }
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // header row
-                Row(
-                  children: [
-                    Container(
-                      width: 22,
-                      height: 22,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Color(0xFFEFF6FF),
-                      ),
-                      child: const Icon(
-                        Icons.circle,
-                        size: 8,
-                        color: Color(0xFF2563EB),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        key.replaceAll("_", " ").toUpperCase(),
-                        style: GoogleFonts.poppins(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      value.toString(),
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF2563EB),
-                      ),
-                    ),
-                  ],
-                ),
+  //           return Column(
+  //             crossAxisAlignment: CrossAxisAlignment.start,
+  //             children: [
+  //               // header row
+  //               Row(
+  //                 children: [
+  //                   Container(
+  //                     width: 22,
+  //                     height: 22,
+  //                     decoration: const BoxDecoration(
+  //                       shape: BoxShape.circle,
+  //                       color: Color(0xFFEFF6FF),
+  //                     ),
+  //                     child: const Icon(
+  //                       Icons.circle,
+  //                       size: 8,
+  //                       color: Color(0xFF2563EB),
+  //                     ),
+  //                   ),
+  //                   const SizedBox(width: 8),
+  //                   Expanded(
+  //                     child: Text(
+  //                       key.replaceAll("_", " ").toUpperCase(),
+  //                       style: GoogleFonts.poppins(
+  //                         fontSize: 11,
+  //                         fontWeight: FontWeight.w600,
+  //                         color: Colors.black87,
+  //                       ),
+  //                     ),
+  //                   ),
+  //                   Text(
+  //                     value.toString(),
+  //                     style: GoogleFonts.poppins(
+  //                       fontSize: 18,
+  //                       fontWeight: FontWeight.w700,
+  //                       color: const Color(0xFF2563EB),
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
 
-                const SizedBox(height: 10),
+  //               const SizedBox(height: 10),
 
-                // image strip
-                SizedBox(
-                  height: 70,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: [
-                      ...images.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final b64 = entry.value;
-                        return _imageThumb(key, index, b64);
-                      }).toList(),
+  //               // image strip
+  //               SizedBox(
+  //                 height: 70,
+  //                 child: ListView(
+  //                   scrollDirection: Axis.horizontal,
+  //                   children: [
+  //                     ...images.asMap().entries.map((entry) {
+  //                       final index = entry.key;
+  //                       final b64 = entry.value;
+  //                       return _imageThumb(key, index, b64);
+  //                     }).toList(),
 
-                      // add button
-                      GestureDetector(
-                        onTap: () => _pickImages(key),
-                        child: Container(
-                          width: 70,
-                          height: 70,
-                          margin: const EdgeInsets.only(right: 8),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
-                            color: const Color(0xFFF8FAFC),
-                          ),
-                          child: const Icon(
-                            Icons.add,
-                            color: Color(0xFF2563EB),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          }),
-        ],
-      ),
-    );
-  }
+  //                     // add button
+  //                     GestureDetector(
+  //                       onTap: () => _pickImages(key),
+  //                       child: Container(
+  //                         width: 70,
+  //                         height: 70,
+  //                         margin: const EdgeInsets.only(right: 8),
+  //                         decoration: BoxDecoration(
+  //                           borderRadius: BorderRadius.circular(12),
+  //                           border: Border.all(color: const Color(0xFFE2E8F0)),
+  //                           color: const Color(0xFFF8FAFC),
+  //                         ),
+  //                         child: const Icon(
+  //                           Icons.add,
+  //                           color: Color(0xFF2563EB),
+  //                         ),
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ),
+  //               ),
+  //             ],
+  //           );
+  //         }),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _gridStatTile(String key, dynamic value) {
     final imageMap = {
@@ -777,10 +777,41 @@ class InwardEntryConsolidatedPage
   //   }
   // }
 
+  // Future<void> _pickImages(String key) async {
+  //   final picker = ImagePicker();
+
+  //   // 1. Pick Image (Recommended: Reduce quality to save storage/bandwidth)
+  //   final XFile? image = await picker.pickImage(
+  //     source: ImageSource.camera,
+  //     imageQuality: 70,
+  //   );
+
+  //   if (image != null) {
+  //     final directory = await getApplicationDocumentsDirectory();
+
+  //     final String fileName =
+  //         '${DateTime.now().millisecondsSinceEpoch}.${(image.path.split(".").last)}';
+  //     final String localPath = '${directory.path}_$fileName';
+
+  //     await File(image.path).copy(localPath);
+
+  //     if (controller.imageAttachmentJson[key] == null) {
+  //       controller.imageAttachmentJson[key] = [];
+  //     }
+  //     controller.imageAttachmentJson[key]!.add(localPath);
+
+  //     controller.imageAttachmentJson.refresh();
+
+  //     if (controller.imageErrors[key] == true) {
+  //       controller.imageErrors[key] = false;
+  //     }
+
+  //     controller.validateImages(isPartial: true);
+  //   }
+  // }
+
   Future<void> _pickImages(String key) async {
     final picker = ImagePicker();
-
-    // 1. Pick Image (Recommended: Reduce quality to save storage/bandwidth)
     final XFile? image = await picker.pickImage(
       source: ImageSource.camera,
       imageQuality: 70,
@@ -789,9 +820,16 @@ class InwardEntryConsolidatedPage
     if (image != null) {
       final directory = await getApplicationDocumentsDirectory();
 
-      final String fileName =
-          '${DateTime.now().millisecondsSinceEpoch}.${(image.path.split(".").last)}';
-      final String localPath = '${directory.path}_$fileName';
+      final String refNo =
+          (controller.textCtrls["ub_ge_no"]?.text.trim() ?? "NOID")
+              .replaceAll("/", "_");
+      final int nextIndex =
+          (controller.imageAttachmentJson[key]?.length ?? 0) + 1;
+      final String ext = image.path.split(".").last;
+
+      final String fileName = '${refNo}_${key}_$nextIndex.$ext';
+      final String localPath = '${directory.path}/$fileName';
+      //
 
       await File(image.path).copy(localPath);
 
@@ -799,13 +837,11 @@ class InwardEntryConsolidatedPage
         controller.imageAttachmentJson[key] = [];
       }
       controller.imageAttachmentJson[key]!.add(localPath);
-
       controller.imageAttachmentJson.refresh();
 
       if (controller.imageErrors[key] == true) {
         controller.imageErrors[key] = false;
       }
-
       controller.validateImages(isPartial: true);
     }
   }

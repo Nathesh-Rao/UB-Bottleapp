@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:ubbottleapp/Constants/Const.dart';
 import 'package:ubbottleapp/Constants/MyColors.dart';
 import 'package:ubbottleapp/ModelPages/InApplicationWebView/controller/webview_controller.dart';
@@ -107,40 +108,28 @@ class LandingPage extends StatelessWidget {
                     subtitle: "Reload lookup data",
                     onTap: offlineFormController.actionRefetchDatasources,
                   ),
-                  _simpleRow(
-                    icon: Icons.restart_alt_rounded,
-                    color: Colors.brown,
-                    title: "Sync Settings",
-                    subtitle: "configure your background sync",
-                    onTap: () {
-                      Get.to(() => SyncSettingsScreen());
-                    },
-                  ),
+                  // _simpleRow(
+                  //   icon: Icons.restart_alt_rounded,
+                  //   color: Colors.brown,
+                  //   title: "Sync Settings",
+                  //   subtitle: "configure your background sync",
+                  //   onTap: () {
+                  //     // Get.to(() => SyncSettingsScreen());
+                  //   },
+                  // ),
                   const Divider(),
                   _sectionHeader("Queue"),
-                  Obx(
-                    () => _simpleRow(
+                  Obx(() => _simpleRow(
                         icon: Icons.upload_file,
                         color: Colors.deepOrange,
                         title: "Push Pending Uploads",
                         subtitle: "Upload queued data to server",
                         onTap: offlineFormController.actionPushPending,
-                        trailing: offlineFormController.pendingCount.value <= 0
-                            ? null
-                            : CircleAvatar(
-                                backgroundColor: MyColors.maroon,
-                                radius: 10,
-                                child: Text(
-                                  offlineFormController.pendingCount.value
-                                      .toString(),
-                                  // "50",
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              )),
-                  ),
+                        badge: offlineFormController.pendingCount.value != 0
+                            ? offlineFormController.pendingCount.value
+                                .toString()
+                            : null,
+                      )),
                   Obx(
                     () => globalVariableController.USER_ROLE.value == 'default'
                         ? Column(
@@ -249,9 +238,9 @@ class LandingPage extends StatelessWidget {
     required String title,
     required String subtitle,
     required VoidCallback onTap,
-    Widget? trailing,
     bool isDanger = false,
     bool isDisabled = false,
+    String? badge,
   }) {
     final Color iconColor = isDisabled ? Colors.grey.shade400 : color;
 
@@ -262,34 +251,35 @@ class LandingPage extends StatelessWidget {
     final Color subTitleColor =
         isDisabled ? Colors.grey.shade300 : MyColors.AXMGray;
 
-    return Stack(
-      children: [
-        ListTile(
-          dense: true,
-          visualDensity: const VisualDensity(horizontal: 0, vertical: -2),
-          enabled: !isDisabled,
-          leading: Icon(icon, size: 20, color: iconColor),
-          title: Text(
-            title,
-            style: GoogleFonts.poppins(
-              fontSize: 13.5,
-              fontWeight: FontWeight.w500,
-              color: titleColor,
-            ),
+    return Badge(
+      isLabelVisible: badge != null,
+      offset: Offset(-50, 0),
+      backgroundColor: MyColors.maroon,
+      label: Text(badge.toString()),
+      textStyle: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 10),
+      child: ListTile(
+        dense: true,
+        visualDensity: const VisualDensity(horizontal: 0, vertical: -2),
+        enabled: !isDisabled,
+        leading: Icon(icon, size: 20, color: iconColor),
+        title: Text(
+          title,
+          style: GoogleFonts.poppins(
+            fontSize: 13.5,
+            fontWeight: FontWeight.w500,
+            color: titleColor,
           ),
-          subtitle: Text(
-            subtitle,
-            style: GoogleFonts.poppins(
-              fontSize: 11,
-              color: subTitleColor,
-            ),
-          ),
-          trailing:
-              isDisabled ? null : const Icon(Icons.chevron_right, size: 18),
-          onTap: isDisabled ? null : onTap,
         ),
-        Positioned(right: 60, top: 2, child: trailing ?? SizedBox.shrink())
-      ],
+        subtitle: Text(
+          subtitle,
+          style: GoogleFonts.poppins(
+            fontSize: 11,
+            color: subTitleColor,
+          ),
+        ),
+        trailing: isDisabled ? null : const Icon(Icons.chevron_right, size: 18),
+        onTap: isDisabled ? null : onTap,
+      ),
     );
   }
 

@@ -17,6 +17,7 @@
     <uses-permission android:name="android.permission.AUDIO_CAPTURE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -103,8 +104,9 @@
         <meta-data android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyBO_dMiQIQIrESfh1f2aLOD2L1ulxb_irc"/>
         <service
-            android:name="be.tramckas.workmanager.WorkmanagerCallHandlerService"
-            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:name="com.pravera.flutter_foreground_task.service.ForegroundService"
+            android:foregroundServiceType="dataSync"
+            android:stopWithTask="true"
             android:exported="false" />
         <receiver
             android:name="be.tramckas.workmanager.WorkmanagerBootReceiver"

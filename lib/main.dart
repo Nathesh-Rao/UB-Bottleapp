@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/auto_sync/offline_background_sync_service.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_background_sync_service.dart';
 import 'package:upgrader/upgrader.dart';
 import 'package:ubbottleapp/Constants/CommonMethods.dart';
@@ -80,7 +81,10 @@ Future<void> main() async {
   }
   try {
     await OfflineDbModule.init();
-    await OfflineBackgroundSyncService.instance.initWorkManager();
+    // await OfflineBackgroundSyncService.instance.initWorkManager();
+    OfflineBackgroundSyncService.initCommunicationPort();
+    OfflineBackgroundSyncService.instance.init();
+    AppLifecycleObserver.instance.register();
     LogService.writeLog(
       message: "[OFFLINE_DB_INIT_001][SUCCESS] Offline DB initialized",
     );

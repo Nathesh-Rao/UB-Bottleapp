@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:ubbottleapp/Constants/AppStorage.dart';
@@ -24,6 +25,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
 
 class OfflineFormController extends GetxController {
   late OfflineFormPageModel page;
@@ -1078,7 +1080,7 @@ class OfflineFormController extends GetxController {
     );
   }
 
-  Future<void> actionExportDatabase() async {
+  Future<void> actionExportDatabaseOld() async {
     try {
       isLoading.value = true;
       final bundle = await OfflineBundleService.createExportBundle();
@@ -1115,6 +1117,205 @@ class OfflineFormController extends GetxController {
     }
   }
 
+  Future<void> actionExportDatabase() async {
+    final String? choice = await _showExportChoiceDialog();
+    if (choice == null) return;
+
+    try {
+      isLoading.value = true;
+
+      if (choice == "full") {
+        Get.showSnackbar(GetSnackBar(
+          icon: CupertinoActivityIndicator(
+            color: Colors.white,
+          ),
+          title: "Please Wait",
+          message: "Packaging DB and underscore-pathed assets...",
+          backgroundColor: MyColors.blue10,
+          isDismissible: false,
+        ));
+        final File? bundle = await OfflineBundleService.createExportBundle();
+        Get.back();
+        if (bundle == null) {
+          Get.snackbar("Export Failed", "Could not create export bundle.");
+          return;
+        }
+        Get.dialog(
+          AlertDialog(
+            title: const Text("Export Database"),
+            content:
+                const Text("Choose an action for your secure offline bundle."),
+            actions: [
+              TextButton(
+                child: const Text("Share"),
+                onPressed: () {
+                  Get.back();
+                  _handleShare(bundle.path);
+                },
+              ),
+              TextButton(
+                child: const Text("Download"),
+                onPressed: () {
+                  Get.back();
+                  _handleDownload(bundle.path);
+                },
+              ),
+            ],
+          ),
+        );
+        await OfflineDbModule.logAudit(
+          action: "bundleAction",
+          remarks: "User exported full bundle with images.",
+        );
+      } else if (choice == "db_only") {
+        try {
+          await OfflineBundleService.uploadDBFile();
+          Get.snackbar("Upload Successful", "DB file uploaded to server.",
+              backgroundColor: Colors.green, colorText: Colors.white);
+        } catch (e) {
+          Get.snackbar("Upload Failed", e.toString(),
+              backgroundColor: Colors.red, colorText: Colors.white);
+        }
+
+        // await OfflineDbModule.logAudit(
+        //   action: "bundleAction",
+        //   remarks: "User exported DB file only.",
+        // );
+      }
+    } catch (e) {
+      Get.snackbar("Export Failed", e.toString());
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<String?> _showExportChoiceDialog() async {
+    String? result;
+
+    await Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        elevation: 0,
+        backgroundColor: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icon
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.upload_rounded,
+                    size: 30, color: Color(0xFF2563EB)),
+              ),
+              const SizedBox(height: 20),
+
+              // Title
+              Text(
+                "Export Data",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              Text(
+                "Choose what to export",
+                textAlign: TextAlign.center,
+                style:
+                    GoogleFonts.poppins(fontSize: 14, color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 6),
+              _bulletPoint(
+                  "Full Bundle — includes DB + all attached images (.axbundle)."),
+              _bulletPoint(
+                  "DB Only — exports just the database file (.db). No images included."),
+              const SizedBox(height: 24),
+
+              // Cancel
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () {
+                    result = null;
+                    Get.back();
+                  },
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    foregroundColor: Colors.grey[700],
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                  child: Text("CANCEL",
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Full bundle
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.folder_zip_rounded),
+                  label: Text("EXPORT FULL BUNDLE",
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                  onPressed: () {
+                    result = "full";
+                    Get.back();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // DB only
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.storage_rounded),
+                  label: Text("EXPORT DB ONLY",
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                  onPressed: () {
+                    result = "db_only";
+                    Get.back();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green[600],
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      barrierDismissible: false,
+    );
+
+    return result;
+  }
+
   Future<void> _handleShare(String path) async {
     await SharePlus.instance.share(
       ShareParams(files: [XFile(path)], text: 'Secure Offline Bundle'),
@@ -1122,7 +1323,7 @@ class OfflineFormController extends GetxController {
     await _logAudit();
   }
 
-  Future<void> _handleDownload(String sourcePath) async {
+  Future<void> _handleDownload1(String sourcePath) async {
     try {
       File sourceFile = File(sourcePath);
       if (!await sourceFile.exists()) {
@@ -1150,9 +1351,110 @@ class OfflineFormController extends GetxController {
     }
   }
 
+  static const _mediaScanner =
+      MethodChannel('com.agile.ub_bottleapp/media_scanner');
+
+  Future<void> _handleDownload(String filePath) async {
+    try {
+      final fileName = basename(filePath);
+
+      final downloadsDir = Directory('/storage/emulated/0/Download');
+      if (!await downloadsDir.exists()) {
+        await downloadsDir.create(recursive: true);
+      }
+
+      final destPath = join(downloadsDir.path, fileName);
+      await File(filePath).copy(destPath);
+
+      await _mediaScanner.invokeMethod('scanFile', {'path': destPath});
+
+      Get.snackbar(
+        "Downloaded",
+        "Saved to Downloads/$fileName",
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar("Download Failed", e.toString());
+    }
+  }
+
   Future<void> _logAudit() async {
     await OfflineDbModule.logAudit(
         action: "DB_BUNDLE_EXPORT", remarks: "Bundled DB and images.");
+  }
+
+  // actionImportDatabase1() async {
+  //   FilePickerResult? result = await FilePicker.platform.pickFiles(
+  //     type: FileType.custom,
+  //     allowedExtensions: ['db'],
+  //   );
+  //   if (result == null || result.files.single.path == null) return;
+
+  //   File dbFile = File(result.files.single.path!);
+  //   await DatabaseHelper.instance.replaceDatabase(dbFile);
+  // }
+
+  Future<void> actionImportDatabaseOld() async {
+    try {
+      final bool backupExists = await OfflineBundleService.hasBackup();
+
+      if (backupExists) {
+        final meta = await OfflineBundleService.getBackupMeta();
+        final String backupInfo = meta != null
+            ? "Made on ${meta['displayTime']} by ${meta['user']}"
+            : "A previous backup is available.";
+
+        final String? choice = await _showBackupChoiceDialog(backupInfo);
+
+        if (choice == null) return;
+
+        if (choice == "restore") {
+          final bool? ok = await _confirm(
+            title: "Restore Previous Backup",
+            subtitle: backupInfo,
+            message:
+                "**CAUTION:** This will replace your current data with the backup. Proceed?",
+            icon: Icons.history_rounded,
+            confirmColor: Colors.orange,
+            okText: "RESTORE BACKUP",
+            cancelText: "CANCEL",
+          );
+          if (ok == true) {
+            await _executeRestore();
+          }
+          return;
+        }
+      }
+
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['axbundle', 'zip'],
+      );
+      if (result == null || result.files.single.path == null) return;
+
+      File bundleFile = File(result.files.single.path!);
+      String fileName = basename(bundleFile.path);
+
+      final bool? ok = await _confirm(
+        title: "Import Data Bundle",
+        subtitle: "Selected: $fileName",
+        message:
+            "**CAUTION:** This will permanently **DELETE** your current local data and logs. "
+            "Your current data will be auto-backed up first. "
+            "You must login with the **SAME credentials** to use this data. Proceed?",
+        icon: Icons.settings_backup_restore_rounded,
+        confirmColor: Colors.redAccent,
+        okText: "RESTORE NOW",
+        cancelText: "KEEP CURRENT",
+      );
+
+      if (ok == true) {
+        await _executeImport(bundleFile);
+      }
+    } catch (e) {
+      Get.snackbar("Error", "Could not process bundle: $e");
+    }
   }
 
   Future<void> actionImportDatabase() async {
@@ -1189,31 +1491,76 @@ class OfflineFormController extends GetxController {
 
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['axbundle'],
+        allowedExtensions: ['axbundle', 'zip', 'db'], // 👈 added 'db'
       );
       if (result == null || result.files.single.path == null) return;
 
       File bundleFile = File(result.files.single.path!);
       String fileName = basename(bundleFile.path);
+      final bool isDbOnly =
+          fileName.toLowerCase().endsWith('.db'); // 👈 detect .db
 
       final bool? ok = await _confirm(
-        title: "Import Data Bundle",
+        title: isDbOnly ? "Import DB File" : "Import Data Bundle",
         subtitle: "Selected: $fileName",
-        message:
-            "**CAUTION:** This will permanently **DELETE** your current local data and logs. "
-            "Your current data will be auto-backed up first. "
-            "You must login with the **SAME credentials** to use this data. Proceed?",
+        message: isDbOnly
+            ? "**CAUTION:** This will permanently replace your current database. "
+                "Your current data will be auto-backed up first. Proceed?"
+            : "**CAUTION:** This will permanently **DELETE** your current local data and logs. "
+                "Your current data will be auto-backed up first. "
+                "You must login with the **SAME credentials** to use this data. Proceed?",
         icon: Icons.settings_backup_restore_rounded,
         confirmColor: Colors.redAccent,
         okText: "RESTORE NOW",
         cancelText: "KEEP CURRENT",
       );
-
+      Get.showSnackbar(GetSnackBar(
+        icon: CupertinoActivityIndicator(
+          color: Colors.white,
+        ),
+        title: "Please Wait",
+        message: "Unpacking DB and other details",
+        backgroundColor: MyColors.blue10,
+        isDismissible: false,
+      ));
       if (ok == true) {
-        await _executeImport(bundleFile);
+        if (isDbOnly) {
+          await _executeDbOnlyImport(bundleFile);
+        } else {
+          await _executeImport(bundleFile);
+        }
       }
+      Get.back();
     } catch (e) {
-      Get.snackbar("Error", "Could not process bundle: $e");
+      Get.snackbar("Error", "Could not process file: $e");
+    }
+  }
+
+  Future<void> _executeDbOnlyImport(File file) async {
+    try {
+      isLoading.value = true;
+
+      debugPrint("[IMPORT_DB_ONLY] Backing up current DB before import...");
+      await OfflineBundleService.backupCurrentDatabase();
+
+      await OfflineBundleService.importDbOnly(file);
+      await getAllPages();
+      await refreshPendingCount();
+      await OfflineDbModule.logAudit(
+        action: "DB_IMPORT_DB_ONLY",
+        remarks: "User imported a raw .db file directly.",
+      );
+      _confirm(
+        title: "Success",
+        message:
+            "Database replaced successfully. A backup of your previous data was saved automatically. "
+            "Please ensure you are logged in as the correct user.",
+        okText: "Done",
+      );
+    } catch (e) {
+      Get.snackbar("Import Failed", e.toString());
+    } finally {
+      isLoading.value = false;
     }
   }
 
@@ -1399,7 +1746,7 @@ class OfflineFormController extends GetxController {
       debugPrint("[IMPORT] Backing up current DB before import...");
       await OfflineBundleService.backupCurrentDatabase();
 
-      await OfflineBundleService.importBundle(file);
+      await OfflineBundleService.importBundleNew(file);
       await OfflineDbModule.init();
       await getAllPages();
       await refreshPendingCount();

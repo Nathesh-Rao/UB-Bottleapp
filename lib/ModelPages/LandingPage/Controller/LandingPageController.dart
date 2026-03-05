@@ -15,6 +15,7 @@ import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/Control
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuMorePage/Controllers/MenuMorePageController.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuMorePage/Models/MenuItemModel.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuMorePage/Page/MenuMorePage.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/auto_sync/offline_background_sync_service.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_background_sync_service.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_module.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/pages/offline_listing_page.dart';
@@ -140,7 +141,8 @@ class LandingPageController extends GetxController with WidgetsBindingObserver {
         // projectName: globalVariableController.PROJECT_NAME.value,
         isInternetAvailable: isOnline,
       );
-      await OfflineBackgroundSyncService.instance.start();
+
+      // await OfflineBackgroundSyncService.instance.start();
       LogService.writeLog(
         message: "$tag[SUCCESS] Post-login offline sync finished",
       );
@@ -547,7 +549,7 @@ class LandingPageController extends GetxController with WidgetsBindingObserver {
               LoadingScreen.dismiss();
               webViewController.signOut(
                   url: Const.getFullWebUrl("aspx/AxMain.aspx?signout=true"));
-              await OfflineBackgroundSyncService.instance.stop();
+              // await OfflineBackgroundSyncService.instance.stop();
               Get.offAllNamed(Routes.Login);
               // if (resp != "" && !resp.toString().contains("error")) {
               //   var jsonResp = jsonDecode(resp);

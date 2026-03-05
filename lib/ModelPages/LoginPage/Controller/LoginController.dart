@@ -6,6 +6,7 @@ import 'package:ubbottleapp/Constants/CommonMethods.dart';
 import 'package:ubbottleapp/Constants/MyColors.dart';
 import 'package:ubbottleapp/Constants/Routes.dart';
 import 'package:ubbottleapp/Constants/Const.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/auto_sync/offline_background_sync_service.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_module.dart';
 import 'package:ubbottleapp/ModelPages/LoginPage/Models/SigninDetailsModel.dart';
 import 'package:ubbottleapp/ModelPages/LoginPage/Page/LoginPage.dart';
@@ -633,12 +634,10 @@ class LoginController extends GetxController {
     }
   }
 
-//// New Login Flow Methods and vars
   onLoad() async {
     currentProjectName.value =
         await appStorage.retrieveValue(AppStorage.PROJECT_NAME) ?? '';
 
-    // initializeLoginPage();
   }
 
   startLoginProcess() async {
@@ -731,7 +730,6 @@ class LoginController extends GetxController {
 
       signInBody.addIf(isDuplicate_session, "ClearPreviousSession", true);
 
-      // signInBody.addIf(isPWD_auth.value, "password", generateMd5(userPasswordController.text.toString().trim()));
       signInBody.addIf(isOTP_auth.value, "OtpAuth", "T");
       FocusManager.instance.primaryFocus?.unfocus();
       LoadingScreen.show();
@@ -739,7 +737,6 @@ class LoginController extends GetxController {
 
       var response = await serverConnections.postToServer(
           url: _url, body: jsonEncode(signInBody));
-      // LogService.writeLog(message: "[-] LoginController => loginButtonClicked() => LoginResponse : $response");
 
       if (response != "") {
         var json = jsonDecode(response);
@@ -747,6 +744,7 @@ class LoginController extends GetxController {
           if (json["result"]["message"].toString() == "Login Successful.") {
             globalVariableController.USER_ROLE.value =
                 json["result"]["role"].toString().toLowerCase();
+
             await OfflineDbModule.logAudit(
               action: "LOGIN_ONLINE",
               response: json.toString(),
@@ -759,6 +757,15 @@ class LoginController extends GetxController {
                 passwordHash: userPasswordController.text.toString().trim(),
                 loginResult: json);
             await processSignInDataResponse(json["result"]);
+
+            if (AppStorage().retrieveValue(AppStorage.AUTO_SYNC) == null) {
+              globalVariableController.autoSyncEnabled.value = true;
+              await AppStorage().storeValue(AppStorage.AUTO_SYNC, true);
+            } else {
+              globalVariableController.autoSyncEnabled.value =
+                  await AppStorage().retrieveValue(AppStorage.AUTO_SYNC);
+            }
+            await OfflineBackgroundSyncService.instance.start();
           } else if (json["result"]?.containsKey("OTPLoginKey")) {
             // OTPPage
             otpMsg.value = json["result"]["message"].toString();

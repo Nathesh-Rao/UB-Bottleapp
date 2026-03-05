@@ -3,7 +3,9 @@ import 'dart:io';
 
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:ubbottleapp/Constants/CommonMethods.dart';
+import 'package:ubbottleapp/Constants/GlobalVariableController.dart';
 import 'package:ubbottleapp/Constants/MyColors.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/auto_sync/offline_background_sync_service.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_module.dart';
 
 import 'package:flutter/material.dart';
@@ -23,7 +25,7 @@ class SettingsPage extends StatelessWidget {
       Get.put(SettingsPageController());
   final LandingPageController landingPageController = Get.find();
   final MenuHomePageController menuHomePageController = Get.find();
-
+  final GlobalVariableController _globalVariableController = Get.find();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -295,23 +297,39 @@ class SettingsPage extends StatelessWidget {
                                     style: GoogleFonts.poppins(
                                         textStyle: TextStyle(fontSize: 18)),
                                   ),
-                                  trailing: StatefulBuilder(
-                                      builder: (context, setStateC) {
+                                  trailing: Obx(() {
                                     return SizedBox(
                                       width: 60,
                                       child: FlutterSwitch(
                                         height: 30,
-                                        value: OfflineDbModule.autoSync,
+                                        value: _globalVariableController
+                                            .autoSyncEnabled.value,
                                         showOnOff: true,
                                         activeColor: MyColors.blue2,
-                                        onToggle: (bool values) async {
-                                          await OfflineDbModule
-                                              .toggleAutoSync();
-                                          setStateC(() {});
+                                        onToggle: (bool value) async {
+                                          // await OfflineDbModule
+                                          //     .toggleAutoSync();
+                                          // setStateC(() {});
+
+                                          final bool newValue =
+                                              !_globalVariableController
+                                                  .autoSyncEnabled.value;
+                                          final bool applied =
+                                              await OfflineBackgroundSyncService
+                                                  .instance
+                                                  .setAutoSync(
+                                                      enabled: newValue);
+                                          if (applied) {
+                                            // Update GlobalVariableController to reflect the change in UI
+                                            _globalVariableController
+                                                .autoSyncEnabled
+                                                .value = newValue;
+                                          }
                                         },
                                       ),
                                     );
                                   })),
+
                               Divider(),
 
                               ListTile(
@@ -329,8 +347,12 @@ class SettingsPage extends StatelessWidget {
                               ),
                               Divider(),
                               ListTile(
-                                onTap: () {
-                                  landingPageController.signOut();
+                                onTap: () async {
+                                  if (!OfflineBackgroundSyncService.instance
+                                      .canProceedWithAction()) return;
+                                  await OfflineBackgroundSyncService.instance
+                                      .stop();
+                                  await landingPageController.signOut();
                                 },
                                 leading: Icon(Icons.power_settings_new),
                                 title: Text(

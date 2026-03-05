@@ -56,7 +56,7 @@ class OfflineDbModule {
 
   static Future<void> init() async {
     autoSync = await AppStorage().retrieveValue(AppStorage.AUTO_SYNC) ?? false;
-    final dbPath = join(await getDatabasesPath(), 'AxpertMobileDB.db');
+    final dbPath = join(await getDatabasesPath(), 'offline_forms.db');
 
     _db = await openDatabase(
       dbPath,
@@ -811,6 +811,38 @@ class OfflineDbModule {
 
   static var processPendingQueTag = "PROCESS_PENDING_QUE";
 
+  static Future<void> debugPrintPendingRequests() async {
+    try {
+      final List<Map<String, dynamic>> rows = await _database.query(
+        OfflineDBConstants.TABLE_PENDING_REQUESTS,
+        columns: [
+          OfflineDBConstants.COL_USERNAME,
+          OfflineDBConstants.COL_PROJECT_NAME,
+          OfflineDBConstants.COL_STATUS,
+        ],
+      );
+
+      if (rows.isEmpty) {
+        log("No records found in ${OfflineDBConstants.TABLE_PENDING_REQUESTS}",
+            name: "DB_CHECK");
+        return;
+      }
+
+      log("--- Pending Requests Log ---", name: "DB_CHECK");
+      for (var row in rows) {
+        final user = row[OfflineDBConstants.COL_USERNAME];
+        final project = row[OfflineDBConstants.COL_PROJECT_NAME];
+        final status = row[OfflineDBConstants.COL_STATUS];
+
+        log("User: $user | Project: $project | Status: $status",
+            name: "DB_CHECK");
+      }
+      log("Total Records: ${rows.length}", name: "DB_CHECK");
+    } catch (e) {
+      log("Error printing requests: $e", name: "DB_CHECK");
+    }
+  }
+
   static Future<String> processPendingQueue({
     required bool isInternetAvailable,
     SyncProgressModel? progress,
@@ -834,7 +866,11 @@ class OfflineDbModule {
     if (currentSessionId.isEmpty) return "No active session to sync";
 
     progress?.updateMessage("Checking pending queue...");
-
+    final List<Map<String, Object?>> result = await _database.rawQuery(
+        'SELECT COUNT(*) as rec_count FROM ${OfflineDBConstants.TABLE_PENDING_REQUESTS}');
+    int count = (result.first['rec_count'] as int?) ?? 0;
+    LogService.writeLog(message: "RECORDS COUNT => ${count}");
+    await debugPrintPendingRequests();
     final idRows = await _database.query(
       OfflineDBConstants.TABLE_PENDING_REQUESTS,
       columns: [OfflineDBConstants.COL_ID],
@@ -907,7 +943,9 @@ class OfflineDbModule {
             (originalPayload['submitdata']['username'] ?? "").isEmpty
                 ? await AppStorage().retrieveValue(AppStorage.USER_NAME)
                 : originalPayload['submitdata']['username'];
-
+        // TODO remove project name after test
+        originalPayload['project'] =
+            await AppStorage().retrieveValue(AppStorage.PROJECT_NAME);
         final Map<String, dynamic> uploadPayload =
             await _convertPayloadPathsToBase64(originalPayload);
         log("processpendingque uploadPayload.length ${uploadPayload.length}",
@@ -946,7 +984,9 @@ class OfflineDbModule {
         String? errorMsg;
 
         if (res.toString() != "") {
-          LogService.writeLog(message: "[API ERROR]||[API SUCCESS] $res");
+          LogService.writeLog(
+              message:
+                  "[API ERROR]||[API SUCCESS] $res ||  ${_isAssetHelper(uploadPayload)}");
           try {
             final decoded = jsonDecode(res);
             if (decoded['success'] == true) {
@@ -978,6 +1018,8 @@ class OfflineDbModule {
               "[ID: $id] Status: ${isSuccess ? 'SUCCESS' : 'FAILED'} | Key: ${uploadPayload['publickey']}",
         );
         progress?.increment(isSuccess: isSuccess);
+
+        //TODO add the batch update from upload_debug
       } catch (e) {
         await logAudit(
           action: processPendingQueTag,
@@ -2070,12 +2112,12 @@ class OfflineDbModule {
   }
 
   static Future<File> getDatabaseFile() async {
-    final dbPath = join(await getDatabasesPath(), 'AxpertMobileDB.db');
+    final dbPath = join(await getDatabasesPath(), 'offline_forms.db');
     return File(dbPath);
   }
 
   static Future<void> importDatabaseFile(File sourceFile) async {
-    final dbPath = join(await getDatabasesPath(), 'AxpertMobileDB.db');
+    final dbPath = join(await getDatabasesPath(), 'offline_forms.db');
 
     await _db?.close();
 
@@ -2155,7 +2197,10 @@ class OfflineDbModule {
 
   static const String _bgPushTag = 'BG_PUSH_QUEUE';
 
-  static Future<String> backgroundPushPendingQueue() async {
+  static Future<String> backgroundPushPendingQueue({
+    required String armUrl,
+    void Function(int current, int total)? onProgress,
+  }) async {
     final scope = await _getLastOfflineUserScope();
     if (scope == null) {
       await LogService.writeLog(message: '[$_bgPushTag] No user scope found.');
@@ -2166,10 +2211,11 @@ class OfflineDbModule {
     final String projectName = scope['projectName']!;
 
     final String sessionId =
-        AppStorage().retrieveValue(AppStorage.SESSIONID) ?? '';
-    final String token = AppStorage().retrieveValue(AppStorage.TOKEN) ?? '';
+        await AppStorage().retrieveValue(AppStorage.SESSIONID) ?? '';
+    final String token =
+        await AppStorage().retrieveValue(AppStorage.TOKEN) ?? '';
     final bool isTrace =
-        AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? false;
+        await AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? false;
 
     if (sessionId.isEmpty) {
       await LogService.writeLog(
@@ -2198,8 +2244,7 @@ class OfflineDbModule {
     }
 
     final http.Client httpClient = http.Client();
-    final String url =
-        Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
+    final String url = armUrl;
     final Map<String, String> headers = {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',
@@ -2321,7 +2366,7 @@ class OfflineDbModule {
           await _markAsError(id);
           failCount++;
         }
-
+        onProgress?.call(i + 1, total);
         await LogService.writeLog(
           message:
               '[$_bgPushTag] [ID: $id] ${isSuccess ? "SUCCESS" : "FAILED: $errorMsg"}',
