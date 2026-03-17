@@ -2216,6 +2216,11 @@ class OfflineDbModule {
         await AppStorage().retrieveValue(AppStorage.TOKEN) ?? '';
     final bool isTrace =
         await AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? false;
+    await LogService.writeLog(
+      message:
+          '[BG_PUSH_QUEUE] Session: "${sessionId.isEmpty ? "EMPTY" : sessionId.substring(0, sessionId.length.clamp(0, 20))}..." | User: $username',
+    );
+    // Inside the for loop, just before httpClient.post()
 
     if (sessionId.isEmpty) {
       await LogService.writeLog(
@@ -2289,10 +2294,12 @@ class OfflineDbModule {
           payload['submitdata']['username'] =
               AppStorage().retrieveValue(AppStorage.USER_NAME) ?? username;
         }
-
+        await LogService.writeLog(
+          message:
+              '[$_bgPushTag] [ID: $id] Sending sessionId: "${payload['ARMSessionId'].toString().substring(0, 20)}..."',
+        );
         final Map<String, dynamic> uploadPayload =
             await _convertPayloadPathsToBase64(payload);
-
         if (uploadPayload.isEmpty) {
           await _markAsError(id);
           await logAudit(
@@ -2397,5 +2404,111 @@ class OfflineDbModule {
     final String result = 'Processed: $successCount success, $failCount failed';
     await LogService.writeLog(message: '[$_bgPushTag] Done. $result');
     return result;
+  }
+
+  // static Future<Set<String>> getExistingUbgeNos() async {
+  //   final scope = await _getLastOfflineUserScope();
+  //   if (scope == null) return {};
+
+  //   final rows = await _database.query(
+  //     OfflineDBConstants.TABLE_PENDING_REQUESTS,
+  //     columns: [OfflineDBConstants.COL_ID, OfflineDBConstants.COL_REQUEST_JSON],
+  //     where: '''
+  //     ${OfflineDBConstants.COL_STATUS} IN (
+  //       ${OfflineDBConstants.STATUS_PENDING},
+  //       ${OfflineDBConstants.STATUS_ERROR},
+  //       ${OfflineDBConstants.STATUS_SUCCESS}
+  //     )
+  //     AND ${OfflineDBConstants.COL_USERNAME} = ?
+  //     AND ${OfflineDBConstants.COL_PROJECT_NAME} = ?
+  //   ''',
+  //     whereArgs: [scope['username'], scope['projectName']],
+  //   );
+
+  //   final Set<String> result = {};
+
+  //   for (final row in rows) {
+  //     try {
+  //       final bodyStr = await _readLargeString(
+  //         table: OfflineDBConstants.TABLE_PENDING_REQUESTS,
+  //         column: OfflineDBConstants.COL_REQUEST_JSON,
+  //         where: '${OfflineDBConstants.COL_ID} = ?',
+  //         whereArgs: [row[OfflineDBConstants.COL_ID]],
+  //       );
+
+  //       if (bodyStr == null || bodyStr.isEmpty) continue;
+
+  //       final Map<String, dynamic> payload = jsonDecode(bodyStr);
+
+  //       final String publicKey =
+  //           (payload['publickey'] ?? '').toString().toLowerCase();
+  //       if (publicKey != 'inwardentry') continue;
+
+  //       final String? ubgeNo = payload['submitdata']?['dataarray']?['data']
+  //               ?['dc1']?['row1']?['ub_ge_no']
+  //           ?.toString();
+
+  //       if (ubgeNo != null && ubgeNo.trim().isNotEmpty) {
+  //         result.add(ubgeNo.trim().toUpperCase());
+  //       }
+  //     } catch (e) {
+  //       debugPrint("[UBGE_CHECK] Error parsing record: $e");
+  //     }
+  //   }
+
+  //   return result;
+  // }
+
+  static Future<bool> isUbgeNoExists(String typed) async {
+    final scope = await _getLastOfflineUserScope();
+    if (scope == null) return false;
+
+    final rows = await _database.query(
+      OfflineDBConstants.TABLE_PENDING_REQUESTS,
+      columns: [OfflineDBConstants.COL_ID, OfflineDBConstants.COL_REQUEST_JSON],
+      where: '''
+      ${OfflineDBConstants.COL_STATUS} IN (
+        ${OfflineDBConstants.STATUS_PENDING},
+        ${OfflineDBConstants.STATUS_ERROR},
+        ${OfflineDBConstants.STATUS_SUCCESS}
+      )
+      AND ${OfflineDBConstants.COL_USERNAME} = ?
+      AND ${OfflineDBConstants.COL_PROJECT_NAME} = ?
+    ''',
+      whereArgs: [scope['username'], scope['projectName']],
+    );
+
+    final typedUpper = typed.trim().toUpperCase();
+
+    for (final row in rows) {
+      try {
+        final bodyStr = await _readLargeString(
+          table: OfflineDBConstants.TABLE_PENDING_REQUESTS,
+          column: OfflineDBConstants.COL_REQUEST_JSON,
+          where: '${OfflineDBConstants.COL_ID} = ?',
+          whereArgs: [row[OfflineDBConstants.COL_ID]],
+        );
+
+        if (bodyStr == null || bodyStr.isEmpty) continue;
+
+        final Map<String, dynamic> payload = jsonDecode(bodyStr);
+
+        final String publicKey =
+            (payload['publickey'] ?? '').toString().toLowerCase();
+        if (publicKey != 'inwardentry') continue;
+
+        final String? ubgeNo = payload['submitdata']?['dataarray']?['data']
+                ?['dc1']?['row1']?['ub_ge_no']
+            ?.toString();
+
+        // Check if the current row matches the typed value
+        if (ubgeNo != null && ubgeNo.trim().toUpperCase() == typedUpper) {
+          return true; // Match found, exit early
+        }
+      } catch (e) {
+        debugPrint("[UBGE_CHECK] Error parsing record: $e");
+      }
+    }
+    return false; // No match found after checking all rows
   }
 }

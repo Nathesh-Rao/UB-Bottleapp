@@ -1,5 +1,5 @@
 import 'dart:developer';
-
+import 'offline_config_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -15,8 +15,8 @@ import 'offline_sync_task_handler.dart';
 
 const String _tag = '[BG_SYNC_SERVICE]';
 const int _kServiceId = 512;
-const int _kDefaultInterval = 15;
-const int _kMinInterval = 15;
+const int _kDefaultInterval = 10;
+const int _kMinInterval = 10;
 
 String _intervalStorageKey(String username, String projectName) =>
     'sync_interval_${username}_$projectName';
@@ -92,7 +92,18 @@ class OfflineBackgroundSyncService {
       return;
     }
 
-    final int interval = await _loadIntervalFromStorage();
+    // final int interval = await _loadIntervalFromStorage();
+    // intervalMinutes.value = interval;
+
+    final int interval = OfflineConfigService.getCachedInterval();
+    if (interval == 0) {
+      log('$_tag sync_interval_minutes=0 — sync disabled by server config.',
+          name: _tag);
+      await LogService.writeLog(
+          message: '$_tag start() aborted — sync disabled by server config.');
+      _isRunning = false;
+      return;
+    }
     intervalMinutes.value = interval;
 
     _isRunning = true;
@@ -175,7 +186,9 @@ class OfflineBackgroundSyncService {
 
   // ── Interval ──────────────────────────────────────────────────────────────
 
-  Future<int> getIntervalMinutes() async => _loadIntervalFromStorage();
+  Future<int> getIntervalMinutes() async =>
+      OfflineConfigService.getCachedInterval();
+  // Future<int> getIntervalMinutes() async => _loadIntervalFromStorage();
 
   Future<void> setIntervalMinutes(int minutes) async {
     final int clamped = minutes.clamp(_kMinInterval, 1440);
@@ -310,23 +323,23 @@ class OfflineBackgroundSyncService {
 
   // ── Private helpers ───────────────────────────────────────────────────────
 
-  Future<int> _loadIntervalFromStorage() async {
-    try {
-      final String? username = AppStorage().retrieveValue(AppStorage.USER_NAME);
-      final String? projectName =
-          AppStorage().retrieveValue(AppStorage.PROJECT_NAME);
-      if (username == null || projectName == null) return _kDefaultInterval;
+  // Future<int> _loadIntervalFromStorage() async {
+  //   try {
+  //     final String? username = AppStorage().retrieveValue(AppStorage.USER_NAME);
+  //     final String? projectName =
+  //         AppStorage().retrieveValue(AppStorage.PROJECT_NAME);
+  //     if (username == null || projectName == null) return _kDefaultInterval;
 
-      final dynamic stored = AppStorage()
-          .retrieveValue(_intervalStorageKey(username, projectName));
-      if (stored == null) return _kDefaultInterval;
+  //     final dynamic stored = AppStorage()
+  //         .retrieveValue(_intervalStorageKey(username, projectName));
+  //     if (stored == null) return _kDefaultInterval;
 
-      return (int.tryParse(stored.toString()) ?? _kDefaultInterval)
-          .clamp(_kMinInterval, 1440);
-    } catch (_) {
-      return _kDefaultInterval;
-    }
-  }
+  //     return (int.tryParse(stored.toString()) ?? _kDefaultInterval)
+  //         .clamp(_kMinInterval, 1440);
+  //   } catch (_) {
+  //     return _kDefaultInterval;
+  //   }
+  // }
 
   Future<void> _saveIntervalToStorage(int minutes) async {
     try {

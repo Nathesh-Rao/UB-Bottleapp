@@ -1,11 +1,10 @@
-
-
 import 'dart:async';
 import 'dart:developer';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_module.dart';
 import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
 
@@ -47,7 +46,7 @@ class OfflineSyncTaskHandler extends TaskHandler {
   bool _dbInitialized = false;
   bool _isCycleRunning = false;
   String _armUrl = '';
-  int _intervalMinutes = 15;
+  int _intervalMinutes = 0;
   Timer? _timer;
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────
@@ -59,8 +58,13 @@ class OfflineSyncTaskHandler extends TaskHandler {
 
     _armUrl = await FlutterForegroundTask.getData<String>(key: 'armUrl') ?? '';
     _intervalMinutes =
-        await FlutterForegroundTask.getData<int>(key: 'intervalMinutes') ?? 15;
-
+        await FlutterForegroundTask.getData<int>(key: 'intervalMinutes') ?? 0;
+    if (_intervalMinutes == 0) {
+      await LogService.writeLog(
+          message: '$_tag interval=0 — sync disabled by config. Task exiting.');
+      FlutterForegroundTask.stopService();
+      return;
+    }
     await LogService.writeLog(
         message:
             '$_tag onStart — interval: ${_intervalMinutes}min | armUrl: $_armUrl');
@@ -130,6 +134,8 @@ class OfflineSyncTaskHandler extends TaskHandler {
     _isCycleRunning = true;
 
     try {
+      // await GetStorage.init();
+
       // 1. Internet check
       if (!await _checkInternet()) {
         await LogService.writeLog(

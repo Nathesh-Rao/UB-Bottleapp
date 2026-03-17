@@ -163,7 +163,47 @@ class InwardEntryDynamicController extends GetxController {
             }
           });
         }
+
+        if (name == 'ub_ge_no') {
+          _ubgeNoFocusNode?.dispose();
+          _ubgeNoFocusNode = FocusNode();
+
+          _ubgeNoFocusNode!.addListener(() async {
+            if (_ubgeNoFocusNode!.hasFocus) return;
+
+            final String typed = ctrl.text.trim();
+            if (typed.isEmpty) return;
+
+            await validateUbgeNo(ctrl, typed, name);
+            // errors[name] = "duplicate ubge no, please update";
+          });
+        }
       }
+    }
+  }
+
+  Future<void> validateUbgeNo(
+      TextEditingController ctrl, String typed, String fieldName) async {
+    if (typed.trim().isEmpty) return;
+
+    try {
+      // Call the updated method to check if it exists
+      final bool exists = await OfflineDbModule.isUbgeNoExists(typed);
+      log(exists.toString());
+      if (exists) {
+        errors[fieldName] = 'UB GE No "$typed" already exists in the queue.';
+        // Get.snackbar(
+        //   'Duplicate Detected',
+        //   'UB GE No "$typed" already exists in the queue. Please enter a unique number.',
+        //   snackPosition: SnackPosition.TOP,
+        //   backgroundColor: Colors.redAccent, // Red to indicate an error
+        //   colorText: Colors.white,
+        //   duration: const Duration(seconds: 3),
+        //   icon: const Icon(Icons.error_outline, color: Colors.white),
+        // );
+      }
+    } catch (e) {
+      debugPrint("[UBGE_VALIDATE] Error: $e");
     }
   }
 
@@ -315,6 +355,79 @@ class InwardEntryDynamicController extends GetxController {
       sampleGridRows.add(row);
     }
   }
+
+// ================== UBGE NO DUPLICATE CHECK ==================
+  FocusNode? _ubgeNoFocusNode;
+  FocusNode? get ubgeNoFocusNode => _ubgeNoFocusNode;
+
+  // Future<void> _checkAndSuffixUbgeNo(
+  //     TextEditingController ctrl, String typed) async {
+  //   try {
+  //     final Set<String> existing = await OfflineDbModule.getExistingUbgeNos();
+
+  //     if (!existing.contains(typed)) return;
+
+  //     String candidate = typed;
+  //     int suffix = 1;
+
+  //     while (existing.contains(candidate)) {
+  //       candidate = '${typed}_${suffix.toString().padLeft(2, '0')}';
+  //       suffix++;
+  //     }
+
+  //     ctrl.text = candidate;
+
+  //     ctrl.selection = TextSelection.collapsed(offset: candidate.length);
+
+  //     Get.snackbar(
+  //       'Duplicate Detected',
+  //       'UB GE No already exists in queue. Renamed to $candidate',
+  //       snackPosition: SnackPosition.BOTTOM,
+  //       backgroundColor: Colors.orangeAccent,
+  //       colorText: Colors.white,
+  //       duration: const Duration(seconds: 3),
+  //       icon: const Icon(Icons.warning_amber_rounded, color: Colors.white),
+  //     );
+  //   } catch (e) {
+  //     debugPrint("[UBGE_SUFFIX] Error: $e");
+  //   }
+  // }
+
+  // Future<void> _checkAndSuffixUbgeNo(
+  //     TextEditingController ctrl, String typed) async {
+  //   try {
+  //     final Set<String> existing = await OfflineDbModule.getExistingUbgeNos();
+
+  //     // Compare case-insensitively but keep original casing in the result
+  //     final Set<String> existingUpper =
+  //         existing.map((e) => e.toUpperCase()).toSet();
+
+  //     if (!existingUpper.contains(typed.toUpperCase())) return;
+
+  //     String candidate = typed;
+  //     int suffix = 1;
+
+  //     while (existingUpper.contains(candidate.toUpperCase())) {
+  //       candidate = '${typed}_${suffix.toString().padLeft(2, '0')}';
+  //       suffix++;
+  //     }
+
+  //     ctrl.text = candidate;
+  //     ctrl.selection = TextSelection.collapsed(offset: candidate.length);
+
+  //     Get.snackbar(
+  //       'Duplicate Detected',
+  //       'UB GE No already exists in queue. Renamed to $candidate',
+  //       snackPosition: SnackPosition.TOP,
+  //       backgroundColor: Colors.orangeAccent,
+  //       colorText: Colors.white,
+  //       duration: const Duration(seconds: 3),
+  //       icon: const Icon(Icons.warning_amber_rounded, color: Colors.white),
+  //     );
+  //   } catch (e) {
+  //     debugPrint("[UBGE_SUFFIX] Error: $e");
+  //   }
+  // }
 
   void openSampleDetailsDialog() {
     currentCardIndex.value = 0;
@@ -1057,7 +1170,7 @@ class InwardEntryDynamicController extends GetxController {
     errors.clear();
   }
 
-  bool validateForm() {
+  Future<bool> validateForm() async {
     errors.clear();
 
     final List fields = schema["fields"];
@@ -1081,13 +1194,19 @@ class InwardEntryDynamicController extends GetxController {
           errors[name] = "$label is required";
         }
       }
+
+      if (name == 'ub_ge_no') {
+        await validateUbgeNo(
+            textCtrls[name]!, textCtrls[name]?.text ?? '', name);
+        // errors[name] = "duplicate ubge no, please update";
+      }
     }
 
     return errors.isEmpty;
   }
 
-  void next() {
-    final ok = validateForm();
+  void next() async {
+    final ok = await validateForm();
 
     if (!ok) {
       Get.snackbar(
@@ -1642,7 +1761,7 @@ class InwardEntryDynamicController extends GetxController {
   // Add this variable to your controller
   var submitStatus = "".obs;
   Future<void> submitPage() async {
-    if (!validateForm()) {
+    if (!await validateForm()) {
       Get.snackbar("Required", "Please fill mandatory fields");
       return;
     }
@@ -1807,7 +1926,7 @@ class InwardEntryDynamicController extends GetxController {
     for (final c in textCtrls.values) {
       c.dispose();
     }
-
+    _ubgeNoFocusNode?.dispose();
     _bagsToSampleDebounce?.cancel();
     super.onClose();
   }

@@ -15,6 +15,18 @@ class OfflineDBConstants {
     return "$baseUrl/MobileOfflineStruct/offline_pages.json";
   }
 
+  static String OFFLINE_CONFIG_URL() {
+    String userEnteredUrl = AppStorage().retrieveValue(AppStorage.PROJECT_URL);
+    if (!userEnteredUrl.startsWith('http')) {
+      userEnteredUrl = 'https://$userEnteredUrl';
+    }
+    Uri uri = Uri.parse(userEnteredUrl);
+
+    String baseUrl = "${uri.scheme}://${uri.host}";
+
+    return "$baseUrl/MobileOfflineStruct/offline_config.json";
+  }
+
   static const String CREATE_QUERY = 'CREATE TABLE IF NOT EXISTS ';
 
   static const int STATUS_PENDING = 0;

@@ -92,6 +92,11 @@ android {
             signingConfig = signingConfigs.release
         }
     }
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging = false
+        }
+    }
     namespace 'com.agile.ub_bottleapp'
 }
 

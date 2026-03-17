@@ -7,6 +7,7 @@ import 'package:ubbottleapp/Constants/MyColors.dart';
 import 'package:ubbottleapp/Constants/Routes.dart';
 import 'package:ubbottleapp/Constants/Const.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/auto_sync/offline_background_sync_service.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/auto_sync/offline_config_service.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_module.dart';
 import 'package:ubbottleapp/ModelPages/LoginPage/Models/SigninDetailsModel.dart';
 import 'package:ubbottleapp/ModelPages/LoginPage/Page/LoginPage.dart';
@@ -637,7 +638,6 @@ class LoginController extends GetxController {
   onLoad() async {
     currentProjectName.value =
         await appStorage.retrieveValue(AppStorage.PROJECT_NAME) ?? '';
-
   }
 
   startLoginProcess() async {
@@ -765,6 +765,7 @@ class LoginController extends GetxController {
               globalVariableController.autoSyncEnabled.value =
                   await AppStorage().retrieveValue(AppStorage.AUTO_SYNC);
             }
+            await OfflineConfigService.fetchAndStore();
             await OfflineBackgroundSyncService.instance.start();
           } else if (json["result"]?.containsKey("OTPLoginKey")) {
             // OTPPage

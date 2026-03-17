@@ -51,7 +51,8 @@ initialize() async {
   InitializationSettings initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
       iOS: initializationSettingsDarwin);
-  await flutterLocalNotificationsPlugin.initialize(initializationSettings,
+  await flutterLocalNotificationsPlugin.initialize(
+      settings: initializationSettings,
       onDidReceiveNotificationResponse: onDidReceiveNotificationResponse);
 
   var fcmID = await messaging.getToken();
@@ -181,7 +182,10 @@ void decodeFirebaseMessage(RemoteMessage message,
       if (shouldDisplay &&
           await AppStorage().retrieveValue(AppStorage.isShowNotifyEnabled))
         await flutterLocalNotificationsPlugin.show(
-            data.hashCode, data.title, data.body, notificationDetails,
+            id: data.hashCode,
+            title: data.title,
+            body: data.body,
+            notificationDetails: notificationDetails,
             payload: 'item x');
     } catch (e) {}
   }
