@@ -6,6 +6,7 @@ import 'package:ubbottleapp/Constants/AppStorage.dart';
 import 'package:ubbottleapp/Constants/Const.dart';
 import 'package:ubbottleapp/Constants/GlobalVariableController.dart';
 import 'package:ubbottleapp/ModelPages/InApplicationWebView/controller/webview_controller.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/auto_sync/offline_background_sync_service.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/data_source_model.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/form_page_model.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/sync_progress_model.dart';
@@ -897,6 +898,8 @@ class OfflineDbModule {
 
     int successCount = 0;
     int failCount = 0;
+    List<int> successIds = [];
+    List<int> failedIds = [];
     int total = idRows.length;
 
     progress?.clearFailedRecords();
@@ -944,8 +947,8 @@ class OfflineDbModule {
                 ? await AppStorage().retrieveValue(AppStorage.USER_NAME)
                 : originalPayload['submitdata']['username'];
         // TODO remove project name after test
-        originalPayload['project'] =
-            await AppStorage().retrieveValue(AppStorage.PROJECT_NAME);
+        // originalPayload['project'] =
+        //     await AppStorage().retrieveValue(AppStorage.PROJECT_NAME);
         final Map<String, dynamic> uploadPayload =
             await _convertPayloadPathsToBase64(originalPayload);
         log("processpendingque uploadPayload.length ${uploadPayload.length}",
@@ -978,7 +981,25 @@ class OfflineDbModule {
           url: url,
           body: jsonEncode(uploadPayload),
           isBearer: true,
+          strictAuth: true,
         );
+
+        if (res != null && res.toString().startsWith('__AUTH_FAILED__')) {
+          final String authFailBody =
+              res.toString().replaceFirst('__AUTH_FAILED__', '');
+          await logAudit(
+            action: processPendingQueTag,
+            isError: true,
+            response:
+                (authFailBody.isEmpty ? "-- Empty Response --" : authFailBody),
+            remarks: "[ID: $id] 400/401 — session expired. Stopping sync. "
+                "| Progress: ${i + 1}/$total processed "
+                "| Success count: ${successIds.length} — IDs: ${successIds.isEmpty ? 'none' : successIds.join(', ')} "
+                "| Failed count: ${failedIds.length} — IDs: ${failedIds.isEmpty ? 'none' : failedIds.join(', ')} "
+                "| Unprocessed count: ${total - (i + 1)} — IDs: ${idRows.sublist(i + 1).map((r) => r[OfflineDBConstants.COL_ID]).join(', ')}",
+          );
+          break;
+        }
 
         bool isSuccess = false;
         String? errorMsg;
@@ -1004,9 +1025,11 @@ class OfflineDbModule {
         if (isSuccess) {
           await _deletePayloadFiles(uploadPayload);
           await _markAsSuccess(id);
+          successIds.add(id);
           successCount++;
         } else {
           await _markAsError(id);
+          failedIds.add(id);
           progress?.addFailedRecord(id, errorMsg ?? "Unknown error");
           failCount++;
         }
@@ -1018,8 +1041,6 @@ class OfflineDbModule {
               "[ID: $id] Status: ${isSuccess ? 'SUCCESS' : 'FAILED'} | Key: ${uploadPayload['publickey']}",
         );
         progress?.increment(isSuccess: isSuccess);
-
-        //TODO add the batch update from upload_debug
       } catch (e) {
         await logAudit(
           action: processPendingQueTag,
@@ -1033,11 +1054,56 @@ class OfflineDbModule {
         failCount++;
       }
     }
+    // -----------------------------
+    if (successIds.isNotEmpty) {
+      var updateSuccessCount = await _batchUpdateStatus(
+          successIds, OfflineDBConstants.STATUS_SUCCESS);
 
+      logAudit(
+          action: processPendingQueTag,
+          response:
+              "Batch update [Success] complete via IN clause. Status: ${OfflineDBConstants.STATUS_SUCCESS}, Ids: ${successIds.toString()} : updateSuccessCount : $updateSuccessCount",
+          remarks: " Total count of success list updated");
+    }
+    if (failedIds.isNotEmpty) {
+      var updateFailureCount =
+          await _batchUpdateStatus(failedIds, OfflineDBConstants.STATUS_ERROR);
+
+      logAudit(
+          action: processPendingQueTag,
+          response:
+              "Batch update [Failure] complete via IN clause. Status: ${OfflineDBConstants.STATUS_ERROR}, Ids: ${failedIds.toString()} : updateFailureCount : $updateFailureCount",
+          remarks: " Total count of failure list updated");
+    }
     progress?.complete();
     progress?.updateMessage("Completed ");
 
     return "Processed: $successCount success, $failCount failed ";
+  }
+
+  static Future<int> _batchUpdateStatus(List<int> ids, int status) async {
+    if (ids.isEmpty) return 0;
+
+    final String placeholders = List.filled(ids.length, '?').join(',');
+    try {
+      var updateSuccessCount = await _database.rawUpdate(
+        '''
+        UPDATE ${OfflineDBConstants.TABLE_PENDING_REQUESTS}
+        SET ${OfflineDBConstants.COL_STATUS} = ?
+        WHERE ${OfflineDBConstants.COL_ID} IN ($placeholders)
+        ''',
+        [status, ...ids],
+      );
+
+      LogService.writeLog(
+          message:
+              "Batch update complete via IN clause. Status: $status, IDS: ${ids.toString()} : updateSuccessCount : $updateSuccessCount");
+
+      return updateSuccessCount;
+    } catch (e) {
+      log("Error in batch update: $e", name: "DB_ERROR");
+      return -1;
+    }
   }
 
   static bool _isAsset(Map<String, dynamic> pl) {
@@ -2258,7 +2324,8 @@ class OfflineDbModule {
     int successCount = 0;
     int failCount = 0;
     final int total = idRows.length;
-
+    final List<int> successIds = [];
+    final List<int> failedIds = [];
     await LogService.writeLog(
       message: '[$_bgPushTag] Starting push. Total: $total | User: $username',
     );
@@ -2301,6 +2368,7 @@ class OfflineDbModule {
         final Map<String, dynamic> uploadPayload =
             await _convertPayloadPathsToBase64(payload);
         if (uploadPayload.isEmpty) {
+          failedIds.add(id);
           await _markAsError(id);
           await logAudit(
             action: _bgPushTag,
@@ -2353,23 +2421,32 @@ class OfflineDbModule {
         } else if (response.statusCode == 401) {
           await LogService.writeLog(
             message:
-                '[$_bgPushTag] 401 Unauthorized — session may have expired. Stopping cycle.',
+                '[$_bgPushTag] 401 Unauthorized — session expired. Stopping cycle.',
           );
           await logAudit(
             action: _bgPushTag,
             isError: true,
-            remarks: '[ID: $id] 401 Unauthorized. Stopping background push.',
+            response:
+                'HTTP 401: ${response.body.isEmpty ? "-- Empty Response --" : response.body}',
+            remarks: '[ID: $id] 401 Unauthorized. Stopping background push. '
+                '| Progress: ${i + 1}/$total processed '
+                '| Success count: ${successIds.length} — IDs: ${successIds.isEmpty ? 'none' : successIds.join(', ')} '
+                '| Failed count: ${failedIds.length} — IDs: ${failedIds.isEmpty ? 'none' : failedIds.join(', ')} '
+                '| Unprocessed count: ${total - (i + 1)} — IDs: ${idRows.sublist(i + 1).map((r) => r[OfflineDBConstants.COL_ID]).join(', ')}',
           );
+          OfflineBackgroundSyncService.instance.stop();
           break;
         } else {
           errorMsg = 'HTTP ${response.statusCode}: ${response.body}';
         }
 
         if (isSuccess) {
+          successIds.add(id);
           await _deletePayloadFiles(uploadPayload);
           await _markAsSuccess(id);
           successCount++;
         } else {
+          failedIds.add(id);
           await _markAsError(id);
           failCount++;
         }
@@ -2388,6 +2465,7 @@ class OfflineDbModule {
       } catch (e) {
         await _markAsError(id);
         failCount++;
+        failedIds.add(id);
         await LogService.writeLog(
             message: '[$_bgPushTag] [ID: $id] Exception: $e');
         await logAudit(
@@ -2400,7 +2478,27 @@ class OfflineDbModule {
     }
 
     httpClient.close();
+    if (successIds.isNotEmpty) {
+      await _database.rawUpdate(
+        '''UPDATE ${OfflineDBConstants.TABLE_PENDING_REQUESTS}
+         SET ${OfflineDBConstants.COL_STATUS} = ${OfflineDBConstants.STATUS_SUCCESS}
+         WHERE ${OfflineDBConstants.COL_ID} IN (${successIds.join(',')})''',
+      );
+      await LogService.writeLog(
+          message:
+              '[$_bgPushTag] Batch SUCCESS update: ${successIds.length} rows — IDs: $successIds');
+    }
 
+    if (failedIds.isNotEmpty) {
+      await _database.rawUpdate(
+        '''UPDATE ${OfflineDBConstants.TABLE_PENDING_REQUESTS}
+         SET ${OfflineDBConstants.COL_STATUS} = ${OfflineDBConstants.STATUS_ERROR}
+         WHERE ${OfflineDBConstants.COL_ID} IN (${failedIds.join(',')})''',
+      );
+      await LogService.writeLog(
+          message:
+              '[$_bgPushTag] Batch ERROR update: ${failedIds.length} rows — IDs: $failedIds');
+    }
     final String result = 'Processed: $successCount success, $failCount failed';
     await LogService.writeLog(message: '[$_bgPushTag] Done. $result');
     return result;

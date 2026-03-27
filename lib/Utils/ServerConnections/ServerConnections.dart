@@ -187,6 +187,7 @@ class ServerConnections {
       String body = '',
       String ClientID = '',
       bool isBearer = false,
+      bool strictAuth = false,
       var show_errorSnackbar = true}) async {
     var API_NAME = url.substring(url.lastIndexOf("/") + 1, url.length);
     if (await _connectivity.connectionStatus)
@@ -231,11 +232,21 @@ class ServerConnections {
               title: "Error!",
               message: response.statusCode.toString(),
               show_errorSnackbar: show_errorSnackbar);
+          if (strictAuth) {
+            return '__AUTH_FAILED__${response.body}';
+          }
         } else {
           if (response.statusCode == 400 || response.statusCode == 401) {
             LogService.writeLog(
                 message:
                     "[ERROR] API_ERROR\nURL:$url\nAPI_NAME: $API_NAME\nBody: $body\nStatusCode: ${response.statusCode}\nResponse: ${response.body}");
+
+            if (strictAuth) {
+              LandingPageController landingPageController = Get.find();
+              landingPageController.showSignOutDialog_sessionExpired();
+              return '__AUTH_FAILED__${response.body}';
+            }
+
             if (response.body
                 .toString()
                 .toLowerCase()
