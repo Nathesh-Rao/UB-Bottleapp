@@ -2353,7 +2353,7 @@ class OfflineDbModule {
         }
 
         final Map<String, dynamic> payload = jsonDecode(bodyStr);
-        payload['ARMSessionId'] = sessionId;
+        payload['ARMSessionId'] = sessionId.trim();
         payload['submitdata']['trace'] = isTrace ? 'true' : 'false';
 
         final String? storedUsername = payload['submitdata']['username'];
@@ -2363,7 +2363,7 @@ class OfflineDbModule {
         }
         await LogService.writeLog(
           message:
-              '[$_bgPushTag] [ID: $id] Sending sessionId: "${payload['ARMSessionId'].toString().substring(0, 20)}..."',
+              '[$_bgPushTag] [ID: $id] Sending sessionId: "${payload['ARMSessionId'].toString()}"',
         );
         final Map<String, dynamic> uploadPayload =
             await _convertPayloadPathsToBase64(payload);
@@ -2427,7 +2427,7 @@ class OfflineDbModule {
             action: _bgPushTag,
             isError: true,
             response:
-                'HTTP 401: ${response.body.isEmpty ? "-- Empty Response --" : response.body}',
+                'HTTP 401: ${response.body.isEmpty ? "-- Empty Response Body -- ${response.toString()}" : response.body}',
             remarks: '[ID: $id] 401 Unauthorized. Stopping background push. '
                 '| Progress: ${i + 1}/$total processed '
                 '| Success count: ${successIds.length} — IDs: ${successIds.isEmpty ? 'none' : successIds.join(', ')} '
@@ -2601,7 +2601,7 @@ class OfflineDbModule {
 
         // Check if the current row matches the typed value
         if (ubgeNo != null && ubgeNo.trim().toUpperCase() == typedUpper) {
-          return true; // Match found, exit early
+          return true;
         }
       } catch (e) {
         debugPrint("[UBGE_CHECK] Error parsing record: $e");
