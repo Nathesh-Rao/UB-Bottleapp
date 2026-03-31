@@ -8,6 +8,7 @@ import 'package:ubbottleapp/ModelPages/InApplicationWebView/page/InApplicationWe
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuActiveListPage/Controllers/UpdatedActiveTaskListController/ActiveTaskListController.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/audit_logs/page/offline_audit_log_page.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/auto_sync/offline_background_sync_service.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/controller/offline_form_controller.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/sync_settings/sync_settings_screen.dart';
 import 'package:ubbottleapp/ModelPages/LandingPage/Controller/LandingPageController.dart';
@@ -285,6 +286,9 @@ class LandingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      OfflineBackgroundSyncService.instance.start();
+    });
     return Obx(
       () => PopScope(
         canPop: false,

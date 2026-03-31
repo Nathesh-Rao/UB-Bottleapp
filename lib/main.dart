@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/auto_sync/offline_background_sync_service.dart';
-import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_background_sync_service.dart';
 import 'package:upgrader/upgrader.dart';
 import 'package:ubbottleapp/Constants/CommonMethods.dart';
 import 'package:ubbottleapp/Constants/MyColors.dart';
@@ -82,9 +82,9 @@ Future<void> main() async {
   try {
     await OfflineDbModule.init();
     // await OfflineBackgroundSyncService.instance.initWorkManager();
+
     OfflineBackgroundSyncService.initCommunicationPort();
-    OfflineBackgroundSyncService.instance.init();
-    AppLifecycleObserver.instance.register();
+
     LogService.writeLog(
       message: "[OFFLINE_DB_INIT_001][SUCCESS] Offline DB initialized",
     );
@@ -96,7 +96,18 @@ Future<void> main() async {
   }
   // GoogleFonts.config.allowRuntimeFetching = false;
   testAssets();
+  final bool staleService = await FlutterForegroundTask.isRunningService;
+  if (staleService) {
+    await FlutterForegroundTask.stopService();
+    await Future.delayed(const Duration(milliseconds: 500));
+    await LogService.writeLog(
+        message: '[MAIN] Stale background isolate killed on fresh launch.');
+  }
+
   runApp(MyApp());
+
+  OfflineBackgroundSyncService.instance.init();
+  AppLifecycleObserver.instance.register();
   SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(statusBarColor: Colors.black38));
   try {

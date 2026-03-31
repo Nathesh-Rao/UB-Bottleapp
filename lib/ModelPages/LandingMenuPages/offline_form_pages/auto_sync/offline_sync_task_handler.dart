@@ -21,7 +21,7 @@ class SyncDataKeys {
   static const String lastSyncedAt = 'lastSyncedAt';
   static const String pendingCount = 'pendingCount';
   static const String intervalMinutes = 'intervalMinutes';
-
+  static const String evtAuthFailed = 'auth_failed';
   // events → main isolate
   static const String evtProgress = 'progress';
   static const String evtDone = 'done';
@@ -54,8 +54,12 @@ class OfflineSyncTaskHandler extends TaskHandler {
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
     print('#### FG_SYNC_TASK onStart CALLED ####');
-    WidgetsFlutterBinding.ensureInitialized();
-
+    // WidgetsFlutterBinding.ensureInitialized();
+    FlutterForegroundTask.sendDataToMain({
+      SyncDataKeys.event: 'debug_ping',
+      'msg': 'onStart fired in isolate',
+    });
+    await GetStorage.init();
     _armUrl = await FlutterForegroundTask.getData<String>(key: 'armUrl') ?? '';
     _intervalMinutes =
         await FlutterForegroundTask.getData<int>(key: 'intervalMinutes') ?? 0;
@@ -70,7 +74,7 @@ class OfflineSyncTaskHandler extends TaskHandler {
             '$_tag onStart — interval: ${_intervalMinutes}min | armUrl: $_armUrl');
 
     await _ensureDbInitialized();
-
+    await Future.delayed(const Duration(seconds: 3));
     await _runSyncCycle();
 
     _startTimer();
@@ -182,7 +186,16 @@ class OfflineSyncTaskHandler extends TaskHandler {
       );
 
       await LogService.writeLog(message: '$_tag Push done. Result: $result');
-
+      if (result == '__AUTH_FAILED__') {
+        _updateNotification(
+          title: '🔴 Session Expired',
+          text: 'Please log in again to continue syncing.',
+        );
+        FlutterForegroundTask.sendDataToMain({
+          SyncDataKeys.event: SyncDataKeys.evtAuthFailed,
+        });
+        return; // ← skip the evtDone block entirely
+      }
       // 5. Post-push — NEVER stop service here.
       //    User may save new offline records before the next cycle.
       //    Just update notification + report to main isolate.

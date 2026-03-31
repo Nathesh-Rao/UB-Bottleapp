@@ -16,7 +16,6 @@ import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuMorePage/Controllers
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuMorePage/Models/MenuItemModel.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/MenuMorePage/Page/MenuMorePage.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/auto_sync/offline_background_sync_service.dart';
-import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_background_sync_service.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_module.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/pages/offline_listing_page.dart';
 import 'package:ubbottleapp/ModelPages/LandingPage/Models/FirebaseMessageModel.dart';

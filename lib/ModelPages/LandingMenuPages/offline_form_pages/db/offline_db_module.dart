@@ -2,11 +2,13 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:ubbottleapp/Constants/AppStorage.dart';
 import 'package:ubbottleapp/Constants/Const.dart';
 import 'package:ubbottleapp/Constants/GlobalVariableController.dart';
 import 'package:ubbottleapp/ModelPages/InApplicationWebView/controller/webview_controller.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/auto_sync/offline_background_sync_service.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/auto_sync/offline_sync_task_handler.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/data_source_model.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/form_page_model.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/sync_progress_model.dart';
@@ -946,9 +948,12 @@ class OfflineDbModule {
             (originalPayload['submitdata']['username'] ?? "").isEmpty
                 ? await AppStorage().retrieveValue(AppStorage.USER_NAME)
                 : originalPayload['submitdata']['username'];
-        // TODO remove project name after test
+        // TODO remove project name and username after test [only for db import test]
+        // originalPayload['submitdata']['username'] =
+        //     await AppStorage().retrieveValue(AppStorage.USER_NAME);
         // originalPayload['project'] =
         //     await AppStorage().retrieveValue(AppStorage.PROJECT_NAME);
+
         final Map<String, dynamic> uploadPayload =
             await _convertPayloadPathsToBase64(originalPayload);
         log("processpendingque uploadPayload.length ${uploadPayload.length}",
@@ -992,7 +997,8 @@ class OfflineDbModule {
             isError: true,
             response:
                 (authFailBody.isEmpty ? "-- Empty Response --" : authFailBody),
-            remarks: "[ID: $id] 400/401 — session expired. Stopping sync. "
+            remarks:
+                "[ID: $id] 401 — session expired. Stopping sync. $authFailBody "
                 "| Progress: ${i + 1}/$total processed "
                 "| Success count: ${successIds.length} — IDs: ${successIds.isEmpty ? 'none' : successIds.join(', ')} "
                 "| Failed count: ${failedIds.length} — IDs: ${failedIds.isEmpty ? 'none' : failedIds.join(', ')} "
@@ -1468,7 +1474,7 @@ class OfflineDbModule {
       } else {
         log("CRITICAL: File MISSING at $value during conversion!",
             name: "AX_BUNDLE_LOG");
-        return "";
+        return "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
       }
     }
   }
@@ -2261,7 +2267,7 @@ class OfflineDbModule {
     );
   }
 
-  static const String _bgPushTag = 'BG_PUSH_QUEUE';
+  static const String _bgPushTag = 'BG_PUSH_QUEUE_TAG';
 
   static Future<String> backgroundPushPendingQueue({
     required String armUrl,
@@ -2395,6 +2401,12 @@ class OfflineDbModule {
           }
         }
 
+        // TODO remove project name and username after test [only for db import test]
+        // uploadPayload['submitdata']['username'] =
+        //     await AppStorage().retrieveValue(AppStorage.USER_NAME);
+        // uploadPayload['project'] =
+        //     await AppStorage().retrieveValue(AppStorage.PROJECT_NAME);
+
         final http.Response response = await httpClient
             .post(
               Uri.parse(url),
@@ -2418,24 +2430,54 @@ class OfflineDbModule {
           } catch (e) {
             errorMsg = 'Response parse error: $e';
           }
-        } else if (response.statusCode == 401) {
+        } else if (response.statusCode == 401 ||
+            response.statusCode == 400 ||
+            response.statusCode == 500) {
+          await LogService.writeLog(
+              message: "[$_bgPushTag] ${uploadPayload.toString()}");
+          await LogService.writeLog(
+              message:
+                  '[$_bgPushTag] HTTP ${response.statusCode}: ${response.body.isEmpty ? "-- Empty Response Body -- ${response.toString()}" : response.body}');
           await LogService.writeLog(
             message:
-                '[$_bgPushTag] 401 Unauthorized — session expired. Stopping cycle.',
+                '[$_bgPushTag] Unauthorized — session expired. Stopping cycle.',
           );
-          await logAudit(
-            action: _bgPushTag,
-            isError: true,
-            response:
-                'HTTP 401: ${response.body.isEmpty ? "-- Empty Response Body -- ${response.toString()}" : response.body}',
-            remarks: '[ID: $id] 401 Unauthorized. Stopping background push. '
-                '| Progress: ${i + 1}/$total processed '
-                '| Success count: ${successIds.length} — IDs: ${successIds.isEmpty ? 'none' : successIds.join(', ')} '
-                '| Failed count: ${failedIds.length} — IDs: ${failedIds.isEmpty ? 'none' : failedIds.join(', ')} '
-                '| Unprocessed count: ${total - (i + 1)} — IDs: ${idRows.sublist(i + 1).map((r) => r[OfflineDBConstants.COL_ID]).join(', ')}',
-          );
-          OfflineBackgroundSyncService.instance.stop();
-          break;
+
+          bool isSessionInvalid = false;
+          try {
+            final decoded = jsonDecode(response.body);
+            final String message =
+                (decoded['result']?['message'] ?? '').toString().toLowerCase();
+            isSessionInvalid = message.contains('sessionid is not valid');
+          } catch (_) {
+            isSessionInvalid = response.body
+                .toString()
+                .toLowerCase()
+                .contains('sessionid is not valid');
+          }
+
+          if (isSessionInvalid) {
+            await logAudit(
+              action: _bgPushTag,
+              isError: true,
+              response:
+                  'HTTP ${response.statusCode}: ${response.body.isEmpty ? "-- Empty Response Body -- ${response.toString()}" : response.body}',
+              remarks: '[ID: $id] 401 Unauthorized. Stopping background push. '
+                  '| Progress: ${i + 1}/$total processed '
+                  '| Success count: ${successIds.length} — IDs: ${successIds.isEmpty ? 'none' : successIds.join(', ')} '
+                  '| Failed count: ${failedIds.length} — IDs: ${failedIds.isEmpty ? 'none' : failedIds.join(', ')} '
+                  '| Unprocessed count: ${total - (i + 1)} — IDs: ${idRows.sublist(i + 1).map((r) => r[OfflineDBConstants.COL_ID]).join(', ')}',
+            );
+            // OfflineBackgroundSyncService.instance.stop();
+            FlutterForegroundTask.sendDataToMain({
+              SyncDataKeys.event: SyncDataKeys.evtAuthFailed,
+              'statusCode': response.statusCode,
+              'body': response.body.isEmpty
+                  ? '-- Empty Response --'
+                  : response.body,
+            });
+            break;
+          }
         } else {
           errorMsg = 'HTTP ${response.statusCode}: ${response.body}';
         }

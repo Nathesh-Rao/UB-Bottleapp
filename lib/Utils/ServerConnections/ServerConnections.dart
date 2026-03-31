@@ -236,21 +236,32 @@ class ServerConnections {
             return '__AUTH_FAILED__${response.body}';
           }
         } else {
-          if (response.statusCode == 400 || response.statusCode == 401) {
+          if (response.statusCode == 401 ||
+              response.statusCode == 400 ||
+              response.statusCode == 500) {
             LogService.writeLog(
                 message:
                     "[ERROR] API_ERROR\nURL:$url\nAPI_NAME: $API_NAME\nBody: $body\nStatusCode: ${response.statusCode}\nResponse: ${response.body}");
-
-            if (strictAuth) {
+            bool isSessionInvalid = false;
+            try {
+              final decoded = jsonDecode(response.body);
+              final String message = (decoded['result']?['message'] ?? '')
+                  .toString()
+                  .toLowerCase();
+              isSessionInvalid = message.contains('sessionid is not valid');
+            } catch (_) {
+              isSessionInvalid = response.body
+                  .toString()
+                  .toLowerCase()
+                  .contains('sessionid is not valid');
+            }
+            if (strictAuth && isSessionInvalid) {
               LandingPageController landingPageController = Get.find();
               landingPageController.showSignOutDialog_sessionExpired();
               return '__AUTH_FAILED__${response.body}';
             }
 
-            if (response.body
-                .toString()
-                .toLowerCase()
-                .contains("sessionid is not valid")) {
+            if (isSessionInvalid) {
               LandingPageController landingPageController = Get.find();
               landingPageController.showSignOutDialog_sessionExpired();
             } else

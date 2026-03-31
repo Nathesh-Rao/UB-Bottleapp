@@ -210,20 +210,20 @@ class OfflineBackgroundSyncService {
 
   // ── Manual trigger ────────────────────────────────────────────────────────
 
-  Future<void> triggerImmediateSync() async {
-    if (isSyncing.value) return;
+  // Future<void> triggerImmediateSync() async {
+  //   if (isSyncing.value) return;
 
-    final bool running = await FlutterForegroundTask.isRunningService;
-    if (running) {
-      FlutterForegroundTask.sendDataToTask(
-          {SyncDataKeys.event: SyncDataKeys.cmdTriggerNow});
-      isSyncing.value = true;
-      _setStatus('Manual sync triggered...');
-    } else {
-      _isRunning = false;
-      await start();
-    }
-  }
+  //   final bool running = await FlutterForegroundTask.isRunningService;
+  //   if (running) {
+  //     FlutterForegroundTask.sendDataToTask(
+  //         {SyncDataKeys.event: SyncDataKeys.cmdTriggerNow});
+  //     isSyncing.value = true;
+  //     _setStatus('Manual sync triggered...');
+  //   } else {
+  //     _isRunning = false;
+  //     await start();
+  //   }
+  // }
 
   // ── App lifecycle ─────────────────────────────────────────────────────────
 
@@ -281,7 +281,7 @@ class OfflineBackgroundSyncService {
 
   // ── Data arriving from task isolate ──────────────────────────────────────
 
-  void _onTaskData(Object data) {
+  void _onTaskData(Object data) async {
     if (data is! Map) return;
     final String event = data[SyncDataKeys.event] as String? ?? '';
 
@@ -304,7 +304,15 @@ class OfflineBackgroundSyncService {
             ? '⚠️ $remaining records pending — retry in ${_labelFor(intervalMinutes.value)}'
             : '✅ All synced — next check in ${_labelFor(intervalMinutes.value)}');
         break;
-
+      case SyncDataKeys.evtAuthFailed:
+        final int statusCode = data['statusCode'] as int? ?? 401;
+        isSyncing.value = false;
+        _setStatus('Session expired — please log in again.');
+        await LogService.writeLog(
+            message:
+                '$_tag Auth failure ($statusCode) received from isolate. Stopping service.');
+        await stop();
+        break;
       case SyncDataKeys.evtNoInternet:
         isSyncing.value = false;
         _setStatus(
