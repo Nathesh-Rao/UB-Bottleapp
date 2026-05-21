@@ -4,6 +4,8 @@ class OfflineDBConstants {
   OfflineDBConstants._();
 
   static String OFFLINE_PAGES_URL() {
+    return "https://raw.githubusercontent.com/amrith4agile/offline_sample_pages/refs/heads/main/offline_pages.json";
+
     String userEnteredUrl = AppStorage().retrieveValue(AppStorage.PROJECT_URL);
     if (!userEnteredUrl.startsWith('http')) {
       userEnteredUrl = 'https://$userEnteredUrl';
@@ -136,7 +138,7 @@ class OfflineDBConstants {
         $COL_ID INTEGER PRIMARY KEY AUTOINCREMENT,
         $COL_USERNAME TEXT,
         $COL_PROJECT_NAME TEXT,
-        $COL_REQUEST_JSON TEXT,
+        $COL_REQUEST_JSON TEXT UNIQUE,
         $COL_STATUS INTEGER,
         $COL_CREATED_AT TEXT
       );

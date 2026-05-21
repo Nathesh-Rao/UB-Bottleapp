@@ -46,6 +46,7 @@ import '../EssHomePage/AttendanceManagement/controller/AttendanceController.dart
 import '../Widgets/EmptyWidget.dart';
 
 class LandingPageController extends GetxController with WidgetsBindingObserver {
+  static LandingPageController get to => Get.find();
   final globalVariableController = Get.find<GlobalVariableController>();
   final MenuMorePageController menuMorePageController =
       Get.put(MenuMorePageController());
@@ -124,6 +125,9 @@ class LandingPageController extends GetxController with WidgetsBindingObserver {
     _startPostLoginSync();
   }
 
+  var isDataSourcefetchingOnStart = false.obs;
+  var totalDsCountOnStart = 0.obs;
+  var completedDsCountOnStart = 0.obs;
   void _startPostLoginSync() async {
     const String tag = "[OFFLINE_POSTLOGIN_001]";
 
@@ -134,12 +138,16 @@ class LandingPageController extends GetxController with WidgetsBindingObserver {
         message:
             "$tag[START] Post-login offline sync started. isOnline=$isOnline",
       );
-
+      isDataSourcefetchingOnStart.value = true;
       await OfflineDbModule.handlePostLogin(
         // username: await appStorage.retrieveValue(AppStorage.USER_NAME) ?? "",
         // projectName: globalVariableController.PROJECT_NAME.value,
         isInternetAvailable: isOnline,
-      );
+      ).then((_) {
+        isDataSourcefetchingOnStart.value = false;
+        totalDsCountOnStart.value = 0;
+        completedDsCountOnStart.value = 0;
+      });
 
       // await OfflineBackgroundSyncService.instance.start();
       LogService.writeLog(

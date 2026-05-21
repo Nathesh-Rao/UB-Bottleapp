@@ -212,11 +212,13 @@ class InwardEntryConsolidatedPage
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  onPressed: controller.isLoading.value
+                  onPressed: (controller.isSubmitButtonClicked.value ||
+                          controller.isLoading.value)
                       ? null
-                      : () {
+                      : () async {
                           // controller.uploadForm();
-                          controller.submit();
+                          controller.isSubmitButtonClicked.value = true;
+                          await controller.submit();
                         },
                   child: controller.isLoading.value
                       ? CupertinoActivityIndicator()

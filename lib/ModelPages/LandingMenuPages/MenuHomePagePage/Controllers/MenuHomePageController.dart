@@ -474,8 +474,7 @@ class MenuHomePageController extends GetxController {
   onClick_PunchIn() async {
     print(punchInResp);
     LoadingScreen.show();
-    var secretEncryptedKey =
-        await getEncryptedSecretKey(ExecuteApi.API_SECRETKEY_GET_DO_PUNCHIN);
+
     Position? currentLocation = await CommonMethods.getCurrentLocation();
     var latitude = currentLocation?.latitude ?? "";
     var longitude = currentLocation?.longitude ?? "";
@@ -538,8 +537,7 @@ class MenuHomePageController extends GetxController {
 
   onClick_PunchOut() async {
     LoadingScreen.show();
-    var secretEncryptedKey =
-        await getEncryptedSecretKey(ExecuteApi.API_SECRETKEY_GET_DO_PUNCHOUT);
+
     Position? currentLocation = await CommonMethods.getCurrentLocation();
     var latitude = currentLocation?.latitude ?? "";
     var longitude = currentLocation?.longitude ?? "";

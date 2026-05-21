@@ -4,9 +4,10 @@ import 'dart:convert';
 import 'package:ubbottleapp/Constants/AppStorage.dart';
 import 'package:ubbottleapp/Constants/CommonMethods.dart';
 import 'package:ubbottleapp/Constants/Const.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/submitData_APIResponseModel.dart';
 import 'package:ubbottleapp/Utils/ServerConnections/InternetConnectivity.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide Response;
 import 'package:http/http.dart' as http;
 
 import '../../ModelPages/LandingPage/Controller/LandingPageController.dart';
@@ -22,6 +23,7 @@ class ServerConnections {
   static const String API_VALIDATE_OTP = "api/v1/ValidateOTP";
   static const String API_RESEND_OTP = "api/v1/ResendOTP";
   static const String API_AX_START_SESSION = "api/v1/AxStartSession";
+  // static const String API_AX_START_SESSION = "api/v1/AxStartSession";
 
   static const String API_GET_APPSTATUS = "api/v1/ARMAppStatus";
   static const String API_ADDUSER = "api/v1/ARMAddUser";
@@ -304,6 +306,113 @@ class ServerConnections {
       }
 
     return "";
+  }
+
+  // postQueueToServer(
+  //     {String url = '',
+  //     var header = '',
+  //     String body = '',
+  //     String ClientID = '',
+  //     bool isBearer = false,
+  //     var show_errorSnackbar = true}) async {
+  //   var API_NAME = url.substring(url.lastIndexOf("/") + 1, url.length);
+  //   if (await _connectivity.connectionStatus)
+  //     try {
+  //       if (ClientID != '') _baseBody = _generateBody(ClientID.toLowerCase());
+  //       if (url == '') url = _baseUrl;
+  //       if (header == '') header = {"Content-Type": "application/json"};
+  //       if (body == '') body = _baseBody;
+  //       if (isBearer)
+  //         header = {
+  //           "Content-Type": "application/json",
+  //           'Authorization': 'Bearer ' +
+  //               appStorage.retrieveValue(AppStorage.TOKEN).toString(),
+  //         };
+  //       print("API_POST_URL: $url");
+  //       print("API_POST_BODY:" + body);
+  //       var response =
+  //           await client.post(Uri.parse(url), headers: header, body: body);
+  //       LogService.writeLog(
+  //           message:
+  //               "[^] [POST] URL:$url\nAPI_NAME: $API_NAME\nBody: $body\nStatusCode: ${response.statusCode}\nResponse: ${response.body}");
+  //       if (response.statusCode == 200) {
+  //         return response.body;
+  //       } else {
+  //         return '__AUTH_FAILED__${response.body}';
+  //       }
+  //     } catch (e) {
+  //       print("API_ERROR: $API_NAME: ${e.toString()}");
+  //       LogService.writeLog(
+  //           message:
+  //               "[ERROR] API_ERROR\nURL:$url\nAPI_NAME: $API_NAME\nBody: $body\nError: ${e.toString()}");
+
+  //       showErrorSnack(
+  //           title: "Error!",
+  //           message: e.toString(),
+  //           show_errorSnackbar: show_errorSnackbar);
+  //     }
+
+  //   return "__AUTH_FAILED__";
+  // }
+
+  Future<SubmitdataApiresponsemodel> postQueueToServer({
+    String url = '',
+    var header = '',
+    String body = '',
+    String ClientID = '',
+    bool isBearer = false,
+    var show_errorSnackbar = true,
+  }) async {
+    var API_NAME = url.substring(url.lastIndexOf("/") + 1, url.length);
+
+    if (await _connectivity.connectionStatus) {
+      try {
+        if (ClientID != '') _baseBody = _generateBody(ClientID.toLowerCase());
+        if (url == '') url = _baseUrl;
+        if (header == '') header = {"Content-Type": "application/json"};
+        if (body == '') body = _baseBody;
+        if (isBearer) {
+          header = {
+            "Content-Type": "application/json",
+            'Authorization':
+                'Bearer ${appStorage.retrieveValue(AppStorage.TOKEN)}',
+          };
+        }
+
+        print("API_POST_URL: $url");
+        print("API_POST_BODY: $body");
+
+        http.Response response =
+            await client.post(Uri.parse(url), headers: header, body: body);
+
+        LogService.writeLog(
+            message:
+                "[^] [POST] URL:$url\nAPI_NAME: $API_NAME\nBody: $body\nStatusCode: ${response.statusCode}\nResponse: ${response.body}");
+
+        // Return a Map containing both pieces of data
+        return SubmitdataApiresponsemodel.fromHttpResponse(response);
+      } catch (e) {
+        print("API_ERROR: $API_NAME: ${e.toString()}");
+        LogService.writeLog(
+            message:
+                "[ERROR] API_ERROR\nURL:$url\nAPI_NAME: $API_NAME\nBody: $body\nError: ${e.toString()}");
+
+        showErrorSnack(
+            title: "Error!",
+            message: e.toString(),
+            show_errorSnackbar: show_errorSnackbar);
+
+        return SubmitdataApiresponsemodel.failure(
+          message: e.toString(),
+          statusCode: 0,
+        );
+      }
+    }
+
+    return SubmitdataApiresponsemodel.failure(
+      message: "No Internet Connection",
+      statusCode: 500,
+    );
   }
 
   getFromServer(

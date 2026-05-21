@@ -109,6 +109,13 @@ class LandingPage extends StatelessWidget {
                     subtitle: "Reload lookup data",
                     onTap: offlineFormController.actionRefetchDatasources,
                   ),
+                  _simpleRow(
+                    icon: Icons.unarchive_rounded,
+                    color: Colors.teal,
+                    title: "Export Database",
+                    subtitle: "Backup offline DB for debugging",
+                    onTap: offlineFormController.actionExportDatabase,
+                  ),
                   // _simpleRow(
                   //   icon: Icons.restart_alt_rounded,
                   //   color: Colors.brown,
@@ -172,14 +179,7 @@ class LandingPage extends StatelessWidget {
                                     "Track user actions and system events",
                                 onTap: () => Get.to(() => AuditLogPage()),
                               ),
-                              _simpleRow(
-                                icon: Icons.unarchive_rounded,
-                                color: Colors.teal,
-                                title: "Export Database",
-                                subtitle: "Backup offline DB for debugging",
-                                onTap:
-                                    offlineFormController.actionExportDatabase,
-                              ),
+
                               _simpleRow(
                                 icon: Icons.archive_rounded,
                                 color: Colors.deepOrange,

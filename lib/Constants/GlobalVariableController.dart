@@ -10,4 +10,5 @@ class GlobalVariableController extends GetxController {
   var USER_ROLE = ''.obs;
   var OFFLINE_FORMS_COUNT = 0.obs;
   final RxBool autoSyncEnabled = false.obs;
+  final RxBool autoSyncMasterEnabled = false.obs;
 }

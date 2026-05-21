@@ -876,11 +876,23 @@ class OfflineFormController extends GetxController {
       _showNeedInternetDialog();
       return;
     }
+    var pendingCount = await OfflineDbModule.getPendingCount();
+    if (pendingCount == 0) {
+      await _confirm(
+        title: "No Pending Data",
+        message:
+            "There is no pending data available.\n\nYou can try saving new forms offline to use this feature",
+        okText: "Okay",
+        icon: Icons.indeterminate_check_box_outlined,
+        confirmColor: const Color.fromARGB(255, 235, 103, 37),
+      );
+      return;
+    }
 
     final ok = await _confirm(
       title: "Upload Pending Data",
       message:
-          "This will upload all locally saved records to the server.\n\nAre you sure you want to continue?",
+          "This will upload $pendingCount locally saved records to the server.\n\nAre you sure you want to continue?",
       okText: "Upload Now",
       icon: Icons.cloud_upload_rounded,
       confirmColor: const Color(0xFF2563EB),
@@ -900,7 +912,7 @@ class OfflineFormController extends GetxController {
         isInternetAvailable: true,
         progress: progressModel,
       );
-
+      log(resultMsg);
       // Get.back();
 
       // _showSimpleSuccessDialog(title: "Upload Complete", message: resultMsg);
@@ -918,9 +930,9 @@ class OfflineFormController extends GetxController {
         icon: const Icon(Icons.warning, color: Colors.white),
       );
     } finally {
+      log("progress complete called here 4");
       isLoading.value = false;
-      // Get.back();
-      progressModel.complete();
+      // progressModel.completeWithError(errorMsg: "errorMsg");
     }
   }
 
@@ -992,7 +1004,8 @@ class OfflineFormController extends GetxController {
           message: "$tag[STEP_2] Fetched ${pages.length} forms");
       progressModel.increment();
       progressModel.updateMessage("Step 3/3: Updating datasources...");
-      await OfflineDbModule.refreshAllDatasourcesFromDownloadedPages();
+      await OfflineDbModule.refreshAllDatasourcesFromDownloadedPages(
+          isrefetching: true);
       LogService.writeLog(message: "$tag[STEP_3] Datasources updated");
       refreshPendingCount();
       progressModel.increment();
@@ -1047,7 +1060,7 @@ class OfflineFormController extends GetxController {
       );
 
       await OfflineDbModule.refreshAllDatasourcesFromDownloadedPages(
-          progressModel: progressModel);
+          progressModel: progressModel, isrefetching: true);
 
       progressModel.complete();
     } catch (e) {

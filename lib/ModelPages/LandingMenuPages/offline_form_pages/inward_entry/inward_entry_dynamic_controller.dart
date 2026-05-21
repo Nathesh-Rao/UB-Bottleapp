@@ -48,6 +48,7 @@ class InwardEntryDynamicController extends GetxController {
   // ================== ERRORS (for later UI) ==================
   final errors = <String, String>{}.obs;
   var isLoading = false.obs;
+  var isSubmitButtonClicked = false.obs;
   @override
   void onInit() {
     super.onInit();
@@ -429,81 +430,284 @@ class InwardEntryDynamicController extends GetxController {
   //   }
   // }
 
-  void openSampleDetailsDialog() {
+  final RxSet<String> gridValidationErrors = <String>{}.obs;
+  final RxInt leastErrorSno = 0.obs;
+  bool validateAllGridSamples({bool showSnack = true}) {
+    gridValidationErrors.clear();
+    leastErrorSno.value = 0;
+    bool isValid = true;
+    final List gridFields = schema["fillgrids"]["fields"];
+    int? firstErrorSno;
+    for (int i = 0; i < sampleGridRows.length; i++) {
+      final row = sampleGridRows[i];
+      final sno = i + 1;
+
+      for (var entry in row.entries) {
+        final fieldName = entry.key;
+        final controller = entry.value;
+
+        final fieldDef = gridFields.firstWhere(
+          (e) => e["fld_name"] == fieldName,
+          orElse: () => null,
+        );
+
+        if (fieldDef != null) {
+          final bool allowEmpty = fieldDef["allowempty"] == 'T';
+
+          if (!allowEmpty && controller.text.trim().isEmpty) {
+            gridValidationErrors.add("${sno}_$fieldName");
+            isValid = false;
+            firstErrorSno ??= sno;
+          }
+        }
+      }
+    }
+    if (firstErrorSno != null) {
+      leastErrorSno.value = firstErrorSno;
+    }
+    if (!isValid && showSnack) {
+      Get.snackbar(
+        "Validation Error",
+        "Please fill all required fields marked in red.",
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+    if (leastErrorSno.value > 0) {
+      final int targetIndex = leastErrorSno.value - 1;
+
+      currentCardIndex.value = targetIndex;
+
+      if (pageController.hasClients) {
+        pageController.animateToPage(
+          targetIndex,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+        );
+      }
+    }
+    return isValid;
+  }
+
+  void _showIncompleteWarningDialog() {
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 10,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // --- ICON ---
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.orange,
+                  size: 40,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // --- TITLE ---
+              Text(
+                "Incomplete Fields",
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // --- REFINED COPYWRITING ---
+              Text(
+                "You have mandatory fields left to fill. \nWould you like to hide this form for now and complete it later?",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.black54,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 28),
+
+              // --- BUTTONS ---
+              Row(
+                children: [
+                  // 'NO' Button (Keep Editing)
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () =>
+                          Get.back(), // Closes just this warning dialog
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: BorderSide(
+                            color: MyColors.baseBlue), // Using your custom blue
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: Text(
+                        "No, Keep Editing",
+                        style: GoogleFonts.poppins(
+                          color: MyColors.baseBlue,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+
+                  // 'YES' Button (Hide Grid)
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Get.back();
+                        Get.back();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: MyColors.baseBlue,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: Text(
+                        "Yes, Hide for Now",
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void openSampleDetailsDialog({bool clearValidation = true}) {
     currentCardIndex.value = 0;
 
     final RxBool isGridView = (Get.width > 600).obs;
 
+    if (clearValidation) {
+      gridValidationErrors.clear();
+    }
     Get.dialog(
-      Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(16),
-        child: SizedBox(
-          height: Get.height * 0.9,
-          width: Get.width > 1000 ? 1000 : Get.width,
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                margin: const EdgeInsets.only(bottom: 10),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Chip(
-                      backgroundColor: const Color(0xFFEFF6FF),
-                      label: Obx(() => Text(
-                            isGridView.value
-                                ? "Total Samples: ${sampleGridRows.length}"
-                                : "Sample ${currentCardIndex.value + 1} of ${sampleGridRows.length}",
-                            style: GoogleFonts.poppins(
+      barrierDismissible: false,
+      PopScope(
+        canPop: false,
+        onPopInvoked: (didPop) {
+          if (didPop) return;
+
+          if (validateAllGridSamples()) {
+            Get.back();
+          }
+        },
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(16),
+          child: SizedBox(
+            height: Get.height * 0.9,
+            width: Get.width > 1000 ? 1000 : Get.width,
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Chip(
+                        backgroundColor: const Color(0xFFEFF6FF),
+                        label: Obx(() => Text(
+                              isGridView.value
+                                  ? "Total Samples: ${sampleGridRows.length}"
+                                  : "Sample ${currentCardIndex.value + 1} of ${sampleGridRows.length}",
+                              style: GoogleFonts.poppins(
+                                color: MyColors.baseBlue,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            )),
+                      ),
+                      const Spacer(),
+                      Obx(() => IconButton(
+                            onPressed: () => isGridView.toggle(),
+                            tooltip: isGridView.value
+                                ? "Switch to Single View"
+                                : "Switch to Grid View",
+                            icon: Icon(
+                              isGridView.value
+                                  ? Icons
+                                      .view_carousel_rounded // Icon for Pager
+                                  : Icons.grid_view_rounded, // Icon for Grid
                               color: MyColors.baseBlue,
-                              fontWeight: FontWeight.w600,
                             ),
                           )),
-                    ),
-                    const Spacer(),
-                    Obx(() => IconButton(
-                          onPressed: () => isGridView.toggle(),
-                          tooltip: isGridView.value
-                              ? "Switch to Single View"
-                              : "Switch to Grid View",
-                          icon: Icon(
-                            isGridView.value
-                                ? Icons.view_carousel_rounded // Icon for Pager
-                                : Icons.grid_view_rounded, // Icon for Grid
-                            color: MyColors.baseBlue,
-                          ),
-                        )),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: () => Get.back(),
-                      child: Chip(
-                        backgroundColor: const Color(0xFFFEF2F2),
-                        label: Text(
-                          "Close",
-                          style: GoogleFonts.poppins(
-                            color: MyColors.baseRed,
-                            fontWeight: FontWeight.w600,
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () {
+                          if (!validateAllGridSamples(showSnack: false)) {
+                            _showIncompleteWarningDialog();
+                          } else {
+                            Get.back();
+                          }
+                        },
+                        child: Chip(
+                          backgroundColor: const Color(0xFFFEF2F2),
+                          label: Text(
+                            "Close",
+                            style: GoogleFonts.poppins(
+                              color: MyColors.baseRed,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              Expanded(
-                child: Obx(() {
-                  if (isGridView.value) {
-                    return _buildTabletGridView();
-                  } else {
-                    return _buildMobilePagerView();
-                  }
-                }),
-              ),
-            ],
+                Expanded(
+                  child: Obx(() {
+                    if (isGridView.value) {
+                      return _buildTabletGridView();
+                    } else {
+                      return _buildMobilePagerView();
+                    }
+                  }),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -577,14 +781,29 @@ class InwardEntryDynamicController extends GetxController {
                   child: FloatingActionButton.small(
                     heroTag: "btn_next",
                     backgroundColor: MyColors.baseBlue,
-                    onPressed:
-                        currentCardIndex.value < sampleGridRows.length - 1
-                            ? () {
-                                pageController.nextPage(
-                                    duration: const Duration(milliseconds: 300),
-                                    curve: Curves.easeInOut);
-                              }
-                            : null,
+                    onPressed: currentCardIndex.value <
+                            sampleGridRows.length - 1
+                        ? () {
+                            bool isCurrentPageValid =
+                                validateSinglePage(currentCardIndex.value);
+
+                            if (isCurrentPageValid) {
+                              pageController.nextPage(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut);
+                            } else {
+                              Get.snackbar(
+                                "Missing Fields",
+                                "Please fill all required fields before proceeding.",
+                                backgroundColor: MyColors.baseRed,
+                                colorText: Colors.white,
+                                snackPosition: SnackPosition.BOTTOM,
+                                margin: const EdgeInsets.all(12),
+                                duration: const Duration(seconds: 2),
+                              );
+                            }
+                          }
+                        : null,
                     child: const Icon(Icons.arrow_forward, color: Colors.white),
                   ),
                 ),
@@ -596,174 +815,104 @@ class InwardEntryDynamicController extends GetxController {
     );
   }
 
+  bool validateSinglePage(int pageIndex) {
+    bool isValid = true;
+
+    final row = sampleGridRows[pageIndex];
+    final sno = pageIndex + 1;
+    final List gridFields = schema["fillgrids"]["fields"];
+
+    for (var entry in row.entries) {
+      final fieldName = entry.key;
+      final controller = entry.value;
+
+      final fieldDef = gridFields.firstWhere(
+        (e) => e["fld_name"] == fieldName,
+        orElse: () => null,
+      );
+
+      if (fieldDef != null) {
+        final bool allowEmpty = fieldDef["allowempty"] == 'T';
+
+        if (!allowEmpty && controller.text.trim().isEmpty) {
+          gridValidationErrors.add("${sno}_$fieldName");
+          isValid = false;
+        }
+      }
+    }
+
+    // if (!isValid) {
+    //   updateLeastErrorSno();
+    // }
+
+    return isValid;
+  }
+
   Widget _buildSampleFormPage(
       Map<String, TextEditingController> model, int sno) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Material(
-        color: Colors.white,
-        elevation: 2,
-        borderRadius: BorderRadius.circular(16),
-        child: Column(
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                children: [
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      "ID: $sno",
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                  const Spacer(),
-                  const Icon(Icons.edit_note, size: 18, color: Colors.grey),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-
-            Expanded(
-              child: ListView(
+      child: Obx(
+        () => Material(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: leastErrorSno.value == sno
+                ? BorderSide(
+                    color: MyColors.baseRed,
+                  )
+                : BorderSide.none,
+          ),
+          color: Colors.white,
+          elevation: 2,
+          child: Column(
+            children: [
+              // Header
+              Padding(
                 padding: const EdgeInsets.all(12),
-                primary: false,
-                children: [
-                  ...model.entries.map((e) {
-                    return _compactField(e.key, e.value, model);
-                  }).toList(),
-                ],
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        "ID: $sno",
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    const Spacer(),
+                    const Icon(Icons.edit_note, size: 18, color: Colors.grey),
+                  ],
+                ),
               ),
-            ),
-          ],
+              const Divider(height: 1),
+
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(12),
+                  primary: false,
+                  children: [
+                    ...model.entries.map((e) {
+                      return _compactField(e.key, e.value, model, sno);
+                    }).toList(),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // Widget _compactField(
-  //   String fieldName,
-  //   TextEditingController controller,
-  //   Map<String, TextEditingController> rowMap,
-  // ) {
-  //   // 1. DYNAMIC LOOKUP: Find definition by name
-  //   final List gridFields = schema["fillgrids"]["fields"];
-  //   final fieldDef = gridFields.firstWhere(
-  //     (e) => e["fld_name"] == fieldName,
-  //     orElse: () => null,
-  //   );
-
-  //   if (fieldDef == null) return const SizedBox.shrink();
-
-  //   // 2. EXTRACT CONFIG
-  //   final String label = fieldDef["fld_caption"] ?? fieldName;
-  //   final String type = fieldDef["fld_type"]?.toString().toLowerCase() ??
-  //       ""; // e.g. 'date', 'dd', 'n'
-  //   final String dataType = fieldDef["data_type"]?.toString().toLowerCase() ??
-  //       ""; // e.g. 'n', 'd', 's'
-  //   final Color accent = const Color(0xFF2563EB);
-
-  //   // 3. DETERMINE BEHAVIOR FLAGS
-  //   final bool isDropdown = type == "dd";
-  //   final bool isDate = type == "date" || dataType == "d";
-  //   final bool isTime = type == "time" || dataType == "t";
-  //   final bool isYear = type == "year";
-  //   final bool isNumeric = type == "n" || dataType == "n";
-
-  //   // Readonly logic: Dates/Years are read-only (user must pick), others are editable
-  //   final bool isReadOnly =
-  //       isDate || isYear || isTime || (fieldDef["readonly"] == "T");
-
-  //   return Container(
-  //     margin: const EdgeInsets.only(bottom: 8),
-  //     height: 44,
-  //     decoration: BoxDecoration(
-  //       color: Colors.white,
-  //       borderRadius: BorderRadius.circular(10),
-  //       border: Border.all(color: const Color(0xFFE2E8F0)),
-  //     ),
-  //     child: Row(
-  //       children: [
-  //         // --- LABEL ---
-  //         Container(
-  //           width: 110,
-  //           height: double.infinity,
-  //           decoration: BoxDecoration(
-  //             color: accent.withOpacity(0.10),
-  //             borderRadius:
-  //                 const BorderRadius.horizontal(left: Radius.circular(10)),
-  //           ),
-  //           alignment: Alignment.centerLeft,
-  //           padding: const EdgeInsets.symmetric(horizontal: 10),
-  //           child: Text(
-  //             label.toUpperCase(),
-  //             maxLines: 1,
-  //             overflow: TextOverflow.ellipsis,
-  //             style: TextStyle(
-  //               fontSize: 12,
-  //               fontWeight: FontWeight.w600,
-  //               color: accent,
-  //             ),
-  //           ),
-  //         ),
-
-  //         // --- INPUT AREA ---
-  //         Expanded(
-  //           child: isDropdown
-  //               ? _buildGridDropdown(fieldDef, controller)
-  //               : TextFormField(
-  //                   controller: controller,
-  //                   keyboardType:
-  //                       isNumeric ? TextInputType.number : TextInputType.text,
-  //                   readOnly: isReadOnly,
-  //                   decoration: const InputDecoration(
-  //                     isDense: true,
-  //                     border: InputBorder.none,
-  //                     hintText: "-",
-  //                     contentPadding:
-  //                         EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-  //                   ),
-  //                   onTap: () async {
-  //                     if (isReadOnly && !isDate && !isYear && !isTime)
-  //                       return; // Standard read-only check
-
-  //                     // A. NUMERIC HANDLING (Clear '0' on tap for better UX)
-  //                     if (isNumeric) {
-  //                       if (controller.text == "0") {
-  //                         controller.text = "";
-  //                       }
-  //                     }
-
-  //                     // B. DATE PICKER
-  //                     if (isDate) {
-  //                       await _handleDatePicker(controller, rowMap);
-  //                     }
-  //                     // C. YEAR PICKER
-  //                     else if (isYear) {
-  //                       await _handleYearPicker(controller);
-  //                     }
-  //                     // D. TIME PICKER
-  //                     else if (isTime) {
-  //                       await _handleTimePicker(controller);
-  //                     }
-  //                   },
-  //                 ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
   Widget _compactField(
     String fieldName,
     TextEditingController controller,
     Map<String, TextEditingController> rowMap,
+    int sno,
   ) {
     // 1. CONFIG: Find definition
     final List gridFields = schema["fillgrids"]["fields"];
@@ -780,6 +929,7 @@ class InwardEntryDynamicController extends GetxController {
         ""; // c, n, d, dd, m, year, time
     final bool isReadOnlyConfig = fieldDef["readonly"] == "T";
     final Color accent = const Color(0xFF2563EB);
+    final bool allowEmpty = fieldDef["allowempty"] == 'T';
 
     // 3. IDENTIFY SPECIFIC TYPES
     final bool isDropdown = type == "dd";
@@ -791,165 +941,194 @@ class InwardEntryDynamicController extends GetxController {
     final bool isMemo = type == "m";
     final bool isCheckbox = type == "cb";
 
-    // 4. READ-ONLY LOGIC
-    // Pickers are read-only for typing, but clickable.
     final bool isPicker = isDate || isTime || isYear;
     final bool isFieldReadOnly = isReadOnlyConfig || isPicker;
 
-    // 5. RENDER CHECKBOX (Special Case: Doesn't use standard text field box)
+    final String errorKey = "${sno}_$fieldName";
+
     if (isCheckbox) {
-      return _buildCompactCheckbox(label, controller, isReadOnlyConfig);
+      return _buildCompactCheckbox(
+          label, controller, isReadOnlyConfig, errorKey);
     }
 
-    // 6. RENDER STANDARD FIELD
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      height: 44,
-      decoration: BoxDecoration(
-        color: isReadOnlyConfig ? const Color(0xFFF8FAFC) : Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Row(
-        children: [
-          // --- LABEL ---
-          Container(
-            width: 110,
-            height: double.infinity,
-            decoration: BoxDecoration(
-              color: accent.withOpacity(0.10),
-              borderRadius:
-                  const BorderRadius.horizontal(left: Radius.circular(10)),
-            ),
-            alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Text(
-              label.toUpperCase(),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: accent,
+    return Obx(() {
+      final bool hasError = gridValidationErrors.contains(errorKey);
+      return Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        height: 44,
+        decoration: BoxDecoration(
+          color: isReadOnlyConfig ? const Color(0xFFF8FAFC) : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: hasError ? Colors.red : const Color(0xFFE2E8F0),
+            width: hasError ? 1.5 : 1.0,
+          ),
+        ),
+        child: Row(
+          children: [
+            // --- LABEL ---
+            Container(
+              width: 110,
+              height: double.infinity,
+              decoration: BoxDecoration(
+                color: accent.withOpacity(0.10),
+                borderRadius:
+                    const BorderRadius.horizontal(left: Radius.circular(10)),
+              ),
+              alignment: Alignment.centerLeft,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Text(
+                label.toUpperCase(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: accent,
+                ),
               ),
             ),
-          ),
 
-          // --- INPUT AREA ---
-          Expanded(
-            child: isDropdown
-                ? _buildGridDropdown(fieldDef, controller)
-                : TextFormField(
-                    controller: controller,
-                    // A. KEYBOARD
-                    keyboardType: isNumeric
-                        ? const TextInputType.numberWithOptions(decimal: true)
-                        : (isMemo
-                            ? TextInputType.multiline
-                            : TextInputType.text),
-
-                    // B. FORMATTERS (Numbers only)
-                    inputFormatters: [
-                      if (isNumeric)
-                        FilteringTextInputFormatter.allow(
-                            RegExp(r'^\d+\.?\d{0,2}')),
-                    ],
-
-                    // C. BEHAVIOR
-                    readOnly: isFieldReadOnly,
-                    maxLines: 1, // Keep grid row compact even for Memo
-                    style: TextStyle(
-                      color: isReadOnlyConfig ? Colors.grey : Colors.black87,
-                      fontSize: 13,
-                    ),
-                    decoration: const InputDecoration(
-                      isDense: true,
-                      border: InputBorder.none,
-                      hintText: "-",
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 12, vertical: 13),
-                    ),
-                    onTap: () async {
-                      if (isReadOnlyConfig) return;
-
-                      // Clear "0" for better UX on numeric fields
-                      if (isNumeric && controller.text == "0") {
-                        controller.text = "";
-                      }
-
-                      // PICKERS
-                      if (isDate)
-                        await _handleDatePicker(controller, rowMap);
-                      else if (isYear)
-                        await _handleYearPicker(controller);
-                      else if (isTime) await _handleTimePicker(controller);
-                    },
+            // --- INPUT AREA ---
+            allowEmpty
+                ? SizedBox.shrink()
+                : Container(
+                    width: 2,
+                    color: MyColors.baseRed,
                   ),
-          ),
-        ],
-      ),
-    );
+            Expanded(
+              child: isDropdown
+                  ? _buildGridDropdown(fieldDef, controller, errorKey)
+                  : TextFormField(
+                      controller: controller,
+                      // A. KEYBOARD
+                      keyboardType: isNumeric
+                          ? const TextInputType.numberWithOptions(decimal: true)
+                          : (isMemo
+                              ? TextInputType.multiline
+                              : TextInputType.text),
+
+                      // B. FORMATTERS (Numbers only)
+                      inputFormatters: [
+                        if (isNumeric)
+                          FilteringTextInputFormatter.allow(
+                              RegExp(r'^\d+\.?\d{0,2}')),
+                      ],
+
+                      // C. BEHAVIOR
+                      readOnly: isFieldReadOnly,
+                      maxLines: 1, // Keep grid row compact even for Memo
+                      style: TextStyle(
+                        color: isReadOnlyConfig ? Colors.grey : Colors.black87,
+                        fontSize: 13,
+                      ),
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        border: InputBorder.none,
+                        hintText: "-",
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+                      ),
+
+                      onChanged: (val) {
+                        if (hasError) gridValidationErrors.remove(errorKey);
+                      },
+                      onTap: () async {
+                        if (isReadOnlyConfig) return;
+
+                        // Clear "0" for better UX on numeric fields
+                        if (isNumeric && controller.text == "0") {
+                          controller.text = "";
+                        }
+
+                        // PICKERS
+                        if (isDate)
+                          await _handleDatePicker(controller, rowMap, sno);
+                        else if (isYear)
+                          await _handleYearPicker(controller);
+                        else if (isTime) await _handleTimePicker(controller);
+
+                        if (hasError && controller.text.isNotEmpty) {
+                          gridValidationErrors.remove(errorKey);
+                        }
+                      },
+                    ),
+            ),
+          ],
+        ),
+      );
+    });
   }
 
   // --- Helper for Checkbox in Grid ---
-  Widget _buildCompactCheckbox(
-      String label, TextEditingController controller, bool isReadOnly) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      height: 44,
-      child: Row(
-        children: [
-          // Reuse label style for consistency
-          Container(
-            width: 110,
-            height: double.infinity,
-            decoration: BoxDecoration(
-              color: const Color(0xFF2563EB).withOpacity(0.10),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Text(
-              label.toUpperCase(),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF2563EB)),
-            ),
-          ),
-          const SizedBox(width: 12),
-          // Checkbox Widget
-          ValueListenableBuilder(
-            valueListenable: controller,
-            builder: (context, value, child) {
-              final isChecked =
-                  value.text.toLowerCase() == "true" || value.text == "1";
-              return Transform.scale(
-                scale: 1.1,
-                child: Checkbox(
-                  value: isChecked,
-                  activeColor: const Color(0xFF2563EB),
-                  onChanged: isReadOnly
-                      ? null
-                      : (v) {
-                          controller.text =
-                              (v == true).toString(); // Saves "true" or "false"
-                        },
+  Widget _buildCompactCheckbox(String label, TextEditingController controller,
+      bool isReadOnly, String errorKey) {
+    return Obx(
+      () {
+        final bool hasError = gridValidationErrors.contains(errorKey);
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          height: 44,
+          child: Row(
+            children: [
+              // Reuse label style for consistency
+              Container(
+                width: 110,
+                height: double.infinity,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2563EB).withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: hasError ? Colors.red : Colors.transparent,
+                    width: hasError ? 1.5 : 1.0,
+                  ),
                 ),
-              );
-            },
+                alignment: Alignment.centerLeft,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Text(
+                  label.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF2563EB)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Checkbox Widget
+              ValueListenableBuilder(
+                valueListenable: controller,
+                builder: (context, value, child) {
+                  final isChecked =
+                      value.text.toLowerCase() == "true" || value.text == "1";
+                  return Transform.scale(
+                    scale: 1.1,
+                    child: Checkbox(
+                      value: isChecked,
+                      activeColor: const Color(0xFF2563EB),
+                      onChanged: isReadOnly
+                          ? null
+                          : (v) {
+                              controller.text = (v == true)
+                                  .toString(); // Saves "true" or "false"
+                            },
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  // --- HELPER HANDLERS ---
-
-  Future<void> _handleDatePicker(TextEditingController controller,
-      Map<String, TextEditingController> rowMap) async {
+  Future<void> _handleDatePicker(
+    TextEditingController controller,
+    Map<String, TextEditingController> rowMap,
+    int sno, // <--- Add sno here
+  ) async {
     final d = await showDatePicker(
       context: Get.context!,
       firstDate: DateTime(2000),
@@ -961,9 +1140,6 @@ class InwardEntryDynamicController extends GetxController {
       controller.text =
           "${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}";
 
-      // DYNAMIC YEAR AUTO-FILL
-      // We loop through the row to see if there is ANY field with type 'year'
-      // If found, we auto-populate it.
       final List gridFields = schema["fillgrids"]["fields"];
 
       for (var entry in rowMap.entries) {
@@ -971,8 +1147,12 @@ class InwardEntryDynamicController extends GetxController {
             orElse: () => null);
 
         if (fDef != null && fDef["fld_type"] == "year") {
-          // Auto-fill the year field if it's currently empty or we want to overwrite
           entry.value.text = d.year.toString();
+
+          final String yearErrorKey = "${sno}_${entry.key}";
+          if (gridValidationErrors.contains(yearErrorKey)) {
+            gridValidationErrors.remove(yearErrorKey);
+          }
         }
       }
     }
@@ -1004,83 +1184,11 @@ class InwardEntryDynamicController extends GetxController {
     }
   }
 
-  // Widget _buildGridDropdown(
-  //     Map<String, dynamic> fieldDef, TextEditingController controller) {
-  //   final String dsName = fieldDef["datasource"] ?? "";
-
-  //   if (dsName.isEmpty) {
-  //     return const Padding(
-  //       padding: EdgeInsets.only(left: 12),
-  //       child: Align(
-  //           alignment: Alignment.centerLeft, child: Text("No Datasource")),
-  //     );
-  //   }
-
-  //   return FutureBuilder<List<Map<String, dynamic>>>(
-  //     future: OfflineDbModule.getDatasourceOptions(
-  //       transId: schema["transid"],
-  //       datasource: dsName,
-  //     ),
-  //     builder: (context, snapshot) {
-  //       if (!snapshot.hasData) {
-  //         return const Center(
-  //             child: SizedBox(
-  //                 height: 15,
-  //                 width: 15,
-  //                 child: CircularProgressIndicator(
-  //                   value: 40,
-  //                 )));
-  //       }
-
-  //       final options = snapshot.data!;
-
-  //       return ValueListenableBuilder<TextEditingValue>(
-  //         valueListenable: controller,
-  //         builder: (context, value, child) {
-  //           final currentText = value.text;
-
-  //           final bool isValidOption = options
-  //               .any((e) => e[fieldDef["fld_name"]]?.toString() == currentText);
-
-  //           return DropdownButtonHideUnderline(
-  //             child: DropdownButton<String>(
-  //               isExpanded: true,
-  //               value: isValidOption ? currentText : null,
-  //               hint: const Padding(
-  //                 padding: EdgeInsets.only(left: 12.0),
-  //                 child: Text("Select",
-  //                     style: TextStyle(color: Colors.grey, fontSize: 13)),
-  //               ),
-  //               padding: const EdgeInsets.symmetric(horizontal: 12),
-  //               items: options.map((item) {
-  //                 final String key = fieldDef["fld_name"];
-  //                 String val = item[key]?.toString() ?? "";
-
-  //                 if (val.isEmpty && item.values.isNotEmpty) {
-  //                   val = item.values.last.toString();
-  //                 }
-
-  //                 return DropdownMenuItem<String>(
-  //                   value: val,
-  //                   child: Text(val,
-  //                       style: GoogleFonts.poppins(
-  //                           fontSize: 13, fontWeight: FontWeight.w500)),
-  //                 );
-  //               }).toList(),
-  //               onChanged: (newValue) {
-  //                 if (newValue != null) {
-  //                   controller.text = newValue;
-  //                 }
-  //               },
-  //             ),
-  //           );
-  //         },
-  //       );
-  //     },
-  //   );
-  // }
   Widget _buildGridDropdown(
-      Map<String, dynamic> fieldDef, TextEditingController controller) {
+    Map<String, dynamic> fieldDef,
+    TextEditingController controller,
+    String errorKey,
+  ) {
     final String dsName = fieldDef["datasource"] ?? "";
 
     if (dsName.isEmpty) {
@@ -1148,6 +1256,9 @@ class InwardEntryDynamicController extends GetxController {
                 onChanged: (newValue) {
                   if (newValue != null) {
                     controller.text = newValue;
+                    if (gridValidationErrors.contains(errorKey)) {
+                      gridValidationErrors.remove(errorKey);
+                    }
                   }
                 },
               ),
@@ -1209,13 +1320,30 @@ class InwardEntryDynamicController extends GetxController {
     final ok = await validateForm();
 
     if (!ok) {
+      // Get.snackbar(
+      //   "Validation Error",
+      //   "Please fix the highlighted fields",
+      //   snackPosition: SnackPosition.BOTTOM,
+      // );
+
       Get.snackbar(
-        "Validation Error",
-        "Please fix the highlighted fields",
+        "Missing Fields",
+        "Please fill all required fields before proceeding.",
+        backgroundColor: MyColors.baseRed,
+        colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(12),
+        duration: const Duration(seconds: 2),
       );
       return;
     }
+    final gridOk = validateAllGridSamples();
+
+    if (!gridOk) {
+      openSampleDetailsDialog(clearValidation: false);
+      return;
+    }
+
     dc1SubmitFormJson = buildDc1SubmitFormJson();
     // mainFormJson = buildMainFormJson();
     // sampleGridJson = buildSampleGridJson();
@@ -1438,16 +1566,21 @@ class InwardEntryDynamicController extends GetxController {
     }
   }
 
-  submit() {
-    if (validateImages()) {
-      submitPage();
-    } else {
-      Get.snackbar("Missing Images",
-          "Please add at least one image for the highlighted items.",
-          backgroundColor: Colors.redAccent,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM,
-          margin: EdgeInsets.all(16));
+  Future<void> submit() async {
+    try {
+      if (validateImages()) {
+        await submitPage();
+      } else {
+        Get.snackbar("Missing Images",
+            "Please add at least one image for the highlighted items.",
+            backgroundColor: Colors.redAccent,
+            colorText: Colors.white,
+            snackPosition: SnackPosition.BOTTOM,
+            margin: EdgeInsets.all(16));
+      }
+    } catch (e) {
+    } finally {
+      isSubmitButtonClicked.value = false;
     }
   }
 

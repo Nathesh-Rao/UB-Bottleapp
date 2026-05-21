@@ -747,7 +747,7 @@ class LoginController extends GetxController {
 
             await OfflineDbModule.logAudit(
               action: "LOGIN_ONLINE",
-              response: json.toString(),
+              response: "LOGIN SUCCESS",
               remarks:
                   "User [${userNameController.text.toString().trim()}] logged in successfully via Server.",
             );
@@ -764,6 +764,17 @@ class LoginController extends GetxController {
             } else {
               globalVariableController.autoSyncEnabled.value =
                   await AppStorage().retrieveValue(AppStorage.AUTO_SYNC);
+            }
+
+            if (await AppStorage().retrieveValue(AppStorage.AUTO_SYNC_MASTER) ==
+                null) {
+              AppStorage().storeValue(AppStorage.AUTO_SYNC_MASTER, true);
+              OfflineDbModule.autoSyncMaster =
+                  globalVariableController.autoSyncMasterEnabled.value = true;
+            } else {
+              OfflineDbModule.autoSyncMaster = globalVariableController
+                      .autoSyncMasterEnabled.value =
+                  await AppStorage().retrieveValue(AppStorage.AUTO_SYNC_MASTER);
             }
             await OfflineConfigService.fetchAndStore();
             await OfflineBackgroundSyncService.instance.start();

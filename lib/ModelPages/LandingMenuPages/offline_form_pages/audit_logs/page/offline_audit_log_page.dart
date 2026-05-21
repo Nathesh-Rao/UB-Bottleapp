@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/audit_logs/controller/offline_audit_log_controller.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_constants.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_module.dart';
 
 // ─── Colors ───────────────────────────────────────────────────────────────────
 
@@ -96,6 +97,14 @@ class _AuditLogPageState extends State<AuditLogPage> {
         ),
       ),
       actions: [
+        IconButton(
+            onPressed: () {
+              OfflineDbModule.pushAuditLogsToServer(isInternetAvailable: true);
+            },
+            icon: Icon(
+              Icons.refresh,
+              color: Colors.green,
+            )),
         Padding(
           padding: const EdgeInsets.only(right: 12),
           child: IconButton(

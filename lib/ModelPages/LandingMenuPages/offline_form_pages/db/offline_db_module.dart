@@ -3,20 +3,17 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:intl/intl.dart';
 import 'package:ubbottleapp/Constants/AppStorage.dart';
 import 'package:ubbottleapp/Constants/Const.dart';
 import 'package:ubbottleapp/Constants/GlobalVariableController.dart';
-import 'package:ubbottleapp/ModelPages/InApplicationWebView/controller/webview_controller.dart';
-import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/auto_sync/offline_background_sync_service.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/auto_sync/offline_sync_task_handler.dart';
-import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/data_source_model.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/form_page_model.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/submitData_APIResponseModel.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/sync_progress_model.dart';
-import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/widgets/sync_progress_dialog.dart';
 import 'package:ubbottleapp/ModelPages/LandingPage/Controller/LandingPageController.dart';
 import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
 import 'package:ubbottleapp/Utils/ServerConnections/ExecuteApi.dart';
-import 'package:ubbottleapp/Utils/ServerConnections/InternetConnectivity.dart';
 import 'package:ubbottleapp/Utils/ServerConnections/ServerConnections.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -29,7 +26,7 @@ import 'offline_db_constants.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 
-enum SubmitStatus { success, savedOffline, apiFailure }
+enum SubmitStatus { success, savedOffline, apiFailure, sqlFailure }
 
 class OfflineDbModule {
   OfflineDbModule._();
@@ -39,7 +36,7 @@ class OfflineDbModule {
   // INIT
 
   static var autoSync = false;
-
+  static var autoSyncMaster = false;
   static Future<bool> toggleAutoSync() async {
     var appstrg = AppStorage();
 
@@ -57,13 +54,34 @@ class OfflineDbModule {
     return newValue;
   }
 
+  static Future<bool> toggleAutoSyncMaster() async {
+    var appstrg = AppStorage();
+
+    bool current =
+        await appstrg.retrieveValue(AppStorage.AUTO_SYNC_MASTER) ?? false;
+
+    bool newValue = !current;
+    globalVariableController.autoSyncMasterEnabled.value = newValue;
+    await appstrg.storeValue(AppStorage.AUTO_SYNC_MASTER, newValue);
+    autoSyncMaster = newValue;
+    await logAudit(
+      action: "TOGGLE_AUTOSYNC_MASTER",
+      remarks: "AutoSyncMaster changed to: $newValue",
+    );
+    return newValue;
+  }
+
   static Future<void> init() async {
     autoSync = await AppStorage().retrieveValue(AppStorage.AUTO_SYNC) ?? false;
+
+    autoSyncMaster =
+        await AppStorage().retrieveValue(AppStorage.AUTO_SYNC_MASTER) ?? true;
+    // globalVariableController.autoSyncMasterEnabled.value = autoSyncMaster;
     final dbPath = join(await getDatabasesPath(), 'offline_forms.db');
 
     _db = await openDatabase(
       dbPath,
-      version: 6, // ← bumped from 5 → 6
+      version: 1, // ← bumped from 5 → 6
       onCreate: (db, _) async {
         await _createTables(db);
       },
@@ -73,56 +91,56 @@ class OfflineDbModule {
           message: "$tag[START] Upgrading DB $oldVersion → $newVersion",
         );
 
-        if (oldVersion < 5) {
-          await db.execute(OfflineDBConstants.CREATE_AUDIT_LOGS_TABLE);
-          LogService.writeLog(message: "$tag[V5] Audit logs table ensured.");
-        }
+        // if (oldVersion < 5) {
+        //   await db.execute(OfflineDBConstants.CREATE_AUDIT_LOGS_TABLE);
+        //   LogService.writeLog(message: "$tag[V5] Audit logs table ensured.");
+        // }
 
-        if (oldVersion < 6) {
-          try {
-            await db.execute(
-              'ALTER TABLE ${OfflineDBConstants.TABLE_AUDIT_LOGS} '
-              'ADD COLUMN ${OfflineDBConstants.COL_IS_SYNCED} INTEGER NOT NULL DEFAULT 0',
-            );
-            LogService.writeLog(
-              message:
-                  "$tag[V6] Added '${OfflineDBConstants.COL_IS_SYNCED}' to audit_logs.",
-            );
-          } catch (e) {
-            LogService.writeLog(
-              message: "$tag[V6][SKIP] is_synced already present: $e",
-            );
-          }
+        // if (oldVersion < 6) {
+        // try {
+        //   await db.execute(
+        //     'ALTER TABLE ${OfflineDBConstants.TABLE_AUDIT_LOGS} '
+        //     'ADD COLUMN ${OfflineDBConstants.COL_IS_SYNCED} INTEGER NOT NULL DEFAULT 0',
+        //   );
+        //   LogService.writeLog(
+        //     message:
+        //         "$tag[V6] Added '${OfflineDBConstants.COL_IS_SYNCED}' to audit_logs.",
+        //   );
+        // } catch (e) {
+        //   LogService.writeLog(
+        //     message: "$tag[V6][SKIP] is_synced already present: $e",
+        //   );
+        // }
 
-          try {
-            await db.execute(
-              'ALTER TABLE ${OfflineDBConstants.TABLE_OFFLINE_USER} '
-              'ADD COLUMN ${OfflineDBConstants.COL_LAST_SYNCED} TEXT',
-            );
-            LogService.writeLog(
-              message:
-                  "$tag[V6] Added '${OfflineDBConstants.COL_LAST_SYNCED}' to offline_user.",
-            );
-          } catch (e) {
-            LogService.writeLog(
-              message: "$tag[V6][SKIP] last_synced already present: $e",
-            );
-          }
-        }
+        //   try {
+        //     await db.execute(
+        //       'ALTER TABLE ${OfflineDBConstants.TABLE_OFFLINE_USER} '
+        //       'ADD COLUMN ${OfflineDBConstants.COL_LAST_SYNCED} TEXT',
+        //     );
+        //     LogService.writeLog(
+        //       message:
+        //           "$tag[V6] Added '${OfflineDBConstants.COL_LAST_SYNCED}' to offline_user.",
+        //     );
+        //   } catch (e) {
+        //     LogService.writeLog(
+        //       message: "$tag[V6][SKIP] last_synced already present: $e",
+        //     );
+        //   }
+        // }
 
         // Audit the upgrade itself
-        try {
-          await db.insert(OfflineDBConstants.TABLE_AUDIT_LOGS, {
-            OfflineDBConstants.COL_USERNAME: 'system',
-            OfflineDBConstants.COL_PROJECT_NAME: 'system',
-            OfflineDBConstants.COL_ACTION: 'DB_UPGRADE',
-            OfflineDBConstants.COL_REMARKS:
-                'Upgraded from $oldVersion to $newVersion.',
-            OfflineDBConstants.COL_CREATED_AT: DateTime.now().toIso8601String(),
-            OfflineDBConstants.COL_IS_ERROR: 0,
-            OfflineDBConstants.COL_IS_SYNCED: 0, // new column — default 0
-          });
-        } catch (_) {}
+        // try {
+        //   await db.insert(OfflineDBConstants.TABLE_AUDIT_LOGS, {
+        //     OfflineDBConstants.COL_USERNAME: 'system',
+        //     OfflineDBConstants.COL_PROJECT_NAME: 'system',
+        //     OfflineDBConstants.COL_ACTION: 'DB_UPGRADE',
+        //     OfflineDBConstants.COL_REMARKS:
+        //         'Upgraded from $oldVersion to $newVersion.',
+        //     OfflineDBConstants.COL_CREATED_AT: DateTime.now().toIso8601String(),
+        //     OfflineDBConstants.COL_IS_ERROR: 0,
+        //     OfflineDBConstants.COL_IS_SYNCED: 0, // new column — default 0
+        //   });
+        // } catch (_) {}
 
         LogService.writeLog(
           message: "$tag[SUCCESS] Migration complete. Data preserved.",
@@ -187,7 +205,7 @@ class OfflineDbModule {
       message:
           "$tag[START] user=$username project=$projectName internet=$isInternetAvailable",
     );
-
+    log("Is autoSync => $autoSync", name: "_handlePostLoginInternal");
     if (autoSync) {
       await _syncPendingBeforeLogin(
         username: username,
@@ -197,13 +215,14 @@ class OfflineDbModule {
     }
 
     final pages = await fetchAndStoreOfflinePages();
-
+    log("pages => ${pages.length}", name: "_handlePostLoginInternal");
     if (pages.isEmpty) {
       LogService.writeLog(message: "$tag[INFO] No offline pages received");
       return;
     }
 
-    await fetchAndStoreAllDatasourcesForAllForms(pages);
+    await fetchAndStoreAllDatasourcesForAllForms(pages,
+        isRefetching: autoSyncMaster);
 
     LogService.writeLog(
       message: "$tag[SUCCESS] Offline bootstrap done. pages=${pages.length}",
@@ -211,8 +230,8 @@ class OfflineDbModule {
   }
 
   static Future<void> fetchAndStoreAllDatasourcesForAllForms(
-    List<Map<String, dynamic>> pages,
-  ) async {
+      List<Map<String, dynamic>> pages,
+      {bool isRefetching = false}) async {
     final scope = await _getLastOfflineUserScope();
     if (scope == null) return;
 
@@ -225,10 +244,12 @@ class OfflineDbModule {
       if (transId == null || transId.isEmpty) continue;
 
       final Set<String> dsSet = _getAllUniqueDatasourcesInPage(page);
-
+      log("dsSet => ${dsSet}", name: "_handlePostLoginInternal");
       if (dsSet.isEmpty) continue;
-
+      LandingPageController.to.totalDsCountOnStart.value = dsSet.length;
+      // LandingPageController.to.completedDsCountOnStart.value = 1;
       for (final ds in dsSet) {
+        LandingPageController.to.completedDsCountOnStart.value += 1;
         final exists = await _database.query(
           OfflineDBConstants.TABLE_DATASOURCE_DATA,
           columns: [OfflineDBConstants.COL_ID], // Optimization: Select ID only
@@ -242,10 +263,14 @@ class OfflineDbModule {
           limit: 1,
         );
 
-        if (exists.isNotEmpty) {
+        if (exists.isNotEmpty && !isRefetching) {
+          log("isRefetching => ${isRefetching} Skipping the fetch",
+              name: "_handlePostLoginInternal");
+
           continue;
         }
-
+        log("isRefetching => ${isRefetching} Fetching All datasource",
+            name: "_handlePostLoginInternal");
         final res = await OfflineDatasources.fetchDatasource(
           datasourceName: ds,
           sessionId: sessionId,
@@ -298,7 +323,7 @@ class OfflineDbModule {
 
       LogService.writeLog(
           message:
-              "$tag[URL] Offline pages URL => ${Uri.parse(OfflineDBConstants.OFFLINE_PAGES_URL())} \n[URI] => ");
+              "$tag[URL] Offline pages URL => ${Uri.parse(OfflineDBConstants.OFFLINE_PAGES_URL())} \n[URI] => ${OfflineDBConstants.OFFLINE_PAGES_URL()} ");
 
       log(res.body, name: tag);
       if (res.statusCode != 200) {
@@ -483,15 +508,19 @@ class OfflineDbModule {
   static Future<void> fetchAndStoreAllDatasources({
     required String transId,
     SyncProgressModel? progress,
+    bool isrefetching = false,
   }) async {
     final scope = await _getLastOfflineUserScope();
     if (scope == null) return;
+    log("fetchAndStoreAllDatasources scope => ${scope} transID => $transId",
+        name: "datasourcerefetch");
 
     await _fetchAndStoreAllDatasourcesInternal(
       username: scope['username']!,
       projectName: scope['projectName']!,
       transId: transId,
       progress: progress,
+      isrefetching: isrefetching,
     );
   }
 
@@ -500,6 +529,7 @@ class OfflineDbModule {
     required String projectName,
     required String transId,
     SyncProgressModel? progress,
+    bool isrefetching = false,
   }) async {
     try {
       final datasources = await _getDatasourceList(
@@ -507,7 +537,8 @@ class OfflineDbModule {
         projectName: projectName,
         transId: transId,
       );
-
+      log("fetchAndStoreAllDatasources datasources => ${datasources} transID => $transId",
+          name: "datasourcerefetch");
       if (datasources.isEmpty) {
         debugPrint("No datasources found inside page: $transId");
         return;
@@ -531,11 +562,16 @@ class OfflineDbModule {
           limit: 1,
         );
 
-        if (exists.isNotEmpty) {
+        log("fetchAndStoreAllDatasources exists => ${exists} transID => $transId",
+            name: "datasourcerefetch");
+        if (exists.isNotEmpty && !isrefetching) {
+          log("exists => ${exists.isNotEmpty} skipping refetch",
+              name: "datasourcerefetch");
           progress?.increment();
           continue;
         }
-
+        log("isrefetching => ${isrefetching}  refetching",
+            name: "datasourcerefetch");
         final scope = await _getLastOfflineUserScope();
         if (scope == null) continue;
 
@@ -759,11 +795,11 @@ class OfflineDbModule {
 
           if (decoded is Map<String, dynamic>) {
             if (decoded['success'] == true) {
-              await logAudit(
-                action: "API_SUBMIT_FORM",
-                response: responseStr,
-                remarks: "Form: ${submitBody['publickey'] ?? "NO_PUBLIC_KEY"}",
-              );
+              // await logAudit(
+              //   action: "API_SUBMIT_FORM",
+              //   response: responseStr,
+              //   remarks: "Form: ${submitBody['publickey'] ?? "NO_PUBLIC_KEY"}",
+              // );
               await _deletePayloadFiles(submitBody);
               return SubmitStatus.success;
             } else {
@@ -771,7 +807,7 @@ class OfflineDbModule {
               LogService.writeLog(
                   message: "[API_FAIL] Server returned false: $msg");
               await logAudit(
-                action: "API_SUBMIT_FORM",
+                action: "OFFLINE_SUBMIT_FORM",
                 isError: true,
                 response: responseStr,
                 remarks: "Form: ${submitBody['publickey'] ?? "NO_PUBLIC_KEY"}",
@@ -792,24 +828,28 @@ class OfflineDbModule {
       return SubmitStatus.apiFailure;
     }
 //-----------------------OFFLINE--------------------------------------->
-    final int rowId = await _database.insert(
-      OfflineDBConstants.TABLE_PENDING_REQUESTS,
-      {
-        OfflineDBConstants.COL_USERNAME: username,
-        OfflineDBConstants.COL_PROJECT_NAME: projectName,
-        OfflineDBConstants.COL_REQUEST_JSON: jsonEncode(submitBody),
-        OfflineDBConstants.COL_STATUS: OfflineDBConstants.STATUS_PENDING,
-        OfflineDBConstants.COL_CREATED_AT: DateTime.now().toIso8601String(),
-      },
-    );
-    await logAudit(
-      action: "OFFLINE_SUBMIT_FORM",
-      remarks:
-          "Record ID: $rowId | Form: ${submitBody['publickey'] ?? "NO_PUBLIC_KEY"}",
-      response:
-          "Saved locally due to ${force_offline ? 'Force Offline' : 'No Internet'}",
-    );
-    return SubmitStatus.savedOffline;
+    try {
+      final int rowId = await _database.insert(
+        OfflineDBConstants.TABLE_PENDING_REQUESTS,
+        {
+          OfflineDBConstants.COL_USERNAME: username,
+          OfflineDBConstants.COL_PROJECT_NAME: projectName,
+          OfflineDBConstants.COL_REQUEST_JSON: jsonEncode(submitBody),
+          OfflineDBConstants.COL_STATUS: OfflineDBConstants.STATUS_PENDING,
+          OfflineDBConstants.COL_CREATED_AT: DateTime.now().toIso8601String(),
+        },
+      );
+      // await logAudit(
+      //   action: "OFFLINE_SUBMIT_FORM",
+      //   remarks:
+      //       "Record ID: $rowId | Form: ${submitBody['publickey'] ?? "NO_PUBLIC_KEY"}",
+      //   response:
+      //       "Saved locally due to ${force_offline ? 'Force Offline' : 'No Internet'}",
+      // );
+      return SubmitStatus.savedOffline;
+    } catch (e) {
+      return SubmitStatus.sqlFailure;
+    }
   }
 
   static var processPendingQueTag = "PROCESS_PENDING_QUE";
@@ -850,6 +890,7 @@ class OfflineDbModule {
     required bool isInternetAvailable,
     SyncProgressModel? progress,
   }) async {
+    progress?.isSessionError.value = false;
     log("processpendingque started", name: processPendingQueTag);
     if (!isInternetAvailable) return "No internet connection";
 
@@ -860,10 +901,10 @@ class OfflineDbModule {
     final projectName = scope['projectName']!;
     log("processpendingque scope Username $username",
         name: processPendingQueTag);
-    await logAudit(
-      action: processPendingQueTag,
-      remarks: "Started background sync for user: $username",
-    );
+    // await logAudit(
+    //   action: processPendingQueTag,
+    //   remarks: "Started background sync for user: $username",
+    // );
     final String currentSessionId =
         AppStorage().retrieveValue(AppStorage.SESSIONID) ?? "";
     if (currentSessionId.isEmpty) return "No active session to sync";
@@ -890,6 +931,8 @@ class OfflineDbModule {
         name: processPendingQueTag);
 
     if (idRows.isEmpty) {
+      log("progress complete called here 3");
+
       progress?.complete();
       await logAudit(
           action: processPendingQueTag,
@@ -913,7 +956,9 @@ class OfflineDbModule {
         Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
     var isTraceOn =
         await AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? false;
-
+    bool isAuthFailed = false;
+    String authFailedMessage = "";
+    int authFailedCode = 0;
     for (int i = 0; i < total; i++) {
       final id = idRows[i][OfflineDBConstants.COL_ID] as int;
 
@@ -948,7 +993,9 @@ class OfflineDbModule {
             (originalPayload['submitdata']['username'] ?? "").isEmpty
                 ? await AppStorage().retrieveValue(AppStorage.USER_NAME)
                 : originalPayload['submitdata']['username'];
-        // TODO remove project name and username after test [only for db import test]
+        // TODO DEBUG_ONLY: Hardcoded username and project name for imported DB testing.
+        // imported db push will fail without this 2 lines
+        // Remove before production build.
         // originalPayload['submitdata']['username'] =
         //     await AppStorage().retrieveValue(AppStorage.USER_NAME);
         // originalPayload['project'] =
@@ -982,71 +1029,248 @@ class OfflineDbModule {
           }
         }
 
-        final dynamic res = await serverConnections.postToServer(
+        final SubmitdataApiresponsemodel res =
+            await serverConnections.postQueueToServer(
           url: url,
           body: jsonEncode(uploadPayload),
           isBearer: true,
-          strictAuth: true,
         );
 
-        if (res != null && res.toString().startsWith('__AUTH_FAILED__')) {
-          final String authFailBody =
-              res.toString().replaceFirst('__AUTH_FAILED__', '');
-          await logAudit(
-            action: processPendingQueTag,
-            isError: true,
-            response:
-                (authFailBody.isEmpty ? "-- Empty Response --" : authFailBody),
-            remarks:
-                "[ID: $id] 401 — session expired. Stopping sync. $authFailBody "
-                "| Progress: ${i + 1}/$total processed "
-                "| Success count: ${successIds.length} — IDs: ${successIds.isEmpty ? 'none' : successIds.join(', ')} "
-                "| Failed count: ${failedIds.length} — IDs: ${failedIds.isEmpty ? 'none' : failedIds.join(', ')} "
-                "| Unprocessed count: ${total - (i + 1)} — IDs: ${idRows.sublist(i + 1).map((r) => r[OfflineDBConstants.COL_ID]).join(', ')}",
-          );
-          break;
-        }
+        LogService.writeLog(
+            message:
+                "[API ERROR]||[API SUCCESS]  ${res.rawBody} ||  ${_isAssetHelper(uploadPayload)}");
+        String displayMessage = res.message;
 
-        bool isSuccess = false;
-        String? errorMsg;
+        /// =========================================================
+        /// SUCCESS
+        /// =========================================================
 
-        if (res.toString() != "") {
-          LogService.writeLog(
-              message:
-                  "[API ERROR]||[API SUCCESS] $res ||  ${_isAssetHelper(uploadPayload)}");
-          try {
-            final decoded = jsonDecode(res);
-            if (decoded['success'] == true) {
-              isSuccess = true;
-            } else {
-              errorMsg = decoded['message'] ?? "Unknown server error";
-            }
-          } catch (e) {
-            errorMsg = "Response parse error: $e";
-          }
-        } else {
-          errorMsg = "Empty response from server";
-        }
-
-        if (isSuccess) {
+        if (res.success) {
           await _deletePayloadFiles(uploadPayload);
+
           await _markAsSuccess(id);
+
           successIds.add(id);
+
           successCount++;
-        } else {
-          await _markAsError(id);
-          failedIds.add(id);
-          progress?.addFailedRecord(id, errorMsg ?? "Unknown error");
-          failCount++;
+
+          log(
+            "counting success failure => isSuccess => true",
+          );
+
+          progress?.increment(isSuccess: true);
+
+          continue;
         }
+
+        /// =========================================================
+        /// FAILURE FLOW
+        /// =========================================================
+
+        progress?.addFailedRecord(id, displayMessage);
+
         await logAudit(
           action: processPendingQueTag,
-          isError: !isSuccess,
-          response: res?.toString() ?? "Empty Response",
-          remarks:
-              "[ID: $id] Status: ${isSuccess ? 'SUCCESS' : 'FAILED'} | Key: ${uploadPayload['publickey']}",
+          isError: true,
+          response: res.rawBody.isEmpty ? "-- Empty Response --" : res.rawBody,
+          remarks: "[ID: $id] ${res.statusCode} — $displayMessage",
         );
-        progress?.increment(isSuccess: isSuccess);
+
+        /// =========================================================
+        /// 400 -> CHECK AUTH ERROR
+        /// =========================================================
+
+        if (res.statusCode == 400) {
+          final bool isSessionIssue = _isAuthenticationError(displayMessage);
+
+          if (displayMessage.toLowerCase().contains("session")) {
+            progress?.isSessionError.value = true;
+          }
+
+          /// AUTH FAILURE -> BREAK
+          if (isSessionIssue) {
+            await _markAsError(id);
+
+            failedIds.add(id);
+
+            failCount++;
+
+            authFailedCode = res.statusCode;
+
+            isAuthFailed = true;
+
+            authFailedMessage = displayMessage;
+
+            break;
+          }
+
+          /// NORMAL VALIDATION ERROR -> CONTINUE
+          await _markAsError(id);
+
+          failedIds.add(id);
+
+          failCount++;
+
+          progress?.addErrors(
+            title: "ID : $id",
+            errorText: displayMessage,
+          );
+
+          log(
+            "counting success failure => isSuccess => false",
+          );
+
+          progress?.increment(isSuccess: false);
+
+          continue;
+        }
+
+        /// =========================================================
+        /// ALL OTHER FAILURES -> BREAK
+        /// =========================================================
+
+        if (displayMessage.toLowerCase().contains("session")) {
+          progress?.isSessionError.value = true;
+        }
+
+        await _markAsError(id);
+
+        failedIds.add(id);
+
+        failCount++;
+
+        authFailedCode = res.statusCode;
+
+        isAuthFailed = true;
+
+        authFailedMessage = displayMessage;
+
+        progress?.addErrors(
+          title: "ID : $id",
+          errorText: displayMessage,
+        );
+
+        log(
+          "counting success failure => isSuccess => false",
+        );
+
+        progress?.increment(isSuccess: false);
+
+        break;
+
+        // if (res.statusCode != 200) {
+        //   progress?.addFailedRecord(id, displayMessage);
+
+        //   await logAudit(
+        //     action: processPendingQueTag,
+        //     isError: true,
+        //     response:
+        //         res.rawBody.isEmpty ? "-- Empty Response --" : res.rawBody,
+        //     remarks: "[ID: $id] ${res.statusCode} — $displayMessage",
+        //   );
+
+        //   /// =====================================================
+        //   /// DIRECT BREAK
+        //   /// =====================================================
+
+        //   if (res.statusCode == 401 || res.statusCode == 500) {
+        //     await _markAsError(id);
+
+        //     failedIds.add(id);
+
+        //     failCount++;
+
+        //     authFailedCode = res.statusCode;
+
+        //     isAuthFailed = true;
+
+        //     authFailedMessage = displayMessage;
+
+        //     break;
+        //   }
+
+        //   /// =====================================================
+        //   /// 400 -> CHECK AUTH MESSAGE
+        //   /// =====================================================
+
+        //   if (res.statusCode == 400) {
+        //     final bool isSessionIssue = _isAuthenticationError(displayMessage);
+
+        //     if (isSessionIssue) {
+        //       await _markAsError(id);
+
+        //       failedIds.add(id);
+
+        //       failCount++;
+
+        //       authFailedCode = res.statusCode;
+
+        //       isAuthFailed = true;
+
+        //       authFailedMessage = displayMessage;
+
+        //       break;
+        //     }
+
+        //     /// normal validation error
+        //     await _markAsError(id);
+
+        //     failedIds.add(id);
+
+        //     failCount++;
+
+        //     progress?.addErrors(
+        //       title: "ID : $id",
+        //       errorText: displayMessage,
+        //     );
+
+        //     progress?.increment(isSuccess: false);
+
+        //     continue;
+        //   }
+
+        //   /// =====================================================
+        //   /// OTHER NON-200 ERRORS
+        //   /// =====================================================
+
+        //   await _markAsError(id);
+
+        //   failedIds.add(id);
+
+        //   failCount++;
+
+        //   progress?.addErrors(
+        //     title: "ID : $id",
+        //     errorText: displayMessage,
+        //   );
+
+        //   progress?.increment(isSuccess: false);
+
+        //   continue;
+        // }
+
+        // if (res.success) {
+        //   await _deletePayloadFiles(uploadPayload);
+        //   await _markAsSuccess(id);
+        //   successIds.add(id);
+        //   successCount++;
+        // } else {
+        //   await _markAsError(id);
+        //   failedIds.add(id);
+        //   progress?.addFailedRecord(id, res.message);
+        //   progress?.addErrors(title: "ID : $id", errorText: displayMessage);
+        //   failCount++;
+        //   await logAudit(
+        //     action: processPendingQueTag,
+        //     isError: true,
+        //     response: res.rawBody,
+        //     remarks:
+        //         "[ID: $id] Status: ${res.success ? 'SUCCESS' : 'FAILED'} | Key: ${uploadPayload['publickey']}",
+        //   );
+        // }
+        // log("counting success failure => isSuccess => ${res.success}");
+
+        // progress?.increment(isSuccess: res.success);
       } catch (e) {
         await logAudit(
           action: processPendingQueTag,
@@ -1081,10 +1305,49 @@ class OfflineDbModule {
               "Batch update [Failure] complete via IN clause. Status: ${OfflineDBConstants.STATUS_ERROR}, Ids: ${failedIds.toString()} : updateFailureCount : $updateFailureCount",
           remarks: " Total count of failure list updated");
     }
-    progress?.complete();
-    progress?.updateMessage("Completed ");
+    if (isAuthFailed) {
+      log("progress complete called here 1");
+      // progress?.updateMessage(authFailedMessage);
 
-    return "Processed: $successCount success, $failCount failed ";
+      progress?.completeWithError(
+          errorMsg: authFailedMessage, statuscode: authFailedCode.toString());
+    } else {
+      log("progress complete called here 2");
+      progress?.updateMessage("Completed");
+      progress?.complete();
+      progress?.showSyncAuditLogsButton.value = true;
+      // await pushAuditLogsToServer(
+      //   isInternetAvailable: true,
+      //   progress: progress,
+      // );
+    }
+
+    return "Processed: $successCount success, $failCount failed";
+  }
+
+  static bool _isAuthenticationError(String message) {
+    final lowerMessage = message.toLowerCase();
+
+    const authKeywords = [
+      "session",
+      "authentication",
+      "token",
+      "unexpected"
+          "authentication failed",
+      "session expired",
+      "invalid session",
+      "session not valid",
+      "invalid token",
+      "token expired",
+      "unauthorized",
+      "access denied",
+      "login expired",
+      "jwt expired",
+    ];
+
+    return authKeywords.any((keyword) {
+      return lowerMessage.contains(keyword);
+    });
   }
 
   static Future<int> _batchUpdateStatus(List<int> ids, int status) async {
@@ -1092,7 +1355,7 @@ class OfflineDbModule {
 
     final String placeholders = List.filled(ids.length, '?').join(',');
     try {
-      var updateSuccessCount = await _database.rawUpdate(
+      var updatecount = await _database.rawUpdate(
         '''
         UPDATE ${OfflineDBConstants.TABLE_PENDING_REQUESTS}
         SET ${OfflineDBConstants.COL_STATUS} = ?
@@ -1103,9 +1366,9 @@ class OfflineDbModule {
 
       LogService.writeLog(
           message:
-              "Batch update complete via IN clause. Status: $status, IDS: ${ids.toString()} : updateSuccessCount : $updateSuccessCount");
+              "Batch update complete via IN clause. Status: ${(status == 2) ? "Error" : "Success"}, IDS: ${ids.toString()} : updatecount : $updatecount");
 
-      return updateSuccessCount;
+      return updatecount;
     } catch (e) {
       log("Error in batch update: $e", name: "DB_ERROR");
       return -1;
@@ -1474,7 +1737,9 @@ class OfflineDbModule {
       } else {
         log("CRITICAL: File MISSING at $value during conversion!",
             name: "AX_BUNDLE_LOG");
-        return "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+        //remove before build
+        // return "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+        return "";
       }
     }
   }
@@ -2125,16 +2390,21 @@ class OfflineDbModule {
     };
   }
 
-  static Future<void> refreshAllDatasourcesFromDownloadedPages(
-      {SyncProgressModel? progressModel}) async {
+  static Future<void> refreshAllDatasourcesFromDownloadedPages({
+    SyncProgressModel? progressModel,
+    bool isrefetching = false,
+  }) async {
     var pages = await OfflineDbModule.getOfflinePages();
+    log("getOfflinePages length => ${pages.length}", name: "datasourcerefetch");
     if (pages.isEmpty) return;
     progressModel?.init(total: pages.length, msg: "Analyzing forms...");
     for (final p in pages) {
       final transId = p['transid'];
       if (transId != null) {
         await fetchAndStoreAllDatasources(
-            transId: transId, progress: progressModel);
+            transId: transId,
+            progress: progressModel,
+            isrefetching: isrefetching);
       }
     }
   }
@@ -2257,294 +2527,357 @@ class OfflineDbModule {
   }
 
   static Future<List<Map<String, dynamic>>> getUnsyncedAuditLogs({
-    int limit = 200,
+    int? limit = 200,
   }) async {
     return await _database.query(
       OfflineDBConstants.TABLE_AUDIT_LOGS,
       where: '${OfflineDBConstants.COL_IS_SYNCED} = 0',
       orderBy: '${OfflineDBConstants.COL_ID} ASC',
-      limit: limit,
+      limit: (limit != null && limit > 0) ? limit : null,
     );
   }
 
   static const String _bgPushTag = 'BG_PUSH_QUEUE_TAG';
 
-  static Future<String> backgroundPushPendingQueue({
-    required String armUrl,
-    void Function(int current, int total)? onProgress,
-  }) async {
-    final scope = await _getLastOfflineUserScope();
-    if (scope == null) {
-      await LogService.writeLog(message: '[$_bgPushTag] No user scope found.');
-      return 'No user session found';
-    }
+  // static Future<String> backgroundPushPendingQueue({
+  //   required String armUrl,
+  //   void Function(int current, int total)? onProgress,
+  // }) async {
+  //   final scope = await _getLastOfflineUserScope();
+  //   if (scope == null) {
+  //     await LogService.writeLog(message: '[$_bgPushTag] No user scope found.');
+  //     return 'No user session found';
+  //   }
 
-    final String username = scope['username']!;
-    final String projectName = scope['projectName']!;
+  //   final String username = scope['username']!;
+  //   final String projectName = scope['projectName']!;
 
-    final String sessionId =
-        await AppStorage().retrieveValue(AppStorage.SESSIONID) ?? '';
-    final String token =
-        await AppStorage().retrieveValue(AppStorage.TOKEN) ?? '';
-    final bool isTrace =
-        await AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? false;
-    await LogService.writeLog(
-      message:
-          '[BG_PUSH_QUEUE] Session: "${sessionId.isEmpty ? "EMPTY" : sessionId.substring(0, sessionId.length.clamp(0, 20))}..." | User: $username',
-    );
-    // Inside the for loop, just before httpClient.post()
+  //   final String sessionId =
+  //       await AppStorage().retrieveValue(AppStorage.SESSIONID) ?? '';
+  //   final String token =
+  //       await AppStorage().retrieveValue(AppStorage.TOKEN) ?? '';
+  //   final bool isTrace =
+  //       await AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? false;
+  //   await LogService.writeLog(
+  //     message:
+  //         '[BG_PUSH_QUEUE] Session: "${sessionId.isEmpty ? "EMPTY" : sessionId.substring(0, sessionId.length.clamp(0, 20))}..." | User: $username',
+  //   );
+  //   // Inside the for loop, just before httpClient.post()
 
-    if (sessionId.isEmpty) {
-      await LogService.writeLog(
-          message: '[$_bgPushTag] No active session. Aborting.');
-      return 'No active session';
-    }
+  //   if (sessionId.isEmpty) {
+  //     await LogService.writeLog(
+  //         message: '[$_bgPushTag] No active session. Aborting.');
+  //     return 'No active session';
+  //   }
 
-    final idRows = await _database.query(
-      OfflineDBConstants.TABLE_PENDING_REQUESTS,
-      columns: [OfflineDBConstants.COL_ID],
-      where: '''
-      ${OfflineDBConstants.COL_STATUS} IN (
-        ${OfflineDBConstants.STATUS_PENDING},
-        ${OfflineDBConstants.STATUS_ERROR}
-      )
-      AND ${OfflineDBConstants.COL_USERNAME}     = ?
-      AND ${OfflineDBConstants.COL_PROJECT_NAME} = ?
-    ''',
-      whereArgs: [username, projectName],
-      orderBy: OfflineDBConstants.COL_CREATED_AT,
-    );
+  //   final idRows = await _database.query(
+  //     OfflineDBConstants.TABLE_PENDING_REQUESTS,
+  //     columns: [OfflineDBConstants.COL_ID],
+  //     where: '''
+  //     ${OfflineDBConstants.COL_STATUS} IN (
+  //       ${OfflineDBConstants.STATUS_PENDING},
+  //       ${OfflineDBConstants.STATUS_ERROR}
+  //     )
+  //     AND ${OfflineDBConstants.COL_USERNAME}     = ?
+  //     AND ${OfflineDBConstants.COL_PROJECT_NAME} = ?
+  //   ''',
+  //     whereArgs: [username, projectName],
+  //     orderBy: OfflineDBConstants.COL_CREATED_AT,
+  //   );
 
-    if (idRows.isEmpty) {
-      await LogService.writeLog(message: '[$_bgPushTag] Queue is empty.');
-      return 'Queue is empty';
-    }
+  //   if (idRows.isEmpty) {
+  //     await LogService.writeLog(message: '[$_bgPushTag] Queue is empty.');
+  //     return 'Queue is empty';
+  //   }
 
-    final http.Client httpClient = http.Client();
-    final String url = armUrl;
-    final Map<String, String> headers = {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
-    };
+  //   final http.Client httpClient = http.Client();
+  //   final String url = armUrl;
+  //   final Map<String, String> headers = {
+  //     'Content-Type': 'application/json',
+  //     'Authorization': 'Bearer $token',
+  //   };
 
-    int successCount = 0;
-    int failCount = 0;
-    final int total = idRows.length;
-    final List<int> successIds = [];
-    final List<int> failedIds = [];
-    await LogService.writeLog(
-      message: '[$_bgPushTag] Starting push. Total: $total | User: $username',
-    );
+  //   int successCount = 0;
+  //   int failCount = 0;
+  //   final int total = idRows.length;
+  //   final List<int> successIds = [];
+  //   final List<int> failedIds = [];
+  //   await LogService.writeLog(
+  //     message: '[$_bgPushTag] Starting push. Total: $total | User: $username',
+  //   );
 
-    for (int i = 0; i < total; i++) {
-      final int id = idRows[i][OfflineDBConstants.COL_ID] as int;
+  //   for (int i = 0; i < total; i++) {
+  //     final int id = idRows[i][OfflineDBConstants.COL_ID] as int;
 
-      try {
-        final String? bodyStr = await _readLargeString(
-          table: OfflineDBConstants.TABLE_PENDING_REQUESTS,
-          column: OfflineDBConstants.COL_REQUEST_JSON,
-          where: '${OfflineDBConstants.COL_ID} = ?',
-          whereArgs: [id],
-        );
+  //     try {
+  //       final String? bodyStr = await _readLargeString(
+  //         table: OfflineDBConstants.TABLE_PENDING_REQUESTS,
+  //         column: OfflineDBConstants.COL_REQUEST_JSON,
+  //         where: '${OfflineDBConstants.COL_ID} = ?',
+  //         whereArgs: [id],
+  //       );
 
-        if (bodyStr == null || bodyStr.isEmpty) {
-          await _markAsError(id);
-          await logAudit(
-            action: _bgPushTag,
-            isError: true,
-            remarks: '[ID: $id] Empty payload — skipping.',
-          );
-          failCount++;
-          continue;
-        }
+  //       if (bodyStr == null || bodyStr.isEmpty) {
+  //         await _markAsError(id);
+  //         await logAudit(
+  //           action: _bgPushTag,
+  //           isError: true,
+  //           remarks: '[ID: $id] Empty payload — skipping.',
+  //         );
+  //         failCount++;
+  //         continue;
+  //       }
 
-        final Map<String, dynamic> payload = jsonDecode(bodyStr);
-        payload['ARMSessionId'] = sessionId.trim();
-        payload['submitdata']['trace'] = isTrace ? 'true' : 'false';
+  //       final Map<String, dynamic> payload = jsonDecode(bodyStr);
+  //       payload['ARMSessionId'] = sessionId.trim();
+  //       payload['submitdata']['trace'] = isTrace ? 'true' : 'false';
 
-        final String? storedUsername = payload['submitdata']['username'];
-        if (storedUsername == null || storedUsername.isEmpty) {
-          payload['submitdata']['username'] =
-              AppStorage().retrieveValue(AppStorage.USER_NAME) ?? username;
-        }
-        await LogService.writeLog(
-          message:
-              '[$_bgPushTag] [ID: $id] Sending sessionId: "${payload['ARMSessionId'].toString()}"',
-        );
-        final Map<String, dynamic> uploadPayload =
-            await _convertPayloadPathsToBase64(payload);
-        if (uploadPayload.isEmpty) {
-          failedIds.add(id);
-          await _markAsError(id);
-          await logAudit(
-            action: _bgPushTag,
-            isError: true,
-            remarks: '[ID: $id] base64 conversion returned empty map.',
-          );
-          failCount++;
-          continue;
-        }
+  //       final String? storedUsername = payload['submitdata']['username'];
+  //       if (storedUsername == null || storedUsername.isEmpty) {
+  //         payload['submitdata']['username'] =
+  //             AppStorage().retrieveValue(AppStorage.USER_NAME) ?? username;
+  //       }
+  //       await LogService.writeLog(
+  //         message:
+  //             '[$_bgPushTag] [ID: $id] Sending sessionId: "${payload['ARMSessionId'].toString()}"',
+  //       );
+  //       final Map<String, dynamic> uploadPayload =
+  //           await _convertPayloadPathsToBase64(payload);
+  //       if (uploadPayload.isEmpty) {
+  //         failedIds.add(id);
+  //         await _markAsError(id);
+  //         await logAudit(
+  //           action: _bgPushTag,
+  //           isError: true,
+  //           remarks: '[ID: $id] base64 conversion returned empty map.',
+  //         );
+  //         failCount++;
+  //         continue;
+  //       }
 
-        if (_isAsset(uploadPayload)) {
-          try {
-            final fileMap = uploadPayload['submitdata']['dataarray']['data']
-                ['dc1']['row1']['axpfile_file'] as Map<String, dynamic>;
-            fileMap.forEach((key, value) {
-              if (value is Map && value.containsKey('filename')) {
-                value['filename'] =
-                    value['filename'].toString().replaceAll('/', '_');
-              }
-            });
-          } catch (e) {
-            await LogService.writeLog(
-                message: '[$_bgPushTag] [ID: $id] Filename fix failed: $e');
-          }
-        }
+  //       if (_isAsset(uploadPayload)) {
+  //         try {
+  //           final fileMap = uploadPayload['submitdata']['dataarray']['data']
+  //               ['dc1']['row1']['axpfile_file'] as Map<String, dynamic>;
+  //           fileMap.forEach((key, value) {
+  //             if (value is Map && value.containsKey('filename')) {
+  //               value['filename'] =
+  //                   value['filename'].toString().replaceAll('/', '_');
+  //             }
+  //           });
+  //         } catch (e) {
+  //           await LogService.writeLog(
+  //               message: '[$_bgPushTag] [ID: $id] Filename fix failed: $e');
+  //         }
+  //       }
 
-        // TODO remove project name and username after test [only for db import test]
-        // uploadPayload['submitdata']['username'] =
-        //     await AppStorage().retrieveValue(AppStorage.USER_NAME);
-        // uploadPayload['project'] =
-        //     await AppStorage().retrieveValue(AppStorage.PROJECT_NAME);
+  //       // TODO DEBUG_ONLY: Hardcoded username and project name for imported DB testing.
+  //       // imported db push will fail without this 2 lines
+  //       // Remove before production build.
+  //       // uploadPayload['submitdata']['username'] =
+  //       //     await AppStorage().retrieveValue(AppStorage.USER_NAME);
+  //       // uploadPayload['project'] =
+  //       //     await AppStorage().retrieveValue(AppStorage.PROJECT_NAME);
 
-        final http.Response response = await httpClient
-            .post(
-              Uri.parse(url),
-              headers: headers,
-              body: jsonEncode(uploadPayload),
-            )
-            .timeout(const Duration(seconds: 60));
+  //       final http.Response response = await httpClient
+  //           .post(
+  //             Uri.parse(url),
+  //             headers: headers,
+  //             body: jsonEncode(uploadPayload),
+  //           )
+  //           .timeout(const Duration(seconds: 60));
 
-        bool isSuccess = false;
-        String errorMsg = 'Unknown error';
+  //       bool isSuccess = false;
+  //       String errorMsg = 'Unknown error';
 
-        if (response.statusCode == 200 && response.body.isNotEmpty) {
-          try {
-            final decoded = jsonDecode(response.body);
-            if (decoded is Map<String, dynamic> && decoded['success'] == true) {
-              isSuccess = true;
-            } else {
-              errorMsg =
-                  decoded['message']?.toString() ?? 'Server returned false';
-            }
-          } catch (e) {
-            errorMsg = 'Response parse error: $e';
-          }
-        } else if (response.statusCode == 401 ||
-            response.statusCode == 400 ||
-            response.statusCode == 500) {
-          await LogService.writeLog(
-              message: "[$_bgPushTag] ${uploadPayload.toString()}");
-          await LogService.writeLog(
-              message:
-                  '[$_bgPushTag] HTTP ${response.statusCode}: ${response.body.isEmpty ? "-- Empty Response Body -- ${response.toString()}" : response.body}');
-          await LogService.writeLog(
-            message:
-                '[$_bgPushTag] Unauthorized — session expired. Stopping cycle.',
-          );
+  //       // if (response.statusCode == 200 && response.body.isNotEmpty) {
+  //       //   try {
+  //       //     final decoded = jsonDecode(response.body);
+  //       //     if (decoded is Map<String, dynamic> && decoded['success'] == true) {
+  //       //       isSuccess = true;
+  //       //     } else {
+  //       //       errorMsg =
+  //       //           decoded['message']?.toString() ?? 'Server returned false';
+  //       //     }
+  //       //   } catch (e) {
+  //       //     errorMsg = 'Response parse error: $e';
+  //       //   }
+  //       // } else {
+  //       //   await LogService.writeLog(
+  //       //       message: "[$_bgPushTag] ${uploadPayload.toString()}");
+  //       //   await LogService.writeLog(
+  //       //       message:
+  //       //           '[$_bgPushTag] HTTP ${response.statusCode}: ${response.body.isEmpty ? "-- Empty Response Body -- ${response.toString()}" : response.body}');
+  //       //   await LogService.writeLog(
+  //       //     message:
+  //       //         '[$_bgPushTag] Unauthorized — session expired. Stopping cycle.',
+  //       //   );
 
-          bool isSessionInvalid = false;
-          try {
-            final decoded = jsonDecode(response.body);
-            final String message =
-                (decoded['result']?['message'] ?? '').toString().toLowerCase();
-            isSessionInvalid = message.contains('sessionid is not valid');
-          } catch (_) {
-            isSessionInvalid = response.body
-                .toString()
-                .toLowerCase()
-                .contains('sessionid is not valid');
-          }
+  //       //   await _markAsError(id);
 
-          if (isSessionInvalid) {
-            await logAudit(
-              action: _bgPushTag,
-              isError: true,
-              response:
-                  'HTTP ${response.statusCode}: ${response.body.isEmpty ? "-- Empty Response Body -- ${response.toString()}" : response.body}',
-              remarks: '[ID: $id] 401 Unauthorized. Stopping background push. '
-                  '| Progress: ${i + 1}/$total processed '
-                  '| Success count: ${successIds.length} — IDs: ${successIds.isEmpty ? 'none' : successIds.join(', ')} '
-                  '| Failed count: ${failedIds.length} — IDs: ${failedIds.isEmpty ? 'none' : failedIds.join(', ')} '
-                  '| Unprocessed count: ${total - (i + 1)} — IDs: ${idRows.sublist(i + 1).map((r) => r[OfflineDBConstants.COL_ID]).join(', ')}',
-            );
-            // OfflineBackgroundSyncService.instance.stop();
-            FlutterForegroundTask.sendDataToMain({
-              SyncDataKeys.event: SyncDataKeys.evtAuthFailed,
-              'statusCode': response.statusCode,
-              'body': response.body.isEmpty
-                  ? '-- Empty Response --'
-                  : response.body,
-            });
-            break;
-          }
-        } else {
-          errorMsg = 'HTTP ${response.statusCode}: ${response.body}';
-        }
+  //       //   failedIds.add(id);
+  //       //   failCount++;
 
-        if (isSuccess) {
-          successIds.add(id);
-          await _deletePayloadFiles(uploadPayload);
-          await _markAsSuccess(id);
-          successCount++;
-        } else {
-          failedIds.add(id);
-          await _markAsError(id);
-          failCount++;
-        }
-        onProgress?.call(i + 1, total);
-        await LogService.writeLog(
-          message:
-              '[$_bgPushTag] [ID: $id] ${isSuccess ? "SUCCESS" : "FAILED: $errorMsg"}',
-        );
-        await logAudit(
-          action: _bgPushTag,
-          isError: !isSuccess,
-          response: response.body,
-          remarks:
-              '[ID: $id] ${isSuccess ? "SUCCESS" : "FAILED"} | Key: ${uploadPayload['publickey']}',
-        );
-      } catch (e) {
-        await _markAsError(id);
-        failCount++;
-        failedIds.add(id);
-        await LogService.writeLog(
-            message: '[$_bgPushTag] [ID: $id] Exception: $e');
-        await logAudit(
-          action: _bgPushTag,
-          isError: true,
-          response: e.toString(),
-          remarks: '[ID: $id] Exception during background push.',
-        );
-      }
-    }
+  //       //   await logAudit(
+  //       //     action: _bgPushTag,
+  //       //     isError: true,
+  //       //     response:
+  //       //         'HTTP ${response.statusCode}: ${response.body.isEmpty ? "-- Empty Response Body -- ${response.toString()}" : response.body}',
+  //       //     remarks: '[ID: $id] 401 Unauthorized. Stopping background push. '
+  //       //         '| Progress: ${i + 1}/$total processed '
+  //       //         '| Success count: ${successIds.length} — IDs: ${successIds.isEmpty ? 'none' : successIds.join(', ')} '
+  //       //         '| Failed count: ${failedIds.length} — IDs: ${failedIds.isEmpty ? 'none' : failedIds.join(', ')} '
+  //       //         '| Unprocessed count: ${total - (i + 1)} — IDs: ${idRows.sublist(i + 1).map((r) => r[OfflineDBConstants.COL_ID]).join(', ')}',
+  //       //   );
 
-    httpClient.close();
-    if (successIds.isNotEmpty) {
-      await _database.rawUpdate(
-        '''UPDATE ${OfflineDBConstants.TABLE_PENDING_REQUESTS}
-         SET ${OfflineDBConstants.COL_STATUS} = ${OfflineDBConstants.STATUS_SUCCESS}
-         WHERE ${OfflineDBConstants.COL_ID} IN (${successIds.join(',')})''',
-      );
-      await LogService.writeLog(
-          message:
-              '[$_bgPushTag] Batch SUCCESS update: ${successIds.length} rows — IDs: $successIds');
-    }
+  //       //   FlutterForegroundTask.sendDataToMain({
+  //       //     SyncDataKeys.event: SyncDataKeys.evtAuthFailed,
+  //       //     'statusCode': response.statusCode,
+  //       //     'body':
+  //       //         response.body.isEmpty ? '-- Empty Response --' : response.body,
+  //       //   });
+  //       //   errorMsg = 'HTTP ${response.statusCode}: ${response.body}';
+  //       //   break;
+  //       // }
 
-    if (failedIds.isNotEmpty) {
-      await _database.rawUpdate(
-        '''UPDATE ${OfflineDBConstants.TABLE_PENDING_REQUESTS}
-         SET ${OfflineDBConstants.COL_STATUS} = ${OfflineDBConstants.STATUS_ERROR}
-         WHERE ${OfflineDBConstants.COL_ID} IN (${failedIds.join(',')})''',
-      );
-      await LogService.writeLog(
-          message:
-              '[$_bgPushTag] Batch ERROR update: ${failedIds.length} rows — IDs: $failedIds');
-    }
-    final String result = 'Processed: $successCount success, $failCount failed';
-    await LogService.writeLog(message: '[$_bgPushTag] Done. $result');
-    return result;
-  }
+  //       if (response.statusCode == 200 && response.body.isNotEmpty) {
+  //         try {
+  //           final decoded = jsonDecode(response.body);
+
+  //           if (decoded is Map<String, dynamic> && decoded['success'] == true) {
+  //             isSuccess = true;
+  //           } else {
+  //             errorMsg =
+  //                 decoded['message']?.toString() ?? 'Server returned false';
+  //           }
+  //         } catch (e) {
+  //           errorMsg = 'Response parse error: $e';
+  //         }
+  //       } else {
+  //         final responseBody = response.body.isEmpty
+  //             ? "-- Empty Response Body -- ${response.toString()}"
+  //             : response.body;
+
+  //         String displayMessage = responseBody;
+
+  //         try {
+  //           final decoded = jsonDecode(response.body);
+
+  //           if (decoded is Map<String, dynamic>) {
+  //             displayMessage = decoded['message']?.toString() ?? responseBody;
+  //           }
+  //         } catch (_) {}
+
+  //         final bool isSessionIssue = _isAuthenticationError(displayMessage);
+
+  //         await LogService.writeLog(
+  //           message: "[$_bgPushTag] ${uploadPayload.toString()}",
+  //         );
+
+  //         await LogService.writeLog(
+  //           message: '[$_bgPushTag] HTTP ${response.statusCode}: $responseBody',
+  //         );
+
+  //         await LogService.writeLog(
+  //           message: isSessionIssue
+  //               ? '[$_bgPushTag] Authentication/session issue detected. Stopping cycle.'
+  //               : '[$_bgPushTag] Non-auth failure detected. Continuing sync.',
+  //         );
+
+  //         errorMsg = 'HTTP ${response.statusCode}: $displayMessage';
+  //         await logAudit(
+  //           action: _bgPushTag,
+  //           isError: true,
+  //           response: 'HTTP ${response.statusCode}: $responseBody',
+  //           remarks: '[ID: $id] ${response.statusCode} — $displayMessage '
+  //               '| Progress: ${i + 1}/$total processed '
+  //               '| Success count: ${successIds.length} — IDs: ${successIds.isEmpty ? 'none' : successIds.join(', ')} '
+  //               '| Failed count: ${failedIds.length} — IDs: ${failedIds.isEmpty ? 'none' : failedIds.join(', ')} '
+  //               '| Unprocessed count: ${total - (i + 1)} — IDs: ${idRows.sublist(i + 1).map((r) => r[OfflineDBConstants.COL_ID]).join(', ')}',
+  //         );
+  //         if (isSessionIssue) {
+  //           await _markAsError(id);
+
+  //           failedIds.add(id);
+  //           failCount++;
+
+  //           FlutterForegroundTask.sendDataToMain({
+  //             SyncDataKeys.event: SyncDataKeys.evtAuthFailed,
+  //             'statusCode': response.statusCode,
+  //             'body': displayMessage,
+  //           });
+
+  //           break;
+  //         }
+  //       }
+
+  //       if (isSuccess) {
+  //         successIds.add(id);
+  //         await _deletePayloadFiles(uploadPayload);
+  //         await _markAsSuccess(id);
+  //         successCount++;
+  //       } else {
+  //         failedIds.add(id);
+  //         await _markAsError(id);
+  //         failCount++;
+  //         await logAudit(
+  //           action: _bgPushTag,
+  //           isError: true,
+  //           response: response.body,
+  //           remarks:
+  //               '[ID: $id] ${isSuccess ? "SUCCESS" : "FAILED"} | Key: ${uploadPayload['publickey']}',
+  //         );
+  //       }
+  //       onProgress?.call(i + 1, total);
+  //       await LogService.writeLog(
+  //         message:
+  //             '[$_bgPushTag] [ID: $id] ${isSuccess ? "SUCCESS" : "FAILED: $errorMsg"}',
+  //       );
+  //     } catch (e) {
+  //       await _markAsError(id);
+  //       failCount++;
+  //       failedIds.add(id);
+  //       await LogService.writeLog(
+  //           message: '[$_bgPushTag] [ID: $id] Exception: $e');
+  //       await logAudit(
+  //         action: _bgPushTag,
+  //         isError: true,
+  //         response: e.toString(),
+  //         remarks: '[ID: $id] Exception during background push.',
+  //       );
+  //     }
+  //   }
+
+  //   httpClient.close();
+  //   if (successIds.isNotEmpty) {
+  //     await _database.rawUpdate(
+  //       '''UPDATE ${OfflineDBConstants.TABLE_PENDING_REQUESTS}
+  //        SET ${OfflineDBConstants.COL_STATUS} = ${OfflineDBConstants.STATUS_SUCCESS}
+  //        WHERE ${OfflineDBConstants.COL_ID} IN (${successIds.join(',')})''',
+  //     );
+  //     await LogService.writeLog(
+  //         message:
+  //             '[$_bgPushTag] Batch SUCCESS update: ${successIds.length} rows — IDs: $successIds');
+  //   }
+
+  //   if (failedIds.isNotEmpty) {
+  //     await _database.rawUpdate(
+  //       '''UPDATE ${OfflineDBConstants.TABLE_PENDING_REQUESTS}
+  //        SET ${OfflineDBConstants.COL_STATUS} = ${OfflineDBConstants.STATUS_ERROR}
+  //        WHERE ${OfflineDBConstants.COL_ID} IN (${failedIds.join(',')})''',
+  //     );
+  //     await LogService.writeLog(
+  //         message:
+  //             '[$_bgPushTag] Batch ERROR update: ${failedIds.length} rows — IDs: $failedIds');
+  //   }
+  //   final String result = 'Processed: $successCount success, $failCount failed';
+  //   await LogService.writeLog(message: '[$_bgPushTag] Done. $result');
+  //   await backgroundPushAuditLogs(
+  //     armUrl: armUrl,
+  //     onStatusUpdate: (msg) => onProgress?.call(-1, -1),
+  //   );
+  //   return result;
+  // }
 
   // static Future<Set<String>> getExistingUbgeNos() async {
   //   final scope = await _getLastOfflineUserScope();
@@ -2599,6 +2932,360 @@ class OfflineDbModule {
   //   return result;
   // }
 
+  static Future<String> backgroundPushPendingQueue({
+    required String armUrl,
+    void Function(int current, int total)? onProgress,
+  }) async {
+    final scope = await _getLastOfflineUserScope();
+    if (scope == null) {
+      await LogService.writeLog(message: '[$_bgPushTag] No user scope found.');
+      return 'No user session found';
+    }
+
+    final String username = scope['username']!;
+    final String projectName = scope['projectName']!;
+
+    final String sessionId =
+        await AppStorage().retrieveValue(AppStorage.SESSIONID) ?? '';
+    final String token =
+        await AppStorage().retrieveValue(AppStorage.TOKEN) ?? '';
+    final bool isTrace =
+        await AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? false;
+
+    await LogService.writeLog(
+      message:
+          '[BG_PUSH_QUEUE] Session: "${sessionId.isEmpty ? "EMPTY" : sessionId.substring(0, sessionId.length.clamp(0, 20))}..." | User: $username',
+    );
+
+    if (sessionId.isEmpty) {
+      await LogService.writeLog(
+          message: '[$_bgPushTag] No active session. Aborting.');
+      return 'No active session';
+    }
+
+    final idRows = await _database.query(
+      OfflineDBConstants.TABLE_PENDING_REQUESTS,
+      columns: [OfflineDBConstants.COL_ID],
+      where: '''
+      ${OfflineDBConstants.COL_STATUS} IN (
+        ${OfflineDBConstants.STATUS_PENDING},
+        ${OfflineDBConstants.STATUS_ERROR}
+      )
+      AND ${OfflineDBConstants.COL_USERNAME}     = ?
+      AND ${OfflineDBConstants.COL_PROJECT_NAME} = ?
+    ''',
+      whereArgs: [username, projectName],
+      orderBy: OfflineDBConstants.COL_CREATED_AT,
+    );
+
+    if (idRows.isEmpty) {
+      await LogService.writeLog(message: '[$_bgPushTag] Queue is empty.');
+      return 'Queue is empty';
+    }
+
+    final ServerConnections serverConnections = ServerConnections();
+    final String url = armUrl;
+
+    int successCount = 0;
+    int failCount = 0;
+    final int total = idRows.length;
+    final List<int> successIds = [];
+    final List<int> failedIds = [];
+
+    await LogService.writeLog(
+      message: '[$_bgPushTag] Starting push. Total: $total | User: $username',
+    );
+
+    for (int i = 0; i < total; i++) {
+      final int id = idRows[i][OfflineDBConstants.COL_ID] as int;
+
+      try {
+        final String? bodyStr = await _readLargeString(
+          table: OfflineDBConstants.TABLE_PENDING_REQUESTS,
+          column: OfflineDBConstants.COL_REQUEST_JSON,
+          where: '${OfflineDBConstants.COL_ID} = ?',
+          whereArgs: [id],
+        );
+
+        if (bodyStr == null || bodyStr.isEmpty) {
+          await _markAsError(id);
+          await logAudit(
+            action: _bgPushTag,
+            isError: true,
+            remarks: '[ID: $id] Empty payload — skipping.',
+          );
+          failCount++;
+          continue;
+        }
+
+        final Map<String, dynamic> payload = jsonDecode(bodyStr);
+        payload['ARMSessionId'] = sessionId.trim();
+        payload['submitdata']['trace'] = isTrace ? 'true' : 'false';
+
+        final String? storedUsername = payload['submitdata']['username'];
+        if (storedUsername == null || storedUsername.isEmpty) {
+          payload['submitdata']['username'] =
+              AppStorage().retrieveValue(AppStorage.USER_NAME) ?? username;
+        }
+
+        await LogService.writeLog(
+          message:
+              '[$_bgPushTag] [ID: $id] Sending sessionId: "${payload['ARMSessionId'].toString()}"',
+        );
+
+        final Map<String, dynamic> uploadPayload =
+            await _convertPayloadPathsToBase64(payload);
+
+        if (uploadPayload.isEmpty) {
+          failedIds.add(id);
+          await _markAsError(id);
+          await logAudit(
+            action: _bgPushTag,
+            isError: true,
+            remarks: '[ID: $id] base64 conversion returned empty map.',
+          );
+          failCount++;
+          continue;
+        }
+
+        if (_isAsset(uploadPayload)) {
+          try {
+            final fileMap = uploadPayload['submitdata']['dataarray']['data']
+                ['dc1']['row1']['axpfile_file'] as Map<String, dynamic>;
+            fileMap.forEach((key, value) {
+              if (value is Map && value.containsKey('filename')) {
+                value['filename'] =
+                    value['filename'].toString().replaceAll('/', '_');
+              }
+            });
+          } catch (e) {
+            await LogService.writeLog(
+                message: '[$_bgPushTag] [ID: $id] Filename fix failed: $e');
+          }
+        }
+
+        final SubmitdataApiresponsemodel res =
+            await serverConnections.postQueueToServer(
+          url: url,
+          body: jsonEncode(uploadPayload),
+          isBearer: true,
+        );
+
+        String displayMessage = res.message;
+
+        await LogService.writeLog(
+          message:
+              "[$_bgPushTag] [API RESULT] ${res.rawBody} || ${_isAssetHelper(uploadPayload)}",
+        );
+
+        // if (res.statusCode != 200) {
+        //   await logAudit(
+        //     action: _bgPushTag,
+        //     isError: true,
+        //     response:
+        //         res.rawBody.isEmpty ? "-- Empty Response --" : res.rawBody,
+        //     remarks: "[ID: $id] ${res.statusCode} — $displayMessage "
+        //         "| Progress: ${i + 1}/$total processed "
+        //         "| Success count: ${successIds.length} — IDs: ${successIds.isEmpty ? 'none' : successIds.join(', ')} "
+        //         "| Failed count: ${failedIds.length} — IDs: ${failedIds.isEmpty ? 'none' : failedIds.join(', ')}",
+        //   );
+
+        //   /// =====================================================
+        //   /// DIRECT BREAK (Auth failure / Server crash)
+        //   /// =====================================================
+        //   if (res.statusCode == 401 || res.statusCode == 500) {
+        //     await _markAsError(id);
+        //     failedIds.add(id);
+        //     failCount++;
+
+        //     FlutterForegroundTask.sendDataToMain({
+        //       SyncDataKeys.event: SyncDataKeys.evtAuthFailed,
+        //       'statusCode': res.statusCode,
+        //       'body': displayMessage,
+        //     });
+        //     break;
+        //   }
+
+        //   /// =====================================================
+        //   /// 400 -> CHECK AUTH MESSAGE
+        //   /// =====================================================
+        //   if (res.statusCode == 400) {
+        //     final bool isSessionIssue = _isAuthenticationError(displayMessage);
+
+        //     if (isSessionIssue) {
+        //       await _markAsError(id);
+        //       failedIds.add(id);
+        //       failCount++;
+
+        //       FlutterForegroundTask.sendDataToMain({
+        //         SyncDataKeys.event: SyncDataKeys.evtAuthFailed,
+        //         'statusCode': res.statusCode,
+        //         'body': displayMessage,
+        //       });
+        //       break;
+        //     }
+
+        //     // Normal validation error
+        //     await _markAsError(id);
+        //     failedIds.add(id);
+        //     failCount++;
+        //     continue;
+        //   }
+
+        //   /// =====================================================
+        //   /// OTHER NON-200 ERRORS
+        //   /// =====================================================
+        //   await _markAsError(id);
+        //   failedIds.add(id);
+        //   failCount++;
+        //   continue;
+        // }
+
+        // // =====================================================
+        // // SUCCESS HANDLING (Status 200)
+        // // =====================================================
+
+        // String displayMessage = res.message;
+
+        /// =====================================================
+        /// SUCCESS
+        /// =====================================================
+
+        if (res.success) {
+          await _deletePayloadFiles(uploadPayload);
+
+          await _markAsSuccess(id);
+
+          successIds.add(id);
+
+          successCount++;
+        } else {
+          await logAudit(
+            action: _bgPushTag,
+            isError: true,
+            response:
+                res.rawBody.isEmpty ? "-- Empty Response --" : res.rawBody,
+            remarks: "[ID: $id] ${res.statusCode} — $displayMessage "
+                "| Progress: ${i + 1}/$total processed "
+                "| Success count: ${successIds.length} — IDs: ${successIds.isEmpty ? 'none' : successIds.join(', ')} "
+                "| Failed count: ${failedIds.length} — IDs: ${failedIds.isEmpty ? 'none' : failedIds.join(', ')}",
+          );
+
+          /// =====================================================
+          /// 400 -> AUTH CHECK
+          /// =====================================================
+
+          if (res.statusCode == 400) {
+            final bool isSessionIssue = _isAuthenticationError(displayMessage);
+
+            /// AUTH FAILURE -> BREAK
+            if (isSessionIssue) {
+              await _markAsError(id);
+
+              failedIds.add(id);
+
+              failCount++;
+
+              FlutterForegroundTask.sendDataToMain({
+                SyncDataKeys.event: SyncDataKeys.evtAuthFailed,
+                'statusCode': res.statusCode,
+                'body': displayMessage,
+              });
+
+              break;
+            }
+
+            /// NORMAL VALIDATION ERROR -> CONTINUE
+            await _markAsError(id);
+
+            failedIds.add(id);
+
+            failCount++;
+
+            continue;
+          }
+
+          /// =====================================================
+          /// ALL OTHER FAILURES -> BREAK
+          /// =====================================================
+
+          await _markAsError(id);
+
+          failedIds.add(id);
+
+          failCount++;
+
+          FlutterForegroundTask.sendDataToMain({
+            SyncDataKeys.event: SyncDataKeys.evtAuthFailed,
+            'statusCode': res.statusCode,
+            'body': displayMessage,
+          });
+
+          break;
+        }
+        // if (res.success) {
+        //   await _deletePayloadFiles(uploadPayload);
+        //   await _markAsSuccess(id);
+        //   successIds.add(id);
+        //   successCount++;
+        // } else {
+        //   await _markAsError(id);
+        //   failedIds.add(id);
+        //   failCount++;
+        //   await logAudit(
+        //     action: _bgPushTag,
+        //     isError: true,
+        //     response: res.rawBody,
+        //     remarks:
+        //         '[ID: $id] Status: ${res.success ? 'SUCCESS' : 'FAILED'} | Key: ${uploadPayload['publickey']}',
+        //   );
+        // }
+
+        onProgress?.call(i + 1, total);
+        await LogService.writeLog(
+          message:
+              '[$_bgPushTag] [ID: $id] ${res.success ? "SUCCESS" : "FAILED: $displayMessage"}',
+        );
+      } catch (e) {
+        await _markAsError(id);
+        failCount++;
+        failedIds.add(id);
+        await LogService.writeLog(
+            message: '[$_bgPushTag] [ID: $id] Exception: $e');
+        await logAudit(
+          action: _bgPushTag,
+          isError: true,
+          response: e.toString(),
+          remarks: '[ID: $id] Exception during background push.',
+        );
+      }
+    }
+
+    if (successIds.isNotEmpty) {
+      var updateSuccessCount = await _batchUpdateStatus(
+          successIds, OfflineDBConstants.STATUS_SUCCESS);
+      await LogService.writeLog(
+          message:
+              '[$_bgPushTag] Batch SUCCESS update: $updateSuccessCount rows — IDs: $successIds');
+    }
+
+    if (failedIds.isNotEmpty) {
+      var updateFailureCount =
+          await _batchUpdateStatus(failedIds, OfflineDBConstants.STATUS_ERROR);
+      await LogService.writeLog(
+          message:
+              '[$_bgPushTag] Batch ERROR update: $updateFailureCount rows — IDs: $failedIds');
+    }
+
+    final String result = 'Processed: $successCount success, $failCount failed';
+    await LogService.writeLog(message: '[$_bgPushTag] Done. $result');
+    await backgroundPushAuditLogs(
+      armUrl: armUrl,
+      onStatusUpdate: (msg) => onProgress?.call(-1, -1),
+    );
+    return result;
+  }
+
   static Future<bool> isUbgeNoExists(String typed) async {
     final scope = await _getLastOfflineUserScope();
     if (scope == null) return false;
@@ -2650,5 +3337,476 @@ class OfflineDbModule {
       }
     }
     return false; // No match found after checking all rows
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+// AUDIT LOG PUSH
+// ─────────────────────────────────────────────────────────────────────────────
+
+  static const String _auditPushTag = 'PUSH_AUDIT_LOGS';
+  static Future<void> pushAuditLogsToServer({
+    required bool isInternetAvailable,
+    SyncProgressModel? progress,
+  }) async {
+    if (!isInternetAvailable) {
+      LogService.writeLog(message: '[$_auditPushTag] Skipped — no internet.');
+      return;
+    }
+
+    final scope = await _getLastOfflineUserScope();
+    if (scope == null) {
+      LogService.writeLog(message: '[$_auditPushTag] Skipped — no user scope.');
+      return;
+    }
+
+    final String sessionId =
+        AppStorage().retrieveValue(AppStorage.SESSIONID) ?? '';
+    final String username = scope['username']!;
+    final String projectName = scope['projectName']!;
+    final bool isTrace =
+        await AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? false;
+
+    if (sessionId.isEmpty) {
+      LogService.writeLog(
+          message: '[$_auditPushTag] Skipped — empty session ID.');
+      return;
+    }
+
+    final List<Map<String, dynamic>> rows =
+        await getUnsyncedAuditLogs(limit: 200);
+
+    if (rows.isEmpty) {
+      progress?.startAuditPhase(0);
+      progress?.completeAuditPhase();
+      LogService.writeLog(
+          message: '[$_auditPushTag] No unsynced audit logs found.');
+
+      return;
+    }
+
+    // ── STARTED ───────────────────────────────────────────────────────────────
+    await logAudit(
+      action: _auditPushTag,
+      remarks: 'Audit log push started — ${rows.length} unsynced rows queued.',
+    );
+    progress?.startAuditPhase(rows.length);
+
+    LogService.writeLog(
+      message: '[$_auditPushTag] Starting push — ${rows.length} unsynced rows.',
+    );
+    final ServerConnections serverConnections = ServerConnections();
+    final String url =
+        Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
+    final List<int> syncedIds = [];
+
+    for (final row in rows) {
+      final int id = row[OfflineDBConstants.COL_ID] as int;
+
+      try {
+        final String rawCreatedAt =
+            row[OfflineDBConstants.COL_CREATED_AT] as String? ?? '';
+        String formattedDate = rawCreatedAt;
+        try {
+          final dt = DateTime.parse(rawCreatedAt);
+          formattedDate = DateFormat('dd/MM/yyyy hh:mm:ss a').format(dt);
+        } catch (_) {}
+
+        final Map<String, dynamic> payload = {
+          'ARMSessionId': sessionId,
+          'publickey': 'api_axm_audit',
+          'project': projectName,
+          'submitdata': {
+            'username': username,
+            'trace': isTrace ? 'true' : 'false',
+            'keyfield': '',
+            'dataarray': {
+              'data': {
+                'mode': 'new',
+                'keyvalue': '',
+                'recordid': '0',
+                'dc1': {
+                  'row1': {
+                    'username':
+                        row[OfflineDBConstants.COL_USERNAME] ?? username,
+                    'project_name':
+                        row[OfflineDBConstants.COL_PROJECT_NAME] ?? projectName,
+                    'action': row[OfflineDBConstants.COL_ACTION] ?? '',
+                    'created_at': formattedDate,
+                    'is_error':
+                        ((row[OfflineDBConstants.COL_IS_ERROR] ?? 0) == 1)
+                            ? 'true'
+                            : 'false',
+                    'response': row[OfflineDBConstants.COL_RESPONSE] ?? '',
+                    'remarks': row[OfflineDBConstants.COL_REMARKS] ?? '',
+                  },
+                },
+              },
+            },
+          },
+        };
+
+        final SubmitdataApiresponsemodel res =
+            await serverConnections.postQueueToServer(
+          url: url,
+          body: jsonEncode(payload),
+          isBearer: true,
+        );
+
+        if (res.rawBody.isEmpty) {
+          LogService.writeLog(
+            message: '[$_auditPushTag] [ID: $id] Empty response — skipping.',
+          );
+          await logAudit(
+            action: _auditPushTag,
+            isError: true,
+            remarks: '[ID: $id] Empty response from server — skipped.',
+          );
+          continue;
+        }
+        String displayMessage = res.message;
+
+        /// =====================================================
+        /// SUCCESS
+        /// =====================================================
+
+        if (res.success) {
+          syncedIds.add(id);
+
+          progress?.incrementAudit(isSuccess: true);
+
+          LogService.writeLog(
+            message: '[$_auditPushTag] [ID: $id] Pushed successfully.',
+          );
+        } else {
+          progress?.incrementAudit(isSuccess: false);
+
+          LogService.writeLog(
+            message: '[$_auditPushTag] [ID: $id] FAILED: $displayMessage',
+          );
+
+          await logAudit(
+            action: _auditPushTag,
+            isError: true,
+            response: res.rawBody,
+            remarks: '[ID: $id] Server rejected audit row — continuing. '
+                'Reason: $displayMessage',
+          );
+
+          /// =====================================================
+          /// 400 -> AUTH CHECK
+          /// =====================================================
+
+          if (res.statusCode == 400) {
+            final bool isAuthIssue = _isAuthenticationError(displayMessage);
+
+            if (isAuthIssue) {
+              LogService.writeLog(
+                message: '[$_auditPushTag] [ID: $id] Auth error — stopping. '
+                    'Reason: $displayMessage',
+              );
+
+              progress?.completeAuditPhase();
+
+              break;
+            }
+
+            /// NORMAL VALIDATION ERROR
+            continue;
+          }
+
+          /// =====================================================
+          /// ALL OTHER FAILURES -> BREAK
+          /// =====================================================
+
+          progress?.completeAuditPhase();
+
+          break;
+        }
+      } catch (e) {
+        final String err = e.toString();
+        LogService.writeLog(
+            message: '[$_auditPushTag] [ID: $id] Exception: $err');
+        await logAudit(
+          action: _auditPushTag,
+          isError: true,
+          response: err,
+          remarks:
+              '[ID: $id] Exception during audit push — ${_isAuthenticationError(err) ? "loop stopped (auth)" : "continuing"}.',
+        );
+
+        if (_isAuthenticationError(err)) {
+          break;
+        }
+        continue;
+      }
+    }
+
+    if (syncedIds.isNotEmpty) {
+      final int updated = await markAuditLogsAsSynced(syncedIds);
+      LogService.writeLog(
+        message:
+            '[$_auditPushTag] Marked $updated rows as synced. IDs: $syncedIds',
+      );
+    }
+
+    // ── ENDED ────────────────────────────────────────────────────────────────
+    await logAudit(
+      action: _auditPushTag,
+      remarks:
+          'Audit log push ended — ${syncedIds.length}/${rows.length} rows synced successfully.',
+    );
+    progress?.completeAuditPhase();
+    LogService.writeLog(
+      message:
+          '[$_auditPushTag] Done. ${syncedIds.length}/${rows.length} pushed.',
+    );
+  }
+
+  static const String _bgAuditPushTag = 'BG_PUSH_AUDIT_LOGS';
+
+  static Future<String> backgroundPushAuditLogs({
+    required String armUrl,
+    void Function(String message)? onStatusUpdate,
+  }) async {
+    // ── Scope + session guards ──────────────────────────────────────────────
+    final scope = await _getLastOfflineUserScope();
+    if (scope == null) {
+      await LogService.writeLog(
+        message: '[$_bgAuditPushTag] No user scope found.',
+      );
+      return 'No user session found';
+    }
+
+    final String username = scope['username']!;
+    final String projectName = scope['projectName']!;
+
+    final String sessionId =
+        await AppStorage().retrieveValue(AppStorage.SESSIONID) ?? '';
+    final String token =
+        await AppStorage().retrieveValue(AppStorage.TOKEN) ?? '';
+    final bool isTrace =
+        await AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? false;
+
+    if (sessionId.isEmpty) {
+      await LogService.writeLog(
+        message: '[$_bgAuditPushTag] No active session. Aborting.',
+      );
+      return 'No active session';
+    }
+
+    // ── Fetch unsynced rows ─────────────────────────────────────────────────
+    final List<Map<String, dynamic>> rows =
+        await getUnsyncedAuditLogs(limit: 200);
+
+    if (rows.isEmpty) {
+      await LogService.writeLog(
+        message: '[$_bgAuditPushTag] No unsynced audit logs. Skipping.',
+      );
+      return 'No audit logs to push';
+    }
+
+    // ── STARTED ────────────────────────────────────────────────────────────
+    await logAudit(
+      action: _bgAuditPushTag,
+      remarks:
+          'Background audit push started — ${rows.length} unsynced rows queued.',
+    );
+
+    await LogService.writeLog(
+      message:
+          '[$_bgAuditPushTag] Starting. Total: ${rows.length} | User: $username',
+    );
+
+    onStatusUpdate?.call('Uploading audit logs (0 / ${rows.length})...');
+
+    final http.Client httpClient = http.Client();
+    final Map<String, String> headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+
+    final int total = rows.length;
+    final List<int> syncedIds = [];
+    int failCount = 0;
+
+    for (int i = 0; i < total; i++) {
+      final int id = rows[i][OfflineDBConstants.COL_ID] as int;
+
+      try {
+        // ── Format the timestamp ──────────────────────────────────────────
+        final String rawCreatedAt =
+            rows[i][OfflineDBConstants.COL_CREATED_AT] as String? ?? '';
+        String formattedDate = rawCreatedAt;
+        try {
+          final dt = DateTime.parse(rawCreatedAt);
+          formattedDate = DateFormat('dd/MM/yyyy hh:mm:ss a').format(dt);
+        } catch (_) {}
+
+        // ── Build payload ─────────────────────────────────────────────────
+        final Map<String, dynamic> payload = {
+          'ARMSessionId': sessionId.trim(),
+          'publickey': 'api_axm_audit',
+          'project': projectName,
+          'submitdata': {
+            'username': username,
+            'trace': isTrace ? 'true' : 'false',
+            'keyfield': '',
+            'dataarray': {
+              'data': {
+                'mode': 'new',
+                'keyvalue': '',
+                'recordid': '0',
+                'dc1': {
+                  'row1': {
+                    'username':
+                        rows[i][OfflineDBConstants.COL_USERNAME] ?? username,
+                    'project_name': rows[i]
+                            [OfflineDBConstants.COL_PROJECT_NAME] ??
+                        projectName,
+                    'action': rows[i][OfflineDBConstants.COL_ACTION] ?? '',
+                    'created_at': formattedDate,
+                    'is_error':
+                        ((rows[i][OfflineDBConstants.COL_IS_ERROR] ?? 0) == 1)
+                            ? 'true'
+                            : 'false',
+                    'response': rows[i][OfflineDBConstants.COL_RESPONSE] ?? '',
+                    'remarks': rows[i][OfflineDBConstants.COL_REMARKS] ?? '',
+                  },
+                },
+              },
+            },
+          },
+        };
+
+        // ── POST ──────────────────────────────────────────────────────────
+        final http.Response response = await httpClient
+            .post(
+              Uri.parse(armUrl),
+              headers: headers,
+              body: jsonEncode(payload),
+            )
+            .timeout(const Duration(seconds: 30));
+
+        // ── Evaluate ──────────────────────────────────────────────────────
+        final SubmitdataApiresponsemodel res =
+            SubmitdataApiresponsemodel.fromHttpResponse(response);
+        String displayMessage = res.message;
+
+        /// =====================================================
+        /// SUCCESS
+        /// =====================================================
+
+        if (res.success) {
+          syncedIds.add(id);
+
+          await LogService.writeLog(
+            message: '[$_bgAuditPushTag] [ID: $id] SUCCESS.',
+          );
+        } else {
+          await LogService.writeLog(
+            message: '[$_bgAuditPushTag] [ID: $id] FAILED: $displayMessage',
+          );
+
+          await logAudit(
+            action: _bgAuditPushTag,
+            isError: true,
+            response: res.rawBody,
+            remarks: '[ID: $id] Server rejected audit row — $displayMessage',
+          );
+
+          /// =====================================================
+          /// 400 -> AUTH CHECK
+          /// =====================================================
+
+          if (res.statusCode == 400) {
+            final bool isAuthIssue = _isAuthenticationError(displayMessage);
+
+            if (isAuthIssue) {
+              await LogService.writeLog(
+                message:
+                    '[$_bgAuditPushTag] Auth error detected — stopping loop.',
+              );
+
+              await logAudit(
+                action: _bgAuditPushTag,
+                isError: true,
+                remarks:
+                    '[ID: $id] Auth error during background audit push — loop stopped.',
+              );
+
+              break;
+            }
+
+            /// normal validation failure
+            failCount++;
+
+            onStatusUpdate?.call(
+              'Audit logs: ${syncedIds.length + failCount} / $total processed...',
+            );
+
+            continue;
+          }
+
+          /// =====================================================
+          /// ALL OTHER FAILURES -> BREAK
+          /// =====================================================
+
+          failCount++;
+
+          await LogService.writeLog(
+            message: '[$_bgAuditPushTag] Critical failure — stopping loop.',
+          );
+
+          break;
+        }
+      } catch (e) {
+        final String err = e.toString();
+        failCount++;
+        await LogService.writeLog(
+          message: '[$_bgAuditPushTag] [ID: $id] Exception: $err',
+        );
+        await logAudit(
+          action: _bgAuditPushTag,
+          isError: true,
+          response: err,
+          remarks:
+              '[ID: $id] Exception — ${_isAuthenticationError(err) ? "loop stopped (auth)" : "continuing"}.',
+        );
+
+        if (_isAuthenticationError(err)) {
+          break;
+        }
+        continue;
+      }
+    }
+
+    httpClient.close();
+
+    // ── Batch-mark synced rows ──────────────────────────────────────────────
+    if (syncedIds.isNotEmpty) {
+      final int updated = await markAuditLogsAsSynced(syncedIds);
+      await LogService.writeLog(
+        message:
+            '[$_bgAuditPushTag] Marked $updated rows as synced. IDs: $syncedIds',
+      );
+    }
+
+    final String result =
+        'Audit logs: ${syncedIds.length} synced, $failCount failed';
+
+    // ── ENDED ──────────────────────────────────────────────────────────────
+    await logAudit(
+      action: _bgAuditPushTag,
+      remarks:
+          'Background audit push ended — ${syncedIds.length}/$total synced successfully.',
+    );
+
+    await LogService.writeLog(
+      message: '[$_bgAuditPushTag] Done. $result',
+    );
+
+    onStatusUpdate?.call(result);
+
+    return result;
   }
 }
