@@ -81,16 +81,47 @@ class OfflineDbModule {
 
     _db = await openDatabase(
       dbPath,
-      version: 1, // ← bumped from 5 → 6
+      version: 7, // ← bumped from 5 → 6
       onCreate: (db, _) async {
         await _createTables(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         const tag = "[OFFLINE_DB_UPGRADE_006]";
-        LogService.writeLog(
-          message: "$tag[START] Upgrading DB $oldVersion → $newVersion",
-        );
+        if (oldVersion < 7) {
+          await db.execute(
+            'ALTER TABLE ${OfflineDBConstants.TABLE_PENDING_REQUESTS} RENAME TO ${OfflineDBConstants.TABLE_PENDING_REQUESTS}_backup',
+          );
 
+          await db.execute(OfflineDBConstants.CREATE_PENDING_REQUESTS_TABLE);
+
+          await db.execute('''
+    INSERT OR IGNORE INTO ${OfflineDBConstants.TABLE_PENDING_REQUESTS} (
+      ${OfflineDBConstants.COL_ID},
+      ${OfflineDBConstants.COL_USERNAME},
+      ${OfflineDBConstants.COL_PROJECT_NAME},
+      ${OfflineDBConstants.COL_REQUEST_JSON},
+      ${OfflineDBConstants.COL_STATUS},
+      ${OfflineDBConstants.COL_CREATED_AT}
+    )
+    SELECT 
+      ${OfflineDBConstants.COL_ID},
+      ${OfflineDBConstants.COL_USERNAME},
+      ${OfflineDBConstants.COL_PROJECT_NAME},
+      ${OfflineDBConstants.COL_REQUEST_JSON},
+      ${OfflineDBConstants.COL_STATUS},
+      ${OfflineDBConstants.COL_CREATED_AT}
+    FROM ${OfflineDBConstants.TABLE_PENDING_REQUESTS}_backup
+  ''');
+
+          await db.execute(
+            'DROP TABLE IF EXISTS ${OfflineDBConstants.TABLE_PENDING_REQUESTS}_backup',
+          );
+
+          LogService.writeLog(
+            message:
+                "$tag[V7] Added UNIQUE constraint on '${OfflineDBConstants.COL_REQUEST_JSON}' in ${OfflineDBConstants.TABLE_PENDING_REQUESTS}.",
+          );
+        }
         // if (oldVersion < 5) {
         //   await db.execute(OfflineDBConstants.CREATE_AUDIT_LOGS_TABLE);
         //   LogService.writeLog(message: "$tag[V5] Audit logs table ensured.");
