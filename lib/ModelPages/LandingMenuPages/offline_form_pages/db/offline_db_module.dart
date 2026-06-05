@@ -1015,7 +1015,12 @@ class OfflineDbModule {
           continue;
         }
 
-        final Map<String, dynamic> originalPayload = jsonDecode(bodyStr);
+        Map<String, dynamic> originalPayload = jsonDecode(bodyStr);
+
+        // if (id == 6267) {
+        //   originalPayload = update6267UploadJson();
+        // }
+
         originalPayload['ARMSessionId'] = currentSessionId;
 
         originalPayload['ARMSessionId'] = currentSessionId;
@@ -1354,6 +1359,314 @@ class OfflineDbModule {
     }
 
     return "Processed: $successCount success, $failCount failed";
+  }
+
+  static Map<String, dynamic> update6267UploadJson() {
+    return {
+      "ARMSessionId": "ARM-genie-03dfef00-a2af-4776-bf64-bb2a67cdae65",
+      "project": "genie",
+      "publickey": "InwardEntry",
+      "submitdata": {
+        "dataarray": {
+          "data": {
+            "dc1": {
+              "row1": {
+                "bags_sample": "19",
+                "billed_qty_bags_crates": "940",
+                "bottle_capacity": "650",
+                "bottle_type_n": "Amber",
+                "btlper_bag_crate": "12",
+                "empty_truck": "4080",
+                "entry_date": "",
+                "entry_time": "",
+                "exit_date": "",
+                "exit_time": "",
+                "loaded_truck": "10080",
+                "netweight": "6000",
+                "packing": "Crates",
+                "receipt_date_time": "19/05/2026 12:02:51 PM",
+                "received_bags_crates": "940",
+                "s1_dc": "4565",
+                "s1_name": "MURTHY AND CO H O ",
+                "s2_district": "Mysuru",
+                "s2_name": "",
+                "short_bags": "19",
+                "state": "Karnataka",
+                "ub_ge_no": "6744/2689",
+                "unit_name": "3200-NANJANGUD",
+                "vehicle_no": "KA05D7877"
+              }
+            },
+            "dc2": {
+              "row1": {
+                "broken": "1",
+                "extra_dirty": "0",
+                "fillrows": "1",
+                "mfgstate": "Karnataka",
+                "mng_year": "2025",
+                "neck_chip": "0",
+                "other_brand": "0",
+                "other_kf": "0",
+                "short": "0",
+                "tat_mfg_date": "21/02/2026",
+                "torn_bags": "0"
+              },
+              "row10": {
+                "broken": "0",
+                "extra_dirty": "0",
+                "fillrows": "10",
+                "mfgstate": "Karnataka",
+                "mng_year": "2025",
+                "neck_chip": "1",
+                "other_brand": "0",
+                "other_kf": "0",
+                "short": "0",
+                "tat_mfg_date": "06/03/2026",
+                "torn_bags": "0"
+              },
+              "row11": {
+                "broken": "0",
+                "extra_dirty": "0",
+                "fillrows": "11",
+                "mfgstate": "Karnataka",
+                "mng_year": "2025",
+                "neck_chip": "0",
+                "other_brand": "0",
+                "other_kf": "0",
+                "short": "0",
+                "tat_mfg_date": "09/04/2026",
+                "torn_bags": "0"
+              },
+              "row12": {
+                "broken": "0",
+                "extra_dirty": "0",
+                "fillrows": "12",
+                "mfgstate": "Karnataka",
+                "mng_year": "2025",
+                "neck_chip": "0",
+                "other_brand": "0",
+                "other_kf": "0",
+                "short": "0",
+                "tat_mfg_date": "23/01/2026",
+                "torn_bags": "0"
+              },
+              "row13": {
+                "broken": "1",
+                "extra_dirty": "0",
+                "fillrows": "13",
+                "mfgstate": "Karnataka",
+                "mng_year": "2025",
+                "neck_chip": "0",
+                "other_brand": "0",
+                "other_kf": "0",
+                "short": "0",
+                "tat_mfg_date": "27/04/2026",
+                "torn_bags": "0"
+              },
+              "row14": {
+                "broken": "0",
+                "extra_dirty": "0",
+                "fillrows": "14",
+                "mfgstate": "Karnataka",
+                "mng_year": "2025",
+                "neck_chip": "0",
+                "other_brand": "1",
+                "other_kf": "0",
+                "short": "0",
+                "tat_mfg_date": "11/02/2026",
+                "torn_bags": "0"
+              },
+              "row15": {
+                "broken": "0",
+                "extra_dirty": "0",
+                "fillrows": "15",
+                "mfgstate": "Jharkhand",
+                "mng_year": "2025",
+                "neck_chip": "0",
+                "other_brand": "0",
+                "other_kf": "0",
+                "short": "0",
+                "tat_mfg_date": "05/04/2026",
+                "torn_bags": "0"
+              },
+              "row16": {
+                "broken": "0",
+                "extra_dirty": "1",
+                "fillrows": "16",
+                "mfgstate": "Karnataka",
+                "mng_year": "2025",
+                "neck_chip": "0",
+                "other_brand": "0",
+                "other_kf": "0",
+                "short": "0",
+                "tat_mfg_date": "17/12/2025",
+                "torn_bags": "0"
+              },
+              "row17": {
+                "broken": "0",
+                "extra_dirty": "0",
+                "fillrows": "17",
+                "mfgstate": "Karnataka",
+                "mng_year": "2025",
+                "neck_chip": "0",
+                "other_brand": "0",
+                "other_kf": "0",
+                "short": "0",
+                "tat_mfg_date": "20/04/2026",
+                "torn_bags": "0"
+              },
+              "row18": {
+                "broken": "0",
+                "extra_dirty": "0",
+                "fillrows": "18",
+                "mfgstate": "Karnataka",
+                "mng_year": "2025",
+                "neck_chip": "0",
+                "other_brand": "0",
+                "other_kf": "0",
+                "short": "0",
+                "tat_mfg_date": "13/01/2026",
+                "torn_bags": "0"
+              },
+              "row19": {
+                "broken": "0",
+                "extra_dirty": "0",
+                "fillrows": "19",
+                "mfgstate": "Jharkhand",
+                "mng_year": "2025",
+                "neck_chip": "0",
+                "other_brand": "0",
+                "other_kf": "0",
+                "short": "0",
+                "tat_mfg_date": "12/03/2026",
+                "torn_bags": "0"
+              },
+              "row2": {
+                "broken": "0",
+                "extra_dirty": "0",
+                "fillrows": "2",
+                "mfgstate": "Karnataka",
+                "mng_year": "2025",
+                "neck_chip": "0",
+                "other_brand": "0",
+                "other_kf": "0",
+                "short": "0",
+                "tat_mfg_date": "18/01/2026",
+                "torn_bags": "0"
+              },
+              "row3": {
+                "broken": "0",
+                "extra_dirty": "0",
+                "fillrows": "3",
+                "mfgstate": "Karnataka",
+                "mng_year": "2025",
+                "neck_chip": "0",
+                "other_brand": "0",
+                "other_kf": "0",
+                "short": "0",
+                "tat_mfg_date": "25/03/2026",
+                "torn_bags": "0"
+              },
+              "row4": {
+                "broken": "0",
+                "extra_dirty": "1",
+                "fillrows": "4",
+                "mfgstate": "Karnataka",
+                "mng_year": "2025",
+                "neck_chip": "0",
+                "other_brand": "0",
+                "other_kf": "0",
+                "short": "0",
+                "tat_mfg_date": "07/02/2026",
+                "torn_bags": "0"
+              },
+              "row5": {
+                "broken": "0",
+                "extra_dirty": "0",
+                "fillrows": "5",
+                "mfgstate": "Karnataka",
+                "mng_year": "2025",
+                "neck_chip": "0",
+                "other_brand": "0",
+                "other_kf": "0",
+                "short": "0",
+                "tat_mfg_date": "15/04/2026",
+                "torn_bags": "0"
+              },
+              "row6": {
+                "broken": "0",
+                "extra_dirty": "0",
+                "fillrows": "6",
+                "mfgstate": "Karnataka",
+                "mng_year": "2025",
+                "neck_chip": "0",
+                "other_brand": "0",
+                "other_kf": "0",
+                "short": "0",
+                "tat_mfg_date": "18/02/2026",
+                "torn_bags": "0"
+              },
+              "row7": {
+                "broken": "1",
+                "extra_dirty": "0",
+                "fillrows": "7",
+                "mfgstate": "Karnataka",
+                "mng_year": "2025",
+                "neck_chip": "0",
+                "other_brand": "0",
+                "other_kf": "0",
+                "short": "0",
+                "tat_mfg_date": "30/01/2026",
+                "torn_bags": "0"
+              },
+              "row8": {
+                "broken": "0",
+                "extra_dirty": "0",
+                "fillrows": "8",
+                "mfgstate": "Karnataka",
+                "mng_year": "2025",
+                "neck_chip": "0",
+                "other_brand": "0",
+                "other_kf": "0",
+                "short": "0",
+                "tat_mfg_date": "11/12/2025",
+                "torn_bags": "0"
+              },
+              "row9": {
+                "broken": "0",
+                "extra_dirty": "0",
+                "fillrows": "9",
+                "mfgstate": "Karnataka",
+                "mng_year": "2025",
+                "neck_chip": "0",
+                "other_brand": "0",
+                "other_kf": "0",
+                "short": "0",
+                "tat_mfg_date": "24/01/2026",
+                "torn_bags": "0"
+              }
+            },
+            "dc3": {
+              "row1": {
+                "tot_broken": "3",
+                "tot_extradirty": "2",
+                "tot_neckchip": "1",
+                "tot_otherbrand": "1",
+                "tot_otherkf": "0",
+                "tot_short": "0",
+                "tot_tornbags": "0"
+              }
+            },
+            "keyvalue": "",
+            "mode": "new",
+            "recordid": "0"
+          }
+        },
+        "keyfield": "",
+        "trace": "false",
+        "username": "kantha"
+      }
+    };
   }
 
   static bool _isAuthenticationError(String message) {

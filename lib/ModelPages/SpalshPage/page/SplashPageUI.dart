@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
@@ -110,6 +111,7 @@ class _SplashPageState extends State<SplashPage>
     final androidInfo = await deviceInfo.androidInfo;
 
     final upgrader = Upgrader(
+      // debugDisplayAlways: true,   
       debugLogging: true,
       storeController: UpgraderStoreController(
         onAndroid: () {
@@ -129,7 +131,7 @@ class _SplashPageState extends State<SplashPage>
       ),
     );
     await upgrader.initialize();
-
+    log("${upgrader.shouldDisplayUpgrade()}", name: "Upgrader");
     if (upgrader.shouldDisplayUpgrade()) {
       Get.offAll(() => UpdateRequiredPage(
             upgrader: upgrader,

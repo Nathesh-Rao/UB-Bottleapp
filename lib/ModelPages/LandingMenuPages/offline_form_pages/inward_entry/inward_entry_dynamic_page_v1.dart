@@ -174,14 +174,19 @@ class InwardEntryDynamicPageV1 extends GetView<InwardEntryDynamicController> {
     final String name = f["fld_name"];
     final String label = f["fld_caption"];
     final bool mandatory = (f["allowempty"] == "F");
+    final bool hidden = (f["hidden"] == "T");
     final bool readonly = (f["readonly"] == "T");
     final String datetime_format = f["datetime_format"] = "";
     final bool isUpper = rawType.endsWith("_upper");
     final String type = isUpper ? rawType.replaceAll("_upper", "") : rawType;
+    if (hidden) {
+      return SizedBox.shrink();
+    }
     switch (type) {
       case "c":
         return _text(
           label,
+          readOnly: readonly,
           controller.getTextCtrl(name),
           name,
           mandatory: mandatory,
@@ -192,6 +197,7 @@ class InwardEntryDynamicPageV1 extends GetView<InwardEntryDynamicController> {
           label,
           controller.getTextCtrl(name),
           name,
+          readOnly: readonly,
           mandatory: mandatory,
         );
       case "dd":
@@ -220,6 +226,7 @@ class InwardEntryDynamicPageV1 extends GetView<InwardEntryDynamicController> {
           controller.getTextCtrl(name),
           name,
           mandatory: mandatory,
+          readOnly: readonly,
           datetime_formate: datetime_format,
         );
 
@@ -230,6 +237,7 @@ class InwardEntryDynamicPageV1 extends GetView<InwardEntryDynamicController> {
           controller.getTextCtrl(name),
           name,
           mandatory: mandatory,
+          readOnly: readonly,
           datetime_formate: datetime_format,
         );
       case "datetime":
@@ -272,6 +280,7 @@ class InwardEntryDynamicPageV1 extends GetView<InwardEntryDynamicController> {
     String key, {
     bool mandatory = false,
     FocusNode? focusNode,
+    bool readOnly = false,
   }) {
     return _RowWithField(
       label: label,
@@ -280,6 +289,7 @@ class InwardEntryDynamicPageV1 extends GetView<InwardEntryDynamicController> {
       child: Obx(() {
         final hasError = controller.errors.containsKey(key);
         return TextFormField(
+          readOnly: readOnly,
           controller: ctrl,
           focusNode: focusNode,
           decoration: _inputDecoration(label, hasError),
@@ -288,8 +298,13 @@ class InwardEntryDynamicPageV1 extends GetView<InwardEntryDynamicController> {
     );
   }
 
-  Widget _number(String label, TextEditingController ctrl, String key,
-      {bool mandatory = false}) {
+  Widget _number(
+    String label,
+    TextEditingController ctrl,
+    String key, {
+    bool mandatory = false,
+    bool readOnly = false,
+  }) {
     return _RowWithField(
       label: label,
       mandatory: mandatory,
@@ -297,6 +312,7 @@ class InwardEntryDynamicPageV1 extends GetView<InwardEntryDynamicController> {
       child: Obx(() {
         final hasError = controller.errors.containsKey(key);
         return TextFormField(
+          readOnly: readOnly,
           controller: ctrl,
           keyboardType: TextInputType.number,
           decoration: _inputDecoration(label, hasError),
@@ -418,9 +434,15 @@ class InwardEntryDynamicPageV1 extends GetView<InwardEntryDynamicController> {
     return "Parent";
   }
 
-  Widget _date(BuildContext context, String label, TextEditingController ctrl,
-      String key,
-      {bool mandatory = false, String datetime_formate = ""}) {
+  Widget _date(
+    BuildContext context,
+    String label,
+    TextEditingController ctrl,
+    String key, {
+    bool mandatory = false,
+    String datetime_formate = "",
+    bool readOnly = false,
+  }) {
     return _RowWithField(
       label: label,
       mandatory: mandatory,
@@ -430,7 +452,7 @@ class InwardEntryDynamicPageV1 extends GetView<InwardEntryDynamicController> {
         final hasError = controller.errors.containsKey(key);
         return TextFormField(
           controller: ctrl,
-          readOnly: true,
+          readOnly: readOnly,
           decoration: _inputDecoration(label, hasError),
           onTap: () async {
             final d = await showDatePicker(
@@ -455,9 +477,15 @@ class InwardEntryDynamicPageV1 extends GetView<InwardEntryDynamicController> {
     );
   }
 
-  Widget _yearPicker(BuildContext context, String label,
-      TextEditingController ctrl, String key,
-      {bool mandatory = false, String datetime_formate = ""}) {
+  Widget _yearPicker(
+    BuildContext context,
+    String label,
+    TextEditingController ctrl,
+    String key, {
+    bool mandatory = false,
+    String datetime_formate = "",
+    bool readOnly = false,
+  }) {
     return _RowWithField(
       label: label,
       mandatory: mandatory,
@@ -467,7 +495,7 @@ class InwardEntryDynamicPageV1 extends GetView<InwardEntryDynamicController> {
         final hasError = controller.errors.containsKey(key);
         return TextFormField(
           controller: ctrl,
-          readOnly: true,
+          readOnly: readOnly,
           decoration: _inputDecoration(label, hasError),
           onTap: () async {
             final now = DateTime.now();
@@ -487,9 +515,15 @@ class InwardEntryDynamicPageV1 extends GetView<InwardEntryDynamicController> {
     );
   }
 
-  Widget _timePicker(BuildContext context, String label,
-      TextEditingController ctrl, String key,
-      {bool mandatory = false, String datetime_formate = ""}) {
+  Widget _timePicker(
+    BuildContext context,
+    String label,
+    TextEditingController ctrl,
+    String key, {
+    bool mandatory = false,
+    String datetime_formate = "",
+    bool readOnly = false,
+  }) {
     return _RowWithField(
       label: label,
       mandatory: mandatory,
@@ -500,7 +534,7 @@ class InwardEntryDynamicPageV1 extends GetView<InwardEntryDynamicController> {
 
         return TextFormField(
           controller: ctrl,
-          readOnly: true,
+          readOnly: readOnly,
           decoration: _inputDecoration(label, hasError),
           onTap: () async {
             final now = TimeOfDay.now();
@@ -564,7 +598,7 @@ class InwardEntryDynamicPageV1 extends GetView<InwardEntryDynamicController> {
 
         return TextFormField(
           controller: ctrl,
-          readOnly: true,
+          readOnly: readOnly,
           decoration: _inputDecoration(label, hasError),
           onTap: readOnly
               ? null // No picker when read-only
@@ -651,7 +685,6 @@ class _RowWithField extends GetView<InwardEntryDynamicController> {
   final Widget child;
   final Widget? trailing;
   final String errorKey;
-
   const _RowWithField({
     required this.label,
     required this.child,

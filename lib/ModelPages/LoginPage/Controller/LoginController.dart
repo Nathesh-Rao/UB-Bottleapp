@@ -759,8 +759,8 @@ class LoginController extends GetxController {
             await processSignInDataResponse(json["result"]);
 
             if (AppStorage().retrieveValue(AppStorage.AUTO_SYNC) == null) {
-              globalVariableController.autoSyncEnabled.value = true;
-              await AppStorage().storeValue(AppStorage.AUTO_SYNC, true);
+              globalVariableController.autoSyncEnabled.value = false;
+              await AppStorage().storeValue(AppStorage.AUTO_SYNC, false);
             } else {
               globalVariableController.autoSyncEnabled.value =
                   await AppStorage().retrieveValue(AppStorage.AUTO_SYNC);

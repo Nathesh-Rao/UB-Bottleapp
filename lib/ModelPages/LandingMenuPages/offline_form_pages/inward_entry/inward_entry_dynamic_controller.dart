@@ -307,7 +307,17 @@ class InwardEntryDynamicController extends GetxController {
 
     _bagsToSampleDebounce = Timer(const Duration(milliseconds: 300), () {
       final int count = int.tryParse(value) ?? 0;
-
+      if (count > 999) {
+        // getTextCtrl("bags_sample").text = "999";
+        Get.snackbar(
+          "Limit Exceeded",
+          "Maximum allowed samples is 999.",
+          backgroundColor: Colors.orangeAccent,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
       if (count >= 1) {
         _generateSampleGrid(count);
         showMiniFab.value = true;
@@ -341,11 +351,12 @@ class InwardEntryDynamicController extends GetxController {
   }
 
   void _generateSampleGrid(int count) {
+    final int safeCount = count.clamp(1, 999);
     clearSampleGrid();
 
     final List gridFields = schema["fillgrids"]["fields"];
 
-    for (int i = 0; i < count; i++) {
+    for (int i = 0; i < safeCount; i++) {
       final Map<String, TextEditingController> row = {};
 
       for (final f in gridFields) {
@@ -432,11 +443,13 @@ class InwardEntryDynamicController extends GetxController {
 
   final RxSet<String> gridValidationErrors = <String>{}.obs;
   final RxInt leastErrorSno = 0.obs;
+
   bool validateAllGridSamples({bool showSnack = true}) {
     gridValidationErrors.clear();
     leastErrorSno.value = 0;
     bool isValid = true;
     final List gridFields = schema["fillgrids"]["fields"];
+    log(sampleGridRows.length.toString(), name: "validateAllGridSamples");
     int? firstErrorSno;
     for (int i = 0; i < sampleGridRows.length; i++) {
       final row = sampleGridRows[i];

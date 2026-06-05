@@ -107,8 +107,10 @@ class _OtpPageState extends State<OtpPage> {
                         ),
                       ),
                     ),
-                    SizedBox(height: MediaQuery.of(context).size.height * 0.025),
-                    Obx(() => _projectNameWidget(projectName: loginController.currentProjectName.value)),
+                    SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.025),
+                    Obx(() => _projectNameWidget(
+                        projectName: loginController.currentProjectName.value)),
                     Obx(
                       () => WidgetOtpTextField(
                         label: "OTP",
@@ -156,7 +158,9 @@ class _OtpPageState extends State<OtpPage> {
                                   // decoration: TextDecoration.underline,
                                   fontWeight: FontWeight.w700,
                                   fontSize: 13,
-                                  color: _isTimerActive ? Colors.grey : MyColors.AXMDark,
+                                  color: _isTimerActive
+                                      ? Colors.grey
+                                      : MyColors.AXMDark,
                                 )),
                           )
                         ],
@@ -165,6 +169,9 @@ class _OtpPageState extends State<OtpPage> {
                     SizedBox(height: 40),
 
                     WidgetLoginButton(
+                      icon: Icon(
+                        Icons.security,
+                      ),
                       label: "Login",
                       onPressed: () {
                         loginController.callVerifyOTP();
@@ -180,7 +187,11 @@ class _OtpPageState extends State<OtpPage> {
                       child: Text(
                         "By using the software, you agree to the",
                         style: GoogleFonts.poppins(
-                            textStyle: TextStyle(fontWeight: FontWeight.w400, fontSize: 12, letterSpacing: 1, color: Colors.black)),
+                            textStyle: TextStyle(
+                                fontWeight: FontWeight.w400,
+                                fontSize: 12,
+                                letterSpacing: 1,
+                                color: Colors.black)),
                       ),
                     ),
                     Row(
@@ -200,7 +211,11 @@ class _OtpPageState extends State<OtpPage> {
                         FittedBox(
                           child: Text(" and the",
                               style: GoogleFonts.poppins(
-                                textStyle: TextStyle(fontWeight: FontWeight.w400, fontSize: 12, color: Colors.black, letterSpacing: 1),
+                                textStyle: TextStyle(
+                                    fontWeight: FontWeight.w400,
+                                    fontSize: 12,
+                                    color: Colors.black,
+                                    letterSpacing: 1),
                               )),
                         ),
                         FittedBox(
@@ -220,7 +235,11 @@ class _OtpPageState extends State<OtpPage> {
                     Text("Powered By",
                         textAlign: TextAlign.center,
                         style: GoogleFonts.poppins(
-                          textStyle: TextStyle(fontWeight: FontWeight.w500, fontSize: 12, color: Colors.black, letterSpacing: 1),
+                          textStyle: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              fontSize: 12,
+                              color: Colors.black,
+                              letterSpacing: 1),
                         )),
                     Image.asset(
                       'assets/images/agilelabslogo.png',
@@ -245,7 +264,9 @@ class _OtpPageState extends State<OtpPage> {
                                   textStyle: TextStyle(
                                       color: MyColors.buzzilyblack,
                                       fontWeight: FontWeight.w700,
-                                      fontSize: MediaQuery.of(context).size.height * 0.012)),
+                                      fontSize:
+                                          MediaQuery.of(context).size.height *
+                                              0.012)),
                             );
                           } else {
                             return Text("");
@@ -285,7 +306,8 @@ class _OtpPageState extends State<OtpPage> {
 
   void _startCountdown() {
     _isTimerActive = true;
-    _remaining = Duration(minutes: int.parse(loginController.otpExpiryTime.value));
+    _remaining =
+        Duration(minutes: int.parse(loginController.otpExpiryTime.value));
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_remaining.inSeconds > 0) {
         setState(() {
@@ -301,8 +323,10 @@ class _OtpPageState extends State<OtpPage> {
   }
 
   String get _formattedTime {
-    final minutes = _remaining.inMinutes.remainder(60).toString().padLeft(1, '0');
-    final seconds = _remaining.inSeconds.remainder(60).toString().padLeft(2, '0');
+    final minutes =
+        _remaining.inMinutes.remainder(60).toString().padLeft(1, '0');
+    final seconds =
+        _remaining.inSeconds.remainder(60).toString().padLeft(2, '0');
     return '$minutes:$seconds min';
   }
 }

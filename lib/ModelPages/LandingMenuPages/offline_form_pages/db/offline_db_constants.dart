@@ -26,7 +26,7 @@ class OfflineDBConstants {
 
     String baseUrl = "${uri.scheme}://${uri.host}";
 
-    return "$baseUrl/MobileOfflineStruct/offline_config.json";
+    return "$baseUrl/MobileOfflineStruct/offline_config.json";           
   }
 
   static const String CREATE_QUERY = 'CREATE TABLE IF NOT EXISTS ';
