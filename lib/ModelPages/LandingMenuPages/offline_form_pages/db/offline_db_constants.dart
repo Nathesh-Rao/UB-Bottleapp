@@ -4,7 +4,7 @@ class OfflineDBConstants {
   OfflineDBConstants._();
 
   static String OFFLINE_PAGES_URL() {
-    // return "https://raw.githubusercontent.com/amrith4agile/offline_sample_pages/refs/heads/main/offline_pages.json";
+    return "https://raw.githubusercontent.com/amrith4agile/offline_sample_pages/refs/heads/main/offline_pages.json";
 
     String userEnteredUrl = AppStorage().retrieveValue(AppStorage.PROJECT_URL);
     if (!userEnteredUrl.startsWith('http')) {
@@ -26,7 +26,7 @@ class OfflineDBConstants {
 
     String baseUrl = "${uri.scheme}://${uri.host}";
 
-    return "$baseUrl/MobileOfflineStruct/offline_config.json";           
+    return "$baseUrl/MobileOfflineStruct/offline_config.json";
   }
 
   static const String CREATE_QUERY = 'CREATE TABLE IF NOT EXISTS ';

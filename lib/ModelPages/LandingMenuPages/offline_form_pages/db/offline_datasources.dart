@@ -87,7 +87,7 @@ class OfflineDatasources {
     Map<String, dynamic>? sqlParams,
   }) async {
     final url =
-        Const.getFullARMUrl(ServerConnections.API_GET_HOMEPAGE_CARDSDATASOURCE);
+        Const.getFullARMUrl(ServerConnections.API_GET_DATASOURCE_RESPONSE);
 
     final body = {
       "ARMSessionId": sessionId,

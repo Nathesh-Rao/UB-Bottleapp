@@ -688,7 +688,7 @@ class EssController extends GetxController {
   getPunchINData() async {
     LoadingScreen.show();
 
-    var url = Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
+    var url = Const.getFullARMUrl(ServerConnections.ARM_EXECUTE_PUBLISHED_API);
     var body = {
       "publickey": "AXPKEY000000010003",
       "ARMSessionId": appStorage.retrieveValue(AppStorage.SESSIONID),
@@ -739,7 +739,7 @@ class EssController extends GetxController {
     String address = await CommonMethods.getAddressFromLatLng(currentLocation!);
     ////currentLocation != null ? await CommonMethods.getAddressFromLatLng(currentLocation) : "";
     log("address: ${address.toString()}");
-    var url = Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
+    var url = Const.getFullARMUrl(ServerConnections.ARM_EXECUTE_PUBLISHED_API);
     var body = {
       "publickey": "AXPKEY000000010002",
       "project": appStorage.retrieveValue(AppStorage.PROJECT_NAME),
@@ -806,7 +806,7 @@ class EssController extends GetxController {
     //currentLocation != null ? await CommonMethods.getAddressFromLatLng(currentLocation) : "";
     log("address: ${address.toString()}");
 
-    var url = Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
+    var url = Const.getFullARMUrl(ServerConnections.ARM_EXECUTE_PUBLISHED_API);
     var body = {
       "publickey": "AXPKEY000000010002",
       "project": appStorage.retrieveValue(AppStorage.PROJECT_NAME),
@@ -918,8 +918,8 @@ class EssController extends GetxController {
       return actionData;
     } else {
       // var dataSourceUrl = baseUrl + GlobalConfiguration().get("HomeCardDataResponse").toString();
-      var dataSourceUrl = Const.getFullARMUrl(
-          ServerConnections.API_GET_HOMEPAGE_CARDSDATASOURCE);
+      var dataSourceUrl =
+          Const.getFullARMUrl(ServerConnections.API_GET_DATASOURCE_RESPONSE);
       var dataSourceBody = body;
       dataSourceBody["sqlParams"] = {
         "param": "value",

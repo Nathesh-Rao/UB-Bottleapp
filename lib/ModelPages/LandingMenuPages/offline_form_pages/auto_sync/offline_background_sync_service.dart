@@ -1,4 +1,6 @@
 import 'dart:developer';
+import 'package:ubbottleapp/Utils/ServerConnections/ServerConnections.dart';
+
 import 'offline_config_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
@@ -118,7 +120,7 @@ class OfflineBackgroundSyncService {
     }
 
     final String armUrl =
-        Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
+        Const.getFullARMUrl(ServerConnections.ARM_EXECUTE_PUBLISHED_API);
     await FlutterForegroundTask.saveData(key: 'armUrl', value: armUrl);
     await FlutterForegroundTask.saveData(
         key: 'intervalMinutes', value: interval);

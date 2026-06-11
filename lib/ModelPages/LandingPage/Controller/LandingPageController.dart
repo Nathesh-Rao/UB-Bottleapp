@@ -214,7 +214,7 @@ class LandingPageController extends GetxController with WidgetsBindingObserver {
   getClientInfo() async {
     // var dataSourceUrl = baseUrl + GlobalConfiguration().get("HomeCardDataResponse").toString();
     var dataSourceUrl =
-        Const.getFullARMUrl(ServerConnections.API_GET_HOMEPAGE_CARDSDATASOURCE);
+        Const.getFullARMUrl(ServerConnections.API_GET_DATASOURCE_RESPONSE);
     var body = {
       "ARMSessionId": appStorage.retrieveValue(AppStorage.SESSIONID),
       "username": appStorage.retrieveValue(AppStorage.USER_NAME),

@@ -14,156 +14,236 @@ import '../../ModelPages/LandingPage/Controller/LandingPageController.dart';
 import '../LogServices/LogService.dart';
 
 class ServerConnections {
+//   static var client = http.Client();
+//   // InternetConnectivity internetConnectivity = Get.find();
+//   static const String API_GET_USERGROUPS = "api/v1/ARMUserGroups";
+//   static const String API_GET_SIGNINDETAILS = "api/v1/ARMSigninDetails";
+//   static const String API_SIGNIN = "api/v1/Signin"; //"api/v1/ARMSignIn";
+//   static const String API_GET_LOGINUSER_DETAILS = "api/v1/GetLoginUserDetails";
+//   static const String API_VALIDATE_OTP = "api/v1/ValidateOTP";
+//   static const String API_RESEND_OTP = "api/v1/ResendOTP";
+//   static const String API_AX_START_SESSION = "api/v1/AxStartSession";
+//   // static const String API_AX_START_SESSION = "api/v1/AxStartSession";
+
+//   static const String API_GET_APPSTATUS = "api/v1/ARMAppStatus";
+//   static const String API_ADDUSER = "api/v1/ARMAddUser";
+//   static const String API_OTP_VALIDATE_USER = "api/v1/ARMValidateAddUser";
+//   static const String API_FORGOTPASSWORD = "api/v1/ARMForgotPassword";
+//   static const String API_VALIDATE_FORGETPASSWORD =
+//       "api/v1/ARMValidateForgotPassword";
+//   static const String API_GOOGLESIGNIN_SSO = "api/v1/ARMSigninSSO";
+//   static const String API_CONNECTTOAXPERT = "api/v1/ARMConnectToAxpert";
+//   static const String API_GET_HOMEPAGE_CARDS = "api/v1/ARMGetHomePageCards";
+//   static const String API_GET_HOMEPAGE_CARDS_v2 = "api/v2/ARMGetHomePageCards";
+//   static const String API_GET_HOMEPAGE_CARDSDATASOURCE =
+//       "api/v1/ARMGetDataResponse";
+
+// //-------------------->
+//   //NOTE AXPERT 11.4
+//   static const String API_GET_CARDS_WITH_DATA = "api/v1/GetCardsWithData";
+
+//   static const SAMPLE_GET_CARDS_WITH_DATA_GLOBAL_PARAMS = {
+//     "m_constants": "MyConstant",
+//     "axpdbdirectorypath": "",
+//     "vdim1": "",
+//     "vdim2": "",
+//     "vdim3": "",
+//     "vdim4": "",
+//     "AxMailFrom": "agilebiz.support@agile-labs.com",
+//     "APPLogo":
+//         "\\\\172.16.0.85\\AgileBizDocs\\Attachments\\Agileerpdemo\\agcloud-biz.png",
+//     "axpegemailactionurl":
+//         "https://demo.agilecloud.biz/demoarm/api/v1/ARMMailTaskAction",
+//     "AxSingnalRapiURL": "https://dev.agilecloud.biz/devarm/api/v1/SendSignalR",
+//     "AxRMQAPIURL":
+//         "https://dev.agilecloud.biz/devarm11.4/api/v1/ARMPushToQueue",
+//     "axdecimal": "4",
+//     "tor_dashboard_logdate_from": "ALL",
+//     "tor_dashboard_logdate_to": "ALL",
+//     "tortimetaken_from": "ALL",
+//     "tortimetaken_to": "ALL",
+//     "torservicename": "ALL",
+//     "custom_dashboard_cardids": "1453220000002,1457330000002",
+//     "custom_dashboard_params": "custom_dashboard_params json here",
+//     "torusername": "ALL",
+//     "AxDisallowCreate": "instk,stock",
+//     "AxpDbDirPath": "\\\\172.16.93.4\\Attachment_QA\\import\\AxImportDbDir",
+//     "AxSignalRapiURL":
+//         "https://dev.agilecloud.biz/devarm11.4/api/v1/SendSignalR",
+//     "AxScriptsAPIURL":
+//         "https://dev.agilecloud.biz/devarmscripts/ASBScriptRest.dll/datasnap/rest/TASBScriptRest/scriptsapi",
+//     "AxFCMSendMsgURL":
+//         "https://dev.agilecloud.biz/devarmtest/api/v1/SendFCMNotification",
+//     "AxPEGMailFrom": "agilebiz.support@agile-labs.com",
+//     "AxRapidSaveURL":
+//         "https://dev.agilecloud.biz/devarmscripts/ASBRapidSaveRest.dll/datasnap/rest/TASBRapidSaveRest/RapidSave",
+//     "axglo_recordid": "1970880000000",
+//     "m_company": "AGILE ERP DEMO",
+//     "m_branch": "HEAD OFFICE",
+//     "m_finyr": "2024",
+//     "m_location": "HEAD OFFICE",
+//     "m_fystartdate": "01/04/2024",
+//     "m_bridentifier": "09HQ",
+//     "m_companycode": "09",
+//     "m_currency": "INR",
+//     "m_spinterval": "",
+//     "fromuserlogin": "F",
+//     "axp_displaytext":
+//         "For the User:admin,Company:AGILE ERP DEMO,Branch:HEAD OFFICE,Financial Year:2024",
+//     "axglo_hide": "T",
+//     "m_fyenddate": "31/03/2025",
+//     "axpimageserver": "",
+//     "m_taxtype": "GST",
+//     "m_cursymbol": "₹",
+//     "m_curdecimals": "2",
+//     "axglo_user": "admin",
+//     "m_companyid": "1775550000001",
+//     "m_currencyid": "1119010000000",
+//     "m_branchid": "1775550000003",
+//     "m_branchlists": "ALL",
+//     "m_accesstobranches": "T",
+//     "m_accesstolocations": "T",
+//     "m_locationlists": "ALL",
+//     "m_opbaldate": "01/04/2024",
+//     "m_today": "22/01/2025",
+//     "m_enablecostcentre": "",
+//     "dac_branch": "HEAD OFFICE,Mumbai Branch",
+//     "lockindate": "24/10/2024",
+//     "millions": "T",
+//     "username": "admin",
+//     "responsibilies": "default",
+//     "rolename": "default",
+//     "ax_evalcopy": "F",
+//     "sesid": "jbxqzz5tie2y3yujshe3k1x5",
+//     "usergroup": "default",
+//     "project": "agileerpdemo",
+//     "axp_connectionname": "agileerpdemo",
+//     "groupno": "2",
+//     "userroles": "default",
+//     "pageaccess": "",
+//     "axp_apipath": "http://localhost/AxpertWebScripts113/",
+//     "axp_devschema": "agileerpdemoaxdef",
+//     "axp_appschema": "agileerpdemo",
+//     "axp_clientlocale":
+//         "en-US*Asia/Calcutta^english*1/24/2025 11:20:53 AM*1443",
+//     "transidlist": "0D000000B950DB15186FFB53D708363D7251C798",
+//     "appvartypes": "cccccccccccccccccccccccccccnccccdcccccccdcccccnnnccccddccd",
+//     "auth_path": "D:\\Codeset\\11\\Axpert11.3\\AxpertWebScripts"
+//   };
+
+//   //-------------------->
+//   // static const String API_GET_PENDING_ACTIVELIST = "api/v1/ARMGetActiveTasks"; //OLD
+//   static const String API_MOBILE_NOTIFICATION = "api/v1/ARMMobileNotification";
+//   static const String API_GET_DASHBOARD_DATA = "api/v1/ARMGetCardsData";
+//   static const String API_CHANGE_PASSWORD = "api/v1/ARMChangePassword";
+
+//   static const String API_GET_MENU = "api/v1/ARMGetMenu";
+//   static const String API_GET_MENU_V2 = "api/v2/ARMGetMenu";
+//   static const String API_SIGNOUT = "api/v1/ARMSignOut";
+
+//   static const String API_GET_PENDING_ACTIVETASK =
+//       "api/v1/ARMGetPendingActiveTasks";
+//   static const String API_GET_PENDING_ACTIVETASK_COUNT =
+//       "api/v1/ARMGetPendingActiveTasksCount";
+//   static const String API_GET_ACTIVETASK_DETAILS =
+//       "api/v1/ARMPEGGetTaskDetails";
+//   static const String API_GET_FILTERED_PENDING_TASK =
+//       "api/v1/ARMGetFilteredActiveTasks";
+//   static const String API_GET_COMPLETED_ACTIVETASK =
+//       "api/v1/ARMGetCompletedTasks";
+//   static const String API_GET_COMPLETED_ACTIVETASK_COUNT =
+//       "api/v1/ARMGetCompletedTasksCount";
+//   static const String API_GET_FILTERED_COMPLETED_TASK =
+//       "api/v1/ARMGetFilteredCompletedTasks";
+//   static const String API_DO_TASK_ACTIONS = "api/v1/ARMDoTaskAction";
+//   static const String API_GET_ALL_ACTIVE_TASKS = "api/v1/ARMGetAllActiveTasks";
+//   static const String API_GET_BULK_APPROVAL_COUNT =
+//       "api/v1/ARMGetBulkApprovalCount";
+//   static const String API_GET_BULK_ACTIVETASKS = "api/v1/ARMGetBulkActiveTasks";
+//   static const String API_POST_BULK_DO_BULK_ACTION = "api/v1/ARMDoBulkAction";
+//   static const String API_GET_SENDTOUSERS = "api/v1/ARMGetSendToUsers";
+//   static const String API_GET_FILE_BY_RECORDID = "api/v1/GetFileByRecordId";
+//   static const String BANNER_JSON_NAME = "mainpagebanner.json";
+
   static var client = http.Client();
-  // InternetConnectivity internetConnectivity = Get.find();
-  static const String API_GET_USERGROUPS = "api/v1/ARMUserGroups";
-  static const String API_GET_SIGNINDETAILS = "api/v1/ARMSigninDetails";
-  static const String API_SIGNIN = "api/v1/Signin"; //"api/v1/ARMSignIn";
-  static const String API_GET_LOGINUSER_DETAILS = "api/v1/GetLoginUserDetails";
-  static const String API_VALIDATE_OTP = "api/v1/ValidateOTP";
-  static const String API_RESEND_OTP = "api/v1/ResendOTP";
-  static const String API_AX_START_SESSION = "api/v1/AxStartSession";
-  // static const String API_AX_START_SESSION = "api/v1/AxStartSession";
+  InternetConnectivity internetConnectivity = Get.find();
 
-  static const String API_GET_APPSTATUS = "api/v1/ARMAppStatus";
-  static const String API_ADDUSER = "api/v1/ARMAddUser";
-  static const String API_OTP_VALIDATE_USER = "api/v1/ARMValidateAddUser";
-  static const String API_FORGOTPASSWORD = "api/v1/ARMForgotPassword";
-  static const String API_VALIDATE_FORGETPASSWORD =
-      "api/v1/ARMValidateForgotPassword";
-  static const String API_GOOGLESIGNIN_SSO = "api/v1/ARMSigninSSO";
-  static const String API_CONNECTTOAXPERT = "api/v1/ARMConnectToAxpert";
-  static const String API_GET_HOMEPAGE_CARDS = "api/v1/ARMGetHomePageCards";
-  static const String API_GET_HOMEPAGE_CARDS_v2 = "api/v2/ARMGetHomePageCards";
-  static const String API_GET_HOMEPAGE_CARDSDATASOURCE =
-      "api/v1/ARMGetDataResponse";
+  // AXAUTH ARM Services
+  static const String API_GET_SIGNINDETAILS = "AxAuth/api/v1/ARMSigninDetails";
+  static const String API_SIGNIN = "AxAuth/api/v1/Signin"; //"api/v1/ARMSignIn";
+  static const String API_GET_LOGINUSER_DETAILS =
+      "AxAuth/api/v1/GetLoginUserDetails";
+  static const String API_VALIDATE_OTP = "AxAuth/api/v1/ValidateOTP";
+  static const String API_RESEND_OTP = "AxAuth/api/v1/ResendOTP";
+  static const String API_CONNECTTOAXPERT = "AxAuth/api/v1/ARMConnectToAxpert";
+  static const String API_SIGNOUT = "AxAuth/api/v1/ARMSignOut";
 
-//-------------------->
-  //NOTE AXPERT 11.4
-  static const String API_GET_CARDS_WITH_DATA = "api/v1/GetCardsWithData";
+  //AxList ARM Services
+  static const String API_GET_CARDS_WITH_DATA =
+      "AxList/api/v1/GetCardsWithData";
 
-  static const SAMPLE_GET_CARDS_WITH_DATA_GLOBAL_PARAMS = {
-    "m_constants": "MyConstant",
-    "axpdbdirectorypath": "",
-    "vdim1": "",
-    "vdim2": "",
-    "vdim3": "",
-    "vdim4": "",
-    "AxMailFrom": "agilebiz.support@agile-labs.com",
-    "APPLogo":
-        "\\\\172.16.0.85\\AgileBizDocs\\Attachments\\Agileerpdemo\\agcloud-biz.png",
-    "axpegemailactionurl":
-        "https://demo.agilecloud.biz/demoarm/api/v1/ARMMailTaskAction",
-    "AxSingnalRapiURL": "https://dev.agilecloud.biz/devarm/api/v1/SendSignalR",
-    "AxRMQAPIURL":
-        "https://dev.agilecloud.biz/devarm11.4/api/v1/ARMPushToQueue",
-    "axdecimal": "4",
-    "tor_dashboard_logdate_from": "ALL",
-    "tor_dashboard_logdate_to": "ALL",
-    "tortimetaken_from": "ALL",
-    "tortimetaken_to": "ALL",
-    "torservicename": "ALL",
-    "custom_dashboard_cardids": "1453220000002,1457330000002",
-    "custom_dashboard_params": "custom_dashboard_params json here",
-    "torusername": "ALL",
-    "AxDisallowCreate": "instk,stock",
-    "AxpDbDirPath": "\\\\172.16.93.4\\Attachment_QA\\import\\AxImportDbDir",
-    "AxSignalRapiURL":
-        "https://dev.agilecloud.biz/devarm11.4/api/v1/SendSignalR",
-    "AxScriptsAPIURL":
-        "https://dev.agilecloud.biz/devarmscripts/ASBScriptRest.dll/datasnap/rest/TASBScriptRest/scriptsapi",
-    "AxFCMSendMsgURL":
-        "https://dev.agilecloud.biz/devarmtest/api/v1/SendFCMNotification",
-    "AxPEGMailFrom": "agilebiz.support@agile-labs.com",
-    "AxRapidSaveURL":
-        "https://dev.agilecloud.biz/devarmscripts/ASBRapidSaveRest.dll/datasnap/rest/TASBRapidSaveRest/RapidSave",
-    "axglo_recordid": "1970880000000",
-    "m_company": "AGILE ERP DEMO",
-    "m_branch": "HEAD OFFICE",
-    "m_finyr": "2024",
-    "m_location": "HEAD OFFICE",
-    "m_fystartdate": "01/04/2024",
-    "m_bridentifier": "09HQ",
-    "m_companycode": "09",
-    "m_currency": "INR",
-    "m_spinterval": "",
-    "fromuserlogin": "F",
-    "axp_displaytext":
-        "For the User:admin,Company:AGILE ERP DEMO,Branch:HEAD OFFICE,Financial Year:2024",
-    "axglo_hide": "T",
-    "m_fyenddate": "31/03/2025",
-    "axpimageserver": "",
-    "m_taxtype": "GST",
-    "m_cursymbol": "₹",
-    "m_curdecimals": "2",
-    "axglo_user": "admin",
-    "m_companyid": "1775550000001",
-    "m_currencyid": "1119010000000",
-    "m_branchid": "1775550000003",
-    "m_branchlists": "ALL",
-    "m_accesstobranches": "T",
-    "m_accesstolocations": "T",
-    "m_locationlists": "ALL",
-    "m_opbaldate": "01/04/2024",
-    "m_today": "22/01/2025",
-    "m_enablecostcentre": "",
-    "dac_branch": "HEAD OFFICE,Mumbai Branch",
-    "lockindate": "24/10/2024",
-    "millions": "T",
-    "username": "admin",
-    "responsibilies": "default",
-    "rolename": "default",
-    "ax_evalcopy": "F",
-    "sesid": "jbxqzz5tie2y3yujshe3k1x5",
-    "usergroup": "default",
-    "project": "agileerpdemo",
-    "axp_connectionname": "agileerpdemo",
-    "groupno": "2",
-    "userroles": "default",
-    "pageaccess": "",
-    "axp_apipath": "http://localhost/AxpertWebScripts113/",
-    "axp_devschema": "agileerpdemoaxdef",
-    "axp_appschema": "agileerpdemo",
-    "axp_clientlocale":
-        "en-US*Asia/Calcutta^english*1/24/2025 11:20:53 AM*1443",
-    "transidlist": "0D000000B950DB15186FFB53D708363D7251C798",
-    "appvartypes": "cccccccccccccccccccccccccccnccccdcccccccdcccccnnnccccddccd",
-    "auth_path": "D:\\Codeset\\11\\Axpert11.3\\AxpertWebScripts"
-  };
+  //AxUtils ARM Services
+  static const String API_GET_MENU = "AxUtils/api/v1/ARMGetMenu";
+  static const String API_GET_MENU_V2 = "AxUtils/api/v1/ARMGetMenu";
 
-  //-------------------->
-  // static const String API_GET_PENDING_ACTIVELIST = "api/v1/ARMGetActiveTasks"; //OLD
-  static const String API_MOBILE_NOTIFICATION = "api/v1/ARMMobileNotification";
-  static const String API_GET_DASHBOARD_DATA = "api/v1/ARMGetCardsData";
-  static const String API_CHANGE_PASSWORD = "api/v1/ARMChangePassword";
-
-  static const String API_GET_MENU = "api/v1/ARMGetMenu";
-  static const String API_GET_MENU_V2 = "api/v2/ARMGetMenu";
-  static const String API_SIGNOUT = "api/v1/ARMSignOut";
-
+  // ARM_APIs ARM Services
+  static const String API_GET_DATASOURCE_RESPONSE =
+      "ARM_APIs/api/v1/ARMGetDataResponse";
+  static const String API_GET_APPSTATUS = "ARM_APIs/api/v1/ARMAppStatus";
+  static const String API_MOBILE_NOTIFICATION =
+      "ARMNotificationHub/api/v1/ARMMobileNotification";
+  static const String API_GET_DASHBOARD_DATA =
+      "ARM_APIs/api/v1/ARMGetCardsData";
+  static const String API_CHANGE_PASSWORD = "ARM_APIs/api/v1/ARMChangePassword";
   static const String API_GET_PENDING_ACTIVETASK =
-      "api/v1/ARMGetPendingActiveTasks";
+      "ARM_APIs/api/v1/ARMGetPendingActiveTasks";
   static const String API_GET_PENDING_ACTIVETASK_COUNT =
-      "api/v1/ARMGetPendingActiveTasksCount";
+      "ARM_APIs/api/v1/ARMGetPendingActiveTasksCount";
   static const String API_GET_ACTIVETASK_DETAILS =
-      "api/v1/ARMPEGGetTaskDetails";
+      "ARM_APIs/api/v1/ARMPEGGetTaskDetails";
   static const String API_GET_FILTERED_PENDING_TASK =
-      "api/v1/ARMGetFilteredActiveTasks";
+      "ARM_APIs/api/v1/ARMGetFilteredActiveTasks";
   static const String API_GET_COMPLETED_ACTIVETASK =
-      "api/v1/ARMGetCompletedTasks";
+      "ARM_APIs/api/v1/ARMGetCompletedTasks";
   static const String API_GET_COMPLETED_ACTIVETASK_COUNT =
-      "api/v1/ARMGetCompletedTasksCount";
+      "ARM_APIs/api/v1/ARMGetCompletedTasksCount";
   static const String API_GET_FILTERED_COMPLETED_TASK =
-      "api/v1/ARMGetFilteredCompletedTasks";
-  static const String API_DO_TASK_ACTIONS = "api/v1/ARMDoTaskAction";
-  static const String API_GET_ALL_ACTIVE_TASKS = "api/v1/ARMGetAllActiveTasks";
+      "ARM_APIs/api/v1/ARMGetFilteredCompletedTasks";
+  static const String API_DO_TASK_ACTIONS = "ARM_APIs/api/v1/ARMDoTaskAction";
+  static const String API_GET_ALL_ACTIVE_TASKS =
+      "ARM_APIs/api/v1/ARMGetAllActiveTasks";
   static const String API_GET_BULK_APPROVAL_COUNT =
-      "api/v1/ARMGetBulkApprovalCount";
-  static const String API_GET_BULK_ACTIVETASKS = "api/v1/ARMGetBulkActiveTasks";
-  static const String API_POST_BULK_DO_BULK_ACTION = "api/v1/ARMDoBulkAction";
-  static const String API_GET_SENDTOUSERS = "api/v1/ARMGetSendToUsers";
-  static const String API_GET_FILE_BY_RECORDID = "api/v1/GetFileByRecordId";
+      "ARM_APIs/api/v1/ARMGetBulkApprovalCount";
+  static const String API_GET_BULK_ACTIVETASKS =
+      "ARM_APIs/api/v1/ARMGetBulkActiveTasks";
+  static const String API_POST_BULK_DO_BULK_ACTION =
+      "ARM_APIs/api/v1/ARMDoBulkAction";
+  static const String API_GET_SENDTOUSERS = "ARM_APIs/api/v1/ARMGetSendToUsers";
+  static const String API_GET_FILE_BY_RECORDID =
+      "ARM_APIs/api/v1/GetFileByRecordId";
   static const String BANNER_JSON_NAME = "mainpagebanner.json";
+
+  static const String ARM_EXECUTE_PUBLISHED_API =
+      "ARM_APIs/api/v1/ARMExecutePublishedAPI";
+  static const String API_GET_ENCRYPTED_SECRET_KEY =
+      "ARM_APIs/api/v1/ARMGetEncryptedSecret";
+  static const String API_ARM_EXECUTE = "ARM_APIs/api/v1/ARMExecuteAPI";
+
+  //OTHER ARM SERVICES
+  static const String API_GET_USERGROUPS = "ARM_APIs/api/v1/ARMUserGroups";
+  static const String API_AX_START_SESSION = "ARM_APIs/api/v1/AxStartSession";
+  static const String API_ADDUSER = "ARM_APIs/api/v1/ARMAddUser";
+  static const String API_OTP_VALIDATE_USER =
+      "ARM_APIs/api/v1/ARMValidateAddUser";
+  static const String API_FORGOTPASSWORD = "ARM_APIs/api/v1/ARMForgotPassword";
+  static const String API_VALIDATE_FORGETPASSWORD =
+      "ARM_APIs/api/v1/ARMValidateForgotPassword";
+  static const String API_GOOGLESIGNIN_SSO = "ARM_APIs/api/v1/ARMSigninSSO";
+  static const String API_GET_HOMEPAGE_CARDS =
+      "ARM_APIs/api/v1/ARMGetHomePageCards";
+  static const String API_GET_HOMEPAGE_CARDS_v2 =
+      "ARM_APIs/api/v2/ARMGetHomePageCards";
+  static const String API_AXSCRIPT = "ARM_APIs/api/v1/AxScript";
 
   AppStorage appStorage = AppStorage();
 

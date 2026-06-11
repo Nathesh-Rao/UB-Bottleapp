@@ -350,8 +350,8 @@ class MenuHomePageController extends GetxController {
       return actionData;
     } else {
       // var dataSourceUrl = baseUrl + GlobalConfiguration().get("HomeCardDataResponse").toString();
-      var dataSourceUrl = Const.getFullARMUrl(
-          ServerConnections.API_GET_HOMEPAGE_CARDSDATASOURCE);
+      var dataSourceUrl =
+          Const.getFullARMUrl(ServerConnections.API_GET_DATASOURCE_RESPONSE);
       var dataSourceBody = body;
       dataSourceBody["sqlParams"] = {
         "param": "value",
@@ -418,7 +418,7 @@ class MenuHomePageController extends GetxController {
   }
 
   getEncryptedSecretKey(String key) async {
-    var url = Const.getFullARMUrl(ExecuteApi.API_GET_ENCRYPTED_SECRET_KEY);
+    var url = Const.getFullARMUrl(ExecuteApi.API_SECRETKEY_GET_DO_PUNCHIN);
     Map<String, dynamic> body = {"secretkey": key};
     var resp = await serverConnections.postToServer(
         url: url, body: jsonEncode(body), isBearer: true);
@@ -434,7 +434,8 @@ class MenuHomePageController extends GetxController {
     secretEncryptedKey =
         await getEncryptedSecretKey(ExecuteApi.API_SECRETKEY_GET_PUNCHIN_DATA);
     if (secretEncryptedKey != "") {
-      var url = Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
+      var url =
+          Const.getFullARMUrl(ServerConnections.ARM_EXECUTE_PUBLISHED_API);
       var body = {
         // "SecretKey": secretEncryptedKey,
         "publickey": "AXPKEY000000010003",
@@ -481,7 +482,7 @@ class MenuHomePageController extends GetxController {
     String address = await CommonMethods.getAddressFromLatLng(
         currentLocation!); //currentLocation != null ? await CommonMethods.getAddressFromLatLng(currentLocation) : "";
     print("address: ${address.toString()}");
-    var url = Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE);
+    var url = Const.getFullARMUrl(ServerConnections.API_ARM_EXECUTE);
     var body = {
       // "SecretKey": secretEncryptedKey, //1408279244140740
       "publickey": "AXPKEY000000010002",
@@ -545,7 +546,7 @@ class MenuHomePageController extends GetxController {
         currentLocation!); //currentLocation != null ? await CommonMethods.getAddressFromLatLng(currentLocation) : "";
     print("address: ${address.toString()}");
 
-    var url = Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE);
+    var url = Const.getFullARMUrl(ServerConnections.API_ARM_EXECUTE);
     var body = {
       // "SecretKey": secretEncryptedKey, //1408279244140740
       "publickey": "AXPKEY000000010002",
@@ -787,7 +788,7 @@ class MenuHomePageController extends GetxController {
     var cl_imagePath = "";
     // var dataSourceUrl = baseUrl + GlobalConfiguration().get("HomeCardDataResponse").toString();
     var dataSourceUrl =
-        Const.getFullARMUrl(ServerConnections.API_GET_HOMEPAGE_CARDSDATASOURCE);
+        Const.getFullARMUrl(ServerConnections.API_GET_DATASOURCE_RESPONSE);
     var body = {
       "ARMSessionId": appStorage.retrieveValue(AppStorage.SESSIONID),
       "username": appStorage.retrieveValue(AppStorage.USER_NAME),

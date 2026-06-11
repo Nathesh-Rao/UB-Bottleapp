@@ -78,7 +78,7 @@ class _WidgetLoginTextFieldState extends State<WidgetLoginTextField> {
                     !widget.isLoading ? widget.readOnly : widget.isLoading,
                 obscureText: _isObscured,
                 //widget.obscureText,
-                style: GoogleFonts.manrope( 
+                style: GoogleFonts.manrope(
                   fontWeight: FontWeight.w600,
                   fontSize: 16,
                 ),

@@ -810,7 +810,7 @@ class OfflineDbModule {
         final ServerConnections serverConnections = ServerConnections();
 
         final String url =
-            Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
+            Const.getFullARMUrl(ServerConnections.ARM_EXECUTE_PUBLISHED_API);
         final Map<String, dynamic> uploadPayload =
             await _convertPayloadPathsToBase64(submitBody);
         final dynamic responseStr = await serverConnections.postToServer(
@@ -984,7 +984,7 @@ class OfflineDbModule {
 
     final ServerConnections serverConnections = ServerConnections();
     final String url =
-        Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
+        Const.getFullARMUrl(ServerConnections.ARM_EXECUTE_PUBLISHED_API);
     var isTraceOn =
         await AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? false;
     bool isAuthFailed = false;
@@ -1779,7 +1779,7 @@ class OfflineDbModule {
 
     final ServerConnections serverConnections = ServerConnections();
     final String forceUrl =
-        Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
+        Const.getFullARMUrl(ServerConnections.ARM_EXECUTE_PUBLISHED_API);
 
     int successCount = 0;
     int failCount = 0;
@@ -2023,7 +2023,7 @@ class OfflineDbModule {
 
       final ServerConnections serverConnections = ServerConnections();
       final String url =
-          Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
+          Const.getFullARMUrl(ServerConnections.ARM_EXECUTE_PUBLISHED_API);
 
       final dynamic res = await serverConnections.postToServer(
         url: url,
@@ -2272,7 +2272,7 @@ class OfflineDbModule {
 
     final ServerConnections serverConnections = ServerConnections();
     final String url =
-        Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
+        Const.getFullARMUrl(ServerConnections.ARM_EXECUTE_PUBLISHED_API);
     await logAudit(
       action: syncAction,
       remarks: "Found ${rows.length} pending records to sync during login.",
@@ -3740,7 +3740,7 @@ class OfflineDbModule {
     );
     final ServerConnections serverConnections = ServerConnections();
     final String url =
-        Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
+        Const.getFullARMUrl(ServerConnections.ARM_EXECUTE_PUBLISHED_API);
     final List<int> syncedIds = [];
 
     for (final row in rows) {

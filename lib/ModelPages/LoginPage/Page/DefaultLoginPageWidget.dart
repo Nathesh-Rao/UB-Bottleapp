@@ -101,7 +101,7 @@ class _DefaultLoginPageWidgetState extends State<DefaultLoginPageWidget> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Color(0xff4B59D9),
+                            color: Color(0xff4B59D9).withValues(alpha: 0.5),
                             blurRadius: 12,
                             offset: const Offset(0, 1),
                           ),

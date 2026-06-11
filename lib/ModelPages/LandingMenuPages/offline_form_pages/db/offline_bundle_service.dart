@@ -348,7 +348,7 @@ class OfflineBundleService {
 
       final ServerConnections serverConnections = ServerConnections();
       final String url =
-          Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
+          Const.getFullARMUrl(ServerConnections.ARM_EXECUTE_PUBLISHED_API);
       Get.showSnackbar(GetSnackBar(
         icon: CupertinoActivityIndicator(
           color: Colors.white,
