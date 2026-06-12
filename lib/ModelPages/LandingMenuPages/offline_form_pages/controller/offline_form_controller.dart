@@ -871,43 +871,46 @@ class OfflineFormController extends GetxController {
 
   Future<void> actionPushPending() async {
     const tag = "[OFFLINE_ACTION_PUSH_PENDING]";
+    if (isLoading.value) return;
 
-    if (!await _isInternetAvailable()) {
-      _showNeedInternetDialog();
-      return;
-    }
-    var pendingCount = await OfflineDbModule.getPendingCount();
-    if (pendingCount == 0) {
-      await _confirm(
-        title: "No Pending Data",
-        message:
-            "There is no pending data available.\n\nYou can try saving new forms offline to use this feature",
-        okText: "Okay",
-        icon: Icons.indeterminate_check_box_outlined,
-        confirmColor: const Color.fromARGB(255, 235, 103, 37),
-      );
-      return;
-    }
-
-    final ok = await _confirm(
-      title: "Upload Pending Data",
-      message:
-          "This will upload $pendingCount locally saved records to the server.\n\nAre you sure you want to continue?",
-      okText: "Upload Now",
-      icon: Icons.cloud_upload_rounded,
-      confirmColor: const Color(0xFF2563EB),
-    );
-    if (!ok) return;
-    final progressModel = SyncProgressModel(initialTitle: "Uploading Data");
-    Get.dialog(
-      SyncProgressDialog(
-        progressModel: progressModel,
-        reTry: actionPushPending,
-        showForcePush: true,
-      ),
-      barrierDismissible: false,
-    );
     try {
+      isLoading.value = true;
+      if (!await _isInternetAvailable()) {
+        _showNeedInternetDialog();
+        return;
+      }
+      var pendingCount = await OfflineDbModule.getPendingCount();
+      if (pendingCount == 0) {
+        await _confirm(
+          title: "No Pending Data",
+          message:
+              "There is no pending data available.\n\nYou can try saving new forms offline to use this feature",
+          okText: "Okay",
+          icon: Icons.indeterminate_check_box_outlined,
+          confirmColor: const Color.fromARGB(255, 235, 103, 37),
+        );
+        return;
+      }
+
+      final ok = await _confirm(
+        title: "Upload Pending Data",
+        message:
+            "This will upload $pendingCount locally saved records to the server.\n\nAre you sure you want to continue?",
+        okText: "Upload Now",
+        icon: Icons.cloud_upload_rounded,
+        confirmColor: const Color(0xFF2563EB),
+      );
+      if (!ok) return;
+      final progressModel = SyncProgressModel(initialTitle: "Uploading Data");
+      Get.dialog(
+        SyncProgressDialog(
+          progressModel: progressModel,
+          reTry: actionPushPending,
+          showForcePush: true,
+        ),
+        barrierDismissible: false,
+      );
+
       final resultMsg = await OfflineDbModule.processPendingQueue(
         isInternetAvailable: true,
         progress: progressModel,
@@ -916,12 +919,10 @@ class OfflineFormController extends GetxController {
       // Get.back();
 
       // _showSimpleSuccessDialog(title: "Upload Complete", message: resultMsg);
-      refreshPendingCount();
       // LogService.writeLog(message: "$tag[DONE] $resultMsg");
     } catch (e, st) {
       // Get.back(); // Ensure dialog closes
       LogService.writeLog(message: "$tag[FAILED] $e \n$st");
-      refreshPendingCount();
       Get.snackbar(
         "Upload Error",
         "Failed to process queue. Check logs.",
@@ -931,6 +932,7 @@ class OfflineFormController extends GetxController {
       );
     } finally {
       log("progress complete called here 4");
+      refreshPendingCount();
       isLoading.value = false;
       // progressModel.completeWithError(errorMsg: "errorMsg");
     }

@@ -921,6 +921,7 @@ class OfflineDbModule {
     required bool isInternetAvailable,
     SyncProgressModel? progress,
   }) async {
+    if (progress?.isLoading.value ?? true) return "Sync already running...";
     progress?.isSessionError.value = false;
     log("processpendingque started", name: processPendingQueTag);
     if (!isInternetAvailable) return "No internet connection";
@@ -941,11 +942,8 @@ class OfflineDbModule {
     if (currentSessionId.isEmpty) return "No active session to sync";
 
     progress?.updateMessage("Checking pending queue...");
-    final List<Map<String, Object?>> result = await _database.rawQuery(
-        'SELECT COUNT(*) as rec_count FROM ${OfflineDBConstants.TABLE_PENDING_REQUESTS}');
-    int count = (result.first['rec_count'] as int?) ?? 0;
-    LogService.writeLog(message: "RECORDS COUNT => ${count}");
-    await debugPrintPendingRequests();
+
+    // await debugPrintPendingRequests();
     final idRows = await _database.query(
       OfflineDBConstants.TABLE_PENDING_REQUESTS,
       columns: [OfflineDBConstants.COL_ID],
@@ -971,17 +969,12 @@ class OfflineDbModule {
           remarks: "No pending records found to sync");
       return "Queue is empty";
     }
-
+///////////////////PUSH start/////////////////////////
     int successCount = 0;
     int failCount = 0;
     List<int> successIds = [];
     List<int> failedIds = [];
     int total = idRows.length;
-
-    progress?.clearFailedRecords();
-    progress?.init(
-        total: total, msg: "Found $total records. Starting upload...");
-
     final ServerConnections serverConnections = ServerConnections();
     final String url =
         Const.getFullARMUrl(ExecuteApi.API_ARM_EXECUTE_PUBLISHED);
@@ -990,6 +983,11 @@ class OfflineDbModule {
     bool isAuthFailed = false;
     String authFailedMessage = "";
     int authFailedCode = 0;
+
+    progress?.clearFailedRecords();
+    progress?.init(
+        total: total, msg: "Found $total records. Starting upload...");
+
     for (int i = 0; i < total; i++) {
       final id = idRows[i][OfflineDBConstants.COL_ID] as int;
 
@@ -1005,6 +1003,8 @@ class OfflineDbModule {
 
         if (bodyStr == null || bodyStr.isEmpty) {
           await _markAsError(id);
+          failedIds.add(id);
+          failCount++;
           progress?.addFailedRecord(id, "Empty payload");
           progress?.increment(isSuccess: false);
           await logAudit(
@@ -1022,8 +1022,6 @@ class OfflineDbModule {
         // }
 
         originalPayload['ARMSessionId'] = currentSessionId;
-
-        originalPayload['ARMSessionId'] = currentSessionId;
         originalPayload['submitdata']['trace'] = isTraceOn ? "true" : "false";
         originalPayload['submitdata']['username'] =
             (originalPayload['submitdata']['username'] ?? "").isEmpty
@@ -1037,15 +1035,15 @@ class OfflineDbModule {
         // originalPayload['project'] =
         //     await AppStorage().retrieveValue(AppStorage.PROJECT_NAME);
 
-        final Map<String, dynamic> uploadPayload =
-            await _convertPayloadPathsToBase64(originalPayload);
-        log("processpendingque uploadPayload.length ${uploadPayload.length}",
-            name: processPendingQueTag);
-        progress?.updateMessage(
-            "Uploading${_isAssetHelper(uploadPayload)}record ${i + 1} of $total...");
-
+        Map<String, dynamic> uploadPayload = originalPayload;
         if (_isAsset(uploadPayload)) {
           try {
+            uploadPayload = await _convertPayloadPathsToBase64(originalPayload);
+            log("processpendingque uploadPayload.length ${uploadPayload.length}",
+                name: processPendingQueTag);
+            progress?.updateMessage(
+                "Uploading${_isAssetHelper(uploadPayload)}record ${i + 1} of $total...");
+
             var data = uploadPayload["submitdata"]["dataarray"]["data"];
             var fileMap =
                 data["dc1"]["row1"]["axpfile_file"] as Map<String, dynamic>;
@@ -1102,9 +1100,13 @@ class OfflineDbModule {
         /// =========================================================
         /// FAILURE FLOW
         /// =========================================================
-
+        ///
+        await _markAsError(id);
+        failedIds.add(id);
+        failCount++;
+        progress?.increment(isSuccess: false);
+        progress?.addErrors(title: "Error", errorText: "${res.message}");
         progress?.addFailedRecord(id, displayMessage);
-
         await logAudit(
           action: processPendingQueTag,
           isError: true,
@@ -1118,45 +1120,38 @@ class OfflineDbModule {
 
         if (res.statusCode == 400) {
           final bool isSessionIssue = _isAuthenticationError(displayMessage);
-
           if (displayMessage.toLowerCase().contains("session")) {
             progress?.isSessionError.value = true;
           }
 
           /// AUTH FAILURE -> BREAK
           if (isSessionIssue) {
-            await _markAsError(id);
-
-            failedIds.add(id);
-
-            failCount++;
-
+            // failedIds.add(id);
+            // failCount++;
             authFailedCode = res.statusCode;
-
             isAuthFailed = true;
-
             authFailedMessage = displayMessage;
 
             break;
           }
 
           /// NORMAL VALIDATION ERROR -> CONTINUE
-          await _markAsError(id);
+          // await _markAsError(id);
 
-          failedIds.add(id);
+          // failedIds.add(id);
 
-          failCount++;
+          // failCount++;
 
-          progress?.addErrors(
-            title: "ID : $id",
-            errorText: displayMessage,
-          );
+          // progress?.addErrors(
+          //   title: "ID : $id",
+          //   errorText: displayMessage,
+          // );
 
           log(
             "counting success failure => isSuccess => false",
           );
 
-          progress?.increment(isSuccess: false);
+          // progress?.increment(isSuccess: false);
 
           continue;
         }
@@ -1169,11 +1164,11 @@ class OfflineDbModule {
           progress?.isSessionError.value = true;
         }
 
-        await _markAsError(id);
+        // await _markAsError(id);
 
-        failedIds.add(id);
+        // failedIds.add(id);
 
-        failCount++;
+        // failCount++;
 
         authFailedCode = res.statusCode;
 
@@ -1181,16 +1176,16 @@ class OfflineDbModule {
 
         authFailedMessage = displayMessage;
 
-        progress?.addErrors(
-          title: "ID : $id",
-          errorText: displayMessage,
-        );
+        // progress?.addErrors(
+        //   title: "ID : $id",
+        //   errorText: displayMessage,
+        // );
 
         log(
           "counting success failure => isSuccess => false",
         );
 
-        progress?.increment(isSuccess: false);
+        // progress?.increment(isSuccess: false);
 
         break;
 
@@ -1314,9 +1309,11 @@ class OfflineDbModule {
           response: e.toString(),
           remarks: "Exception processing record ID: $id",
         );
+        failedIds.add(id);
         await _markAsError(id);
         progress?.addFailedRecord(id, e.toString());
         progress?.increment(isSuccess: false);
+        progress?.addErrors(title: "Error", errorText: e.toString());
         failCount++;
       }
     }
