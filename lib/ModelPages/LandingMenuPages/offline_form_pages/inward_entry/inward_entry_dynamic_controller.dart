@@ -2015,8 +2015,7 @@ class InwardEntryDynamicController extends GetxController {
   List<Map<String, dynamic>> generateAttachmentPayloads() {
     final List<Map<String, dynamic>> payloads = [];
 
-    final String refNo = (textCtrls["ub_ge_no"]?.text.trim() ?? "UNKNOWN_REF")
-        .replaceAll("/", "_");
+    final String refNo = (textCtrls["ub_ge_no"]?.text.trim() ?? "UNKNOWN_REF");
     final String sessionId = AppStorage().retrieveValue(AppStorage.SESSIONID);
     final String username = AppStorage().retrieveValue(AppStorage.USER_NAME);
     imageAttachmentJson.forEach((categoryKey, base64List) {
@@ -2025,7 +2024,6 @@ class InwardEntryDynamicController extends GetxController {
       final Map<String, dynamic> fileMap = {};
       for (int i = 0; i < base64List.length; i++) {
         String rawFileName = "${refNo}_${categoryKey}_${i + 1}.jpg";
-
         String cleanFileName = rawFileName.replaceAll("/", "_");
 
         fileMap["file${i + 1}"] = {
