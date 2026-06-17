@@ -381,9 +381,21 @@ class ServerConnections {
 
         print("API_POST_URL: $url");
         print("API_POST_BODY: $body");
+//TODO 60 timeout and continue if happens( add to errors and failed records)
+//TODO remove bg calls for pushing records
+        http.Response response = await client
+            .post(Uri.parse(url), headers: header, body: body)
+            .timeout(
+          const Duration(seconds: 60),
+          onTimeout: () {
+            LogService.writeLog(
+                message:
+                    "[TIMEOUT] API_TIMEOUT\nURL:$url\nAPI_NAME: $API_NAME\nBody: $body");
 
-        http.Response response =
-            await client.post(Uri.parse(url), headers: header, body: body);
+            return http.Response('{"message": "Request timed out"}', 408);
+          },
+        );
+        ;
 
         LogService.writeLog(
             message:

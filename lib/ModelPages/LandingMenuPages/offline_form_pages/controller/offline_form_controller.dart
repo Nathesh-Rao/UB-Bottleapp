@@ -934,6 +934,7 @@ class OfflineFormController extends GetxController {
       log("progress complete called here 4");
       refreshPendingCount();
       isLoading.value = false;
+      
       // progressModel.completeWithError(errorMsg: "errorMsg");
     }
   }

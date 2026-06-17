@@ -63,7 +63,9 @@ class InwardEntryDynamicPageV1 extends GetView<InwardEntryDynamicController> {
             //   icon: Icon(Icons.history, color: MyColors.green),
             // ),
             IconButton(
-              onPressed: () => controller.prepareForm(schema),
+              onPressed: () {
+                controller.startNewTransaction();
+              },
               icon: Icon(Icons.history, color: MyColors.baseYellow),
             )
           ],

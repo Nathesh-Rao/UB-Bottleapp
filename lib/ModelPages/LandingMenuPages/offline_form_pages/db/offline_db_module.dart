@@ -860,12 +860,26 @@ class OfflineDbModule {
     }
 //-----------------------OFFLINE--------------------------------------->
     try {
+      final String encodedBody = jsonEncode(submitBody);
+      // final existing = await _database.query(
+      //   OfflineDBConstants.TABLE_PENDING_REQUESTS,
+      //   where:
+      //       '${OfflineDBConstants.COL_REQUEST_JSON} = ? AND ${OfflineDBConstants.COL_STATUS} = ?',
+      //   whereArgs: [encodedBody, OfflineDBConstants.STATUS_PENDING],
+      //   limit: 1,
+      // );
+
+      // if (existing.isNotEmpty) {
+      //   LogService.writeLog(message: "[OFFLINE] Duplicate submission blocked");
+      //   return SubmitStatus.savedOffline;
+      // }
+
       final int rowId = await _database.insert(
         OfflineDBConstants.TABLE_PENDING_REQUESTS,
         {
           OfflineDBConstants.COL_USERNAME: username,
           OfflineDBConstants.COL_PROJECT_NAME: projectName,
-          OfflineDBConstants.COL_REQUEST_JSON: jsonEncode(submitBody),
+          OfflineDBConstants.COL_REQUEST_JSON: encodedBody,
           OfflineDBConstants.COL_STATUS: OfflineDBConstants.STATUS_PENDING,
           OfflineDBConstants.COL_CREATED_AT: DateTime.now().toIso8601String(),
         },
@@ -921,7 +935,7 @@ class OfflineDbModule {
     required bool isInternetAvailable,
     SyncProgressModel? progress,
   }) async {
-    if (progress?.isLoading.value ?? true) return "Sync already running...";
+    // if (progress?.isLoading.value ?? false) return "Sync already running...";
     progress?.isSessionError.value = false;
     log("processpendingque started", name: processPendingQueTag);
     if (!isInternetAvailable) return "No internet connection";
@@ -1188,7 +1202,6 @@ class OfflineDbModule {
         // progress?.increment(isSuccess: false);
 
         break;
-
       } catch (e) {
         await logAudit(
           action: processPendingQueTag,

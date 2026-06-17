@@ -22,7 +22,6 @@ class _UpdateRequiredPageState extends State<UpdateRequiredPage> {
   @override
   void initState() {
     super.initState();
-
     _subscription = widget.upgrader.stateStream.listen(onUpgradeStateChange);
   }
 

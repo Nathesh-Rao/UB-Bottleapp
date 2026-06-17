@@ -287,7 +287,8 @@ class LandingPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      OfflineBackgroundSyncService.instance.start();
+      // bg_sync
+      // OfflineBackgroundSyncService.instance.start();
     });
     return Obx(
       () => PopScope(

@@ -5,6 +5,7 @@ import 'package:ubbottleapp/Constants/AppStorage.dart';
 import 'package:ubbottleapp/Constants/CommonMethods.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_module.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/inward_entry/inward_entry_consolidated_page.dart';
+import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
 import 'package:ubbottleapp/Utils/ServerConnections/InternetConnectivity.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -20,7 +21,7 @@ class InwardEntryDynamicController extends GetxController {
   final Map<String, RxString> dropdownCtrls = {};
   final ScrollController scrollCtrl = ScrollController();
   final PageController pageController = PageController();
-  Map<String, dynamic> mainFormJson = {};
+  // Map<String, dynamic> mainFormJson = {};
   Map<String, dynamic> dc1SubmitFormJson = {};
 
   // List<Map<String, dynamic>> sampleGridJson = [];
@@ -74,7 +75,7 @@ class InwardEntryDynamicController extends GetxController {
     isFormPreparing.value = true;
     schema = newSchema;
     // 1. clear old stuff
-    resetForm();
+    // resetForm();
     // scrollCtrl.animateTo(
     //   0,
     //   duration: const Duration(milliseconds: 500),
@@ -102,6 +103,7 @@ class InwardEntryDynamicController extends GetxController {
     }
 
     isFormPreparing.value = false;
+    update();
   }
 
   Future<void> loadDatasources() async {
@@ -1291,7 +1293,69 @@ class InwardEntryDynamicController extends GetxController {
     }
     clearSampleGrid();
     showMiniFab.value = false;
+    sampleSummaryJson.clear();
+    dc1SubmitFormJson.clear();
     errors.clear();
+  }
+
+  Future<void> startNewTransaction() async {
+    log("start new transaction clicked");
+    try {
+      isFormPreparing.value = true;
+
+      // Clear text controllers
+      for (final controller in textCtrls.values) {
+        controller.clear();
+      }
+
+      // Clear dropdown values
+      dropdownCtrls.clear();
+
+      // Clear form errors
+      errors.clear();
+
+      // Clear sample/grid data
+      sampleGridRows.clear();
+
+      // Clear runtime JSONs
+      // mainFormJson.clear();
+      dc1SubmitFormJson.clear();
+      sampleSummaryJson.clear();
+
+      // Clear image data
+      imageAttachmentJson.clear();
+      filteredSummary.clear();
+      imageErrors.clear();
+
+      // Reset card index
+      currentCardIndex.value = 0;
+
+      // Dispose old controllers
+      for (final controller in textCtrls.values) {
+        controller.dispose();
+      }
+
+      textCtrls.clear();
+
+      // Rebuild everything from schema
+      await prepareForm(schema);
+
+      // Scroll to top
+      if (scrollCtrl.hasClients) {
+        scrollCtrl.jumpTo(0);
+      }
+
+      update();
+
+      imageAttachmentJson.refresh();
+      filteredSummary.refresh();
+    } catch (e, st) {
+      LogService.writeLog(
+        message: "startNewTransaction error => $e\n$st",
+      );
+    } finally {
+      isFormPreparing.value = false;
+    }
   }
 
   Future<bool> validateForm() async {
@@ -1363,7 +1427,7 @@ class InwardEntryDynamicController extends GetxController {
     sampleSummaryJson = buildSampleSummaryJson();
 
     debugPrint("====== MAIN FORM JSON ======");
-    debugPrint(mainFormJson.toString());
+    // debugPrint(mainFormJson.toString());
 
     // debugPrint("====== SAMPLE GRID JSON ======");
     // debugPrint(sampleGridJson.toString());
@@ -1580,6 +1644,7 @@ class InwardEntryDynamicController extends GetxController {
   }
 
   Future<void> submit() async {
+    if (isLoading.value) return;
     try {
       if (validateImages()) {
         await submitPage();
@@ -1976,9 +2041,10 @@ class InwardEntryDynamicController extends GetxController {
       submitStatus.value = "Finalizing...";
       await Future.delayed(Duration(milliseconds: 500));
 // todo Form widget
-      resetForm();
+      // resetForm();
+      await startNewTransaction();
       isLoading.value = false;
-      prepareForm(schema);
+      // prepareForm(schema);
       submitStatus.value = "";
       Get.back();
 

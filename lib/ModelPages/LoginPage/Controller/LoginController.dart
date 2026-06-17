@@ -777,7 +777,8 @@ class LoginController extends GetxController {
                   await AppStorage().retrieveValue(AppStorage.AUTO_SYNC_MASTER);
             }
             await OfflineConfigService.fetchAndStore();
-            await OfflineBackgroundSyncService.instance.start();
+            //bg_sync
+            // await OfflineBackgroundSyncService.instance.start();
           } else if (json["result"]?.containsKey("OTPLoginKey")) {
             // OTPPage
             otpMsg.value = json["result"]["message"].toString();
