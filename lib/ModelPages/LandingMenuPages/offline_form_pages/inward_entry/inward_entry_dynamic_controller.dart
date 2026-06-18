@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer';
 import 'package:flutter/services.dart';
 import 'package:ubbottleapp/Constants/AppStorage.dart';
 import 'package:ubbottleapp/Constants/CommonMethods.dart';
+import 'package:ubbottleapp/Constants/Const.dart' hide globalVariableController;
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_module.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/inward_entry/inward_entry_consolidated_page.dart';
 import 'package:ubbottleapp/Utils/ServerConnections/InternetConnectivity.dart';
@@ -1920,7 +1922,8 @@ class InwardEntryDynamicController extends GetxController {
       var forceOffline = schema["force_offline"];
       submitStatus.value = "Generating form data...";
       final Map<String, dynamic> mainBody = await generateSubmitPayload();
-      log(mainBody.toString(), name: "MAIN_BODY");
+      final prettyJson = const JsonEncoder.withIndent('  ').convert(mainBody);
+      log(prettyJson, name: 'MAIN_BODY');
       submitStatus.value = "Submitting Master Form...";
 
       final SubmitStatus mainStatus = await OfflineDbModule.submitFormSmart(
@@ -2050,6 +2053,7 @@ class InwardEntryDynamicController extends GetxController {
               "dc1": {
                 "row1": {
                   "ub_gen_no": refNo,
+                  // "axm_recordid": "${Const.axm_recordid}",
                   "category": categoryKey,
                   "axpfile_file": fileMap,
                   "axpfilepath_file": ""
@@ -2059,7 +2063,8 @@ class InwardEntryDynamicController extends GetxController {
           }
         }
       };
-
+      final prettyJson = const JsonEncoder.withIndent('  ').convert(payload);
+      log(prettyJson, name: 'ATTACH_BODY');
       payloads.add(payload);
     });
 

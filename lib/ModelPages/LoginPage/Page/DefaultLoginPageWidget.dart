@@ -59,7 +59,7 @@ class _DefaultLoginPageWidgetState extends State<DefaultLoginPageWidget> {
     return Container(
       decoration: BoxDecoration(
         image: DecorationImage(
-          image: AssetImage("assets/images/login_bg.png"),
+          image: AssetImage("assets/images/login_bg2.png"),
         ),
       ),
       child: Scaffold(

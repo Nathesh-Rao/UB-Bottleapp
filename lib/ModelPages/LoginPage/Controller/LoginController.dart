@@ -703,6 +703,8 @@ class LoginController extends GetxController {
     debugPrint("User Offline Authenticated? => $isUserAuthenticated");
 
     if (isUserAuthenticated) {
+      globalVariableController.USER_NAME.value =
+          userNameController.text.toString().trim();
       await OfflineDbModule.logAudit(
         action: "LOGIN_OFFLINE",
         response: "Local Validation Success",
@@ -744,7 +746,8 @@ class LoginController extends GetxController {
           if (json["result"]["message"].toString() == "Login Successful.") {
             globalVariableController.USER_ROLE.value =
                 json["result"]["role"].toString().toLowerCase();
-
+            globalVariableController.USER_NAME.value =
+                json["result"]["username"].toString().toLowerCase();
             await OfflineDbModule.logAudit(
               action: "LOGIN_ONLINE",
               response: "LOGIN SUCCESS",

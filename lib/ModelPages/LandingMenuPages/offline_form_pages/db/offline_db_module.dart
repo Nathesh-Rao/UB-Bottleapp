@@ -2076,7 +2076,7 @@ class OfflineDbModule {
         log("File found at $value, converting to base64",
             name: "AX_BUNDLE_LOG");
         var b64 = await fileToBase64Correct(file);
-
+        // return "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
         return b64;
       } else {
         log("CRITICAL: File MISSING at $value during conversion!",
