@@ -1086,7 +1086,7 @@ class OfflineDbModule {
 
         LogService.writeLog(
             message:
-                "[API ERROR]||[API SUCCESS]  ${res.rawBody} ||  ${_isAssetHelper(uploadPayload)}");
+                "[API ERROR]||[API SUCCESS]  ${res.rawBody} ||  ${_isAssetHelper(uploadPayload)} || ${_getAxmRecId(uploadPayload)}");
         String displayMessage = res.message;
 
         /// =========================================================
@@ -1105,8 +1105,22 @@ class OfflineDbModule {
           log(
             "counting success failure => isSuccess => true",
           );
-
           progress?.increment(isSuccess: true);
+
+          //response check for duplicate axm_recordid
+          final body = jsonDecode(res.rawBody);
+          if (!body.containsKey('result')) {
+            LogService.writeLog(
+                message: "$id THIS ID IS A DUPLICATE ${res.rawBody}");
+
+            await logAudit(
+              action: processPendingQueTag,
+              isError: true,
+              response: uploadPayload.toString(),
+              remarks:
+                  "This ID[$id] contains duplicate axm_recordid \nstatuscode${res.statusCode}\nresponse${res.rawBody}",
+            );
+          }
 
           continue;
         }
@@ -1652,6 +1666,27 @@ class OfflineDbModule {
               ["ub_gen_no"] ??
           "";
       return ubge.isEmpty ? " Asset " : " UBGE: $ubge ";
+    }
+    return ' ';
+  }
+
+  static String _getAxmRecId(Map<String, dynamic> pl) {
+    String publicKey = pl["publickey"] ?? '';
+
+    if (publicKey.toLowerCase() == "inwardentry") {
+      var axm_recordid = pl["submitdata"]["dataarray"]["data"]["dc1"]["row1"]
+              ["axm_recordid"] ??
+          "";
+      return axm_recordid.isEmpty
+          ? " axm_recordid: EMPTY "
+          : " axm_recordid: $axm_recordid ";
+    } else if (publicKey.toLowerCase() == "inwardattach") {
+      var axm_recordid = pl["submitdata"]["dataarray"]["data"]["dc1"]["row1"]
+              ["axm_recordid"] ??
+          "";
+      return axm_recordid.isEmpty
+          ? " axm_recordid: EMPTY "
+          : " axm_recordid: $axm_recordid ";
     }
     return ' ';
   }

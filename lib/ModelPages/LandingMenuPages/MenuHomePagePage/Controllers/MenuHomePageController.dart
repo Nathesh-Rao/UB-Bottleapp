@@ -199,14 +199,18 @@ class MenuHomePageController extends GetxController {
         url: url, body: jsonEncode(getCardsBody), isBearer: true);
     LogService.writeLog(message: "getcardswithdata : $resp");
     LogService.writeOnConsole(message: "getcardswithdata : $resp");
-    var response = jsonDecode(resp);
-    // LogService.writeLog(message: "_getCardsWithData: resp:$response");
-    List dataList = response["result"]["data"];
-    // _clearDataLists();
-    _UpdateDataLists(dataList);
+    try {
+      var response = jsonDecode(resp);
+      // LogService.writeLog(message: "_getCardsWithData: resp:$response");
+      List dataList = response["result"]["data"];
+      // _clearDataLists();
+      _UpdateDataLists(dataList);
 
-    isLoading.value = false;
-    LoadingScreen.dismiss();
+      isLoading.value = false;
+      LoadingScreen.dismiss();
+    } catch (e) {
+      LogService.writeLog(message: e.toString());
+    }
     // _printDataCard();
   }
 

@@ -120,12 +120,21 @@ class SubmitdataApiresponsemodel {
       /// FALLBACK
       /// =========================================================
 
-      return SubmitdataApiresponsemodel(
-        success: false,
-        message: "Invalid Response Format",
-        statusCode: httpStatusCode,
-        rawBody: body,
-      );
+      if (json['success'] ?? false) {
+        return SubmitdataApiresponsemodel(
+          success: true,
+          message: "RESPONSE WITHOUT RESULT",
+          statusCode: httpStatusCode,
+          rawBody: body,
+        );
+      } else {
+        return SubmitdataApiresponsemodel(
+          success: false,
+          message: "Invalid Response Format",
+          statusCode: httpStatusCode,
+          rawBody: body,
+        );
+      }
     } catch (e) {
       return SubmitdataApiresponsemodel(
         success: false,

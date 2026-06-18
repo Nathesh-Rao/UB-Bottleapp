@@ -1,6 +1,3 @@
-import 'dart:developer';
-
-import 'package:animate_do/animate_do.dart';
 import 'package:ubbottleapp/Constants/MyColors.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../Constants/const.dart' hide globalVariableController;
 import 'inward_entry_dynamic_controller.dart';
 
 class InwardEntryDynamicPageV1 extends GetView<InwardEntryDynamicController> {
@@ -87,7 +85,8 @@ class InwardEntryDynamicPageV1 extends GetView<InwardEntryDynamicController> {
                     ...sections.entries.map((entry) {
                       final sectionTitle = entry.key;
                       final sectionFields = entry.value;
-
+                      if (areAllFieldsHiddenInSection(sectionFields))
+                        return SizedBox.shrink();
                       return _Section(
                         title: sectionTitle,
                         children: sectionFields.map((f) {
@@ -171,7 +170,17 @@ class InwardEntryDynamicPageV1 extends GetView<InwardEntryDynamicController> {
     );
   }
 
+  bool areAllFieldsHiddenInSection(List<dynamic> sectionFields) {
+    return sectionFields.every(
+      (field) => (field['hidden']?.toString().toUpperCase() ?? 'F') == 'T',
+    );
+  }
+
+
+
   Widget _buildFieldFromSchema(BuildContext context, Map<String, dynamic> f) {
+
+
     final String rawType = f["fld_type"];
     final String name = f["fld_name"];
     final String label = f["fld_caption"];

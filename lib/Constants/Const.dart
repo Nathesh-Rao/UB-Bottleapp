@@ -2,6 +2,7 @@ import 'package:ubbottleapp/Constants/AppStorage.dart';
 import 'package:ubbottleapp/Constants/MyColors.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:uuid/uuid.dart';
 
 import 'GlobalVariableController.dart';
 
@@ -9,9 +10,9 @@ final globalVariableController = Get.find<GlobalVariableController>();
 
 class Const {
   static DateTime DEMO_END_DATE = DateTime(2025, 2, 8);
-  static String APP_RELEASE_ID = "test6267";
-//   static String APP_RELEASE_ID = "_build15";
-  static String APP_RELEASE_DATE = "03062026"; //"_release031025";
+  // static String APP_RELEASE_ID = "test62";
+  static String APP_RELEASE_ID = "_build16";
+  static String APP_RELEASE_DATE = "18062026"; //"_release031025";
   static String DEVICE_ID = "";
   static String GUID = "";
   static String APP_VERSION = "";
@@ -76,4 +77,10 @@ class Const {
     // textButtonTheme:
     //     TextButtonThemeData(style: ButtonStyle(backgroundColor: MaterialStateColor.resolveWith((states) => Colors.grey)))
   );
+
+  // static String get axm_recordid => 'DUPLICATE';
+  static String get axm_recordid =>
+      '${globalVariableController.USER_NAME.value}_${DateTime.now().microsecondsSinceEpoch}';
+  // static String get axm_recordid =>
+  //     '${globalVariableController.USER_NAME.value}_${Uuid().v4().toString()}';
 }
