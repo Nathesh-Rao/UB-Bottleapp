@@ -1016,7 +1016,7 @@ class OfflineDbModule {
         );
 
         if (bodyStr == null || bodyStr.isEmpty) {
-          await _markAsError(id);
+          // await _markAsError(id);
           failedIds.add(id);
           failCount++;
           progress?.addFailedRecord(id, "Empty payload");
@@ -1129,7 +1129,7 @@ class OfflineDbModule {
         /// FAILURE FLOW
         /// =========================================================
         ///
-        await _markAsError(id);
+        // await _markAsError(id);
         failedIds.add(id);
         failCount++;
         progress?.increment(isSuccess: false);
@@ -1224,7 +1224,7 @@ class OfflineDbModule {
           remarks: "Exception processing record ID: $id",
         );
         failedIds.add(id);
-        await _markAsError(id);
+        // await _markAsError(id);
         progress?.addFailedRecord(id, e.toString());
         progress?.increment(isSuccess: false);
         progress?.addErrors(title: "Error", errorText: e.toString());
@@ -3284,7 +3284,7 @@ class OfflineDbModule {
         );
 
         if (bodyStr == null || bodyStr.isEmpty) {
-          await _markAsError(id);
+          // await _markAsError(id);
           await logAudit(
             action: _bgPushTag,
             isError: true,
@@ -3314,7 +3314,7 @@ class OfflineDbModule {
 
         if (uploadPayload.isEmpty) {
           failedIds.add(id);
-          await _markAsError(id);
+          // await _markAsError(id);
           await logAudit(
             action: _bgPushTag,
             isError: true,
@@ -3456,7 +3456,7 @@ class OfflineDbModule {
 
             /// AUTH FAILURE -> BREAK
             if (isSessionIssue) {
-              await _markAsError(id);
+              // await _markAsError(id);
 
               failedIds.add(id);
 
@@ -3472,7 +3472,7 @@ class OfflineDbModule {
             }
 
             /// NORMAL VALIDATION ERROR -> CONTINUE
-            await _markAsError(id);
+            // await _markAsError(id);
 
             failedIds.add(id);
 
@@ -3485,7 +3485,7 @@ class OfflineDbModule {
           /// ALL OTHER FAILURES -> BREAK
           /// =====================================================
 
-          await _markAsError(id);
+          // await _markAsError(id);
 
           failedIds.add(id);
 
@@ -3523,7 +3523,7 @@ class OfflineDbModule {
               '[$_bgPushTag] [ID: $id] ${res.success ? "SUCCESS" : "FAILED: $displayMessage"}',
         );
       } catch (e) {
-        await _markAsError(id);
+        // await _markAsError(id);
         failCount++;
         failedIds.add(id);
         await LogService.writeLog(
