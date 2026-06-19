@@ -290,45 +290,45 @@ class SettingsPage extends StatelessWidget {
                               //   ),
                               // ),
 
-                              ListTile(
-                                  leading: Icon(Icons.sync),
-                                  title: Text(
-                                    "Auto Sync Records",
-                                    style: GoogleFonts.poppins(
-                                        textStyle: TextStyle(fontSize: 18)),
-                                  ),
-                                  trailing: Obx(() {
-                                    return SizedBox(
-                                      width: 60,
-                                      child: FlutterSwitch(
-                                        height: 30,
-                                        value: _globalVariableController
-                                            .autoSyncEnabled.value,
-                                        showOnOff: true,
-                                        activeColor: MyColors.blue2,
-                                        onToggle: (bool value) async {
-                                          // await OfflineDbModule
-                                          //     .toggleAutoSync();
-                                          // setStateC(() {});
+                              // ListTile(
+                              //     leading: Icon(Icons.sync),
+                              //     title: Text(
+                              //       "Auto Sync Records",
+                              //       style: GoogleFonts.poppins(
+                              //           textStyle: TextStyle(fontSize: 18)),
+                              //     ),
+                              //     trailing: Obx(() {
+                              //       return SizedBox(
+                              //         width: 60,
+                              //         child: FlutterSwitch(
+                              //           height: 30,
+                              //           value: _globalVariableController
+                              //               .autoSyncEnabled.value,
+                              //           showOnOff: true,
+                              //           activeColor: MyColors.blue2,
+                              //           onToggle: (bool value) async {
+                              //             // await OfflineDbModule
+                              //             //     .toggleAutoSync();
+                              //             // setStateC(() {});
 
-                                          final bool newValue =
-                                              !_globalVariableController
-                                                  .autoSyncEnabled.value;
-                                          final bool applied =
-                                              await OfflineBackgroundSyncService
-                                                  .instance
-                                                  .setAutoSync(
-                                                      enabled: newValue);
-                                          if (applied) {
-                                            // Update GlobalVariableController to reflect the change in UI
-                                            _globalVariableController
-                                                .autoSyncEnabled
-                                                .value = newValue;
-                                          }
-                                        },
-                                      ),
-                                    );
-                                  })),
+                              //             final bool newValue =
+                              //                 !_globalVariableController
+                              //                     .autoSyncEnabled.value;
+                              //             final bool applied =
+                              //                 await OfflineBackgroundSyncService
+                              //                     .instance
+                              //                     .setAutoSync(
+                              //                         enabled: newValue);
+                              //             if (applied) {
+                              //               // Update GlobalVariableController to reflect the change in UI
+                              //               _globalVariableController
+                              //                   .autoSyncEnabled
+                              //                   .value = newValue;
+                              //             }
+                              //           },
+                              //         ),
+                              //       );
+                              //     })),
 
                               Divider(),
                               ListTile(
