@@ -1096,7 +1096,7 @@ class OfflineDbModule {
         if (res.success) {
           await _deletePayloadFiles(uploadPayload);
 
-          await _markAsSuccess(id);
+          // await _markAsSuccess(id);
 
           successIds.add(id);
 
@@ -3430,7 +3430,7 @@ class OfflineDbModule {
         if (res.success) {
           await _deletePayloadFiles(uploadPayload);
 
-          await _markAsSuccess(id);
+          // await _markAsSuccess(id);
 
           successIds.add(id);
 
