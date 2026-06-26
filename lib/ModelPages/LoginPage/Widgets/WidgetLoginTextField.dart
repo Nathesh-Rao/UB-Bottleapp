@@ -80,7 +80,7 @@ class _WidgetLoginTextFieldState extends State<WidgetLoginTextField> {
                   ],
                 ),
           SizedBox(
-            height: 50,
+            height: 55,
             child: Stack(
               children: [
                 TextFormField(
@@ -103,21 +103,23 @@ class _WidgetLoginTextFieldState extends State<WidgetLoginTextField> {
                     fillColor: widget.style2 ? Colors.white12 : null,
                     border: OutlineInputBorder(
                       borderSide: BorderSide(
-                        color: Color(0xff4B59D9),
+                        color: Color(0xff4B59D9).withValues(alpha: 0.5),
+                        width: 2,
                       ),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     //
                     enabledBorder: OutlineInputBorder(
                       borderSide: BorderSide(
-                        color: Color(0xff4B59D9),
+                        color: Color(0xff4B59D9).withValues(alpha: 0.5),
+                        width: 2,
                       ),
                       borderRadius: BorderRadius.circular(8),
                     ),
 
                     focusedBorder: OutlineInputBorder(
                       borderSide: BorderSide(
-                        color: Color(0xff4B59D9),
+                        color: Color(0xff4B59D9).withValues(alpha: 0.7),
                         width: 2,
                       ),
                       borderRadius: BorderRadius.circular(8),
