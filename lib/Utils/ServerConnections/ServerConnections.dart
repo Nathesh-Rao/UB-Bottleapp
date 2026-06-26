@@ -225,6 +225,7 @@ class ServerConnections {
 
   static const String ARM_EXECUTE_PUBLISHED_API =
       "ARM_APIs/api/v1/ARMExecutePublishedAPI";
+  static const String ARM_PUSH_TO_QUEUE = "ARM_APIs/api/v1/ARMPushToQueue";
   static const String API_GET_ENCRYPTED_SECRET_KEY =
       "ARM_APIs/api/v1/ARMGetEncryptedSecret";
   static const String API_ARM_EXECUTE = "ARM_APIs/api/v1/ARMExecuteAPI";
@@ -291,7 +292,7 @@ class ServerConnections {
         var response =
             await client.post(Uri.parse(url), headers: header, body: body);
 
-        // print("API_RESPONSE_DATA: $API_NAME: ${response.body}\n");
+        print("API_RESPONSE_DATA: $API_NAME: ${response.body}\n");
         // print("");
         if (response.statusCode == 200) {
           LogService.writeLog(

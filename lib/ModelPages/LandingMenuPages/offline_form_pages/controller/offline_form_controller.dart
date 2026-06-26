@@ -11,7 +11,9 @@ import 'package:ubbottleapp/ModelPages/InApplicationWebView/controller/webview_c
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_bundle_service.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_constants.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_module.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/cached_save_progress_model.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/sync_progress_model.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/widgets/cached_save_dialog.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/widgets/sync_progress_dialog.dart';
 import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
 import 'package:ubbottleapp/Utils/ServerConnections/InternetConnectivity.dart';
@@ -1458,7 +1460,7 @@ class OfflineFormController extends GetxController {
             "You must login with the **SAME credentials** to use this data. Proceed?",
         icon: Icons.settings_backup_restore_rounded,
         confirmColor: Colors.redAccent,
-        okText: "RESTORE NOW",
+        okText: "IMPORT NOW",
         cancelText: "KEEP CURRENT",
       );
 
@@ -1524,7 +1526,7 @@ class OfflineFormController extends GetxController {
                 "You must login with the **SAME credentials** to use this data. Proceed?",
         icon: Icons.settings_backup_restore_rounded,
         confirmColor: Colors.redAccent,
-        okText: "RESTORE NOW",
+        okText: "IMPORT NOW",
         cancelText: "KEEP CURRENT",
       );
       Get.showSnackbar(GetSnackBar(
@@ -1791,5 +1793,78 @@ class OfflineFormController extends GetxController {
         ],
       ),
     );
+  }
+
+  ////////////////////////////////////////////////////////
+  //////////////CACHED_SAVE//////////////////////
+  ////////////////////////////////////////////////////////
+
+  Future<void> actionPushPendingByCachedSave() async {
+    const tag = "[OFFLINE_ACTION_PUSH_PENDING_BY_CACHED_SAVE]";
+    if (!await _isInternetAvailable()) {
+      _showNeedInternetDialog();
+      return;
+    }
+
+    var pendingCount = await OfflineDbModule.getPendingCount();
+    if (pendingCount == 0) {
+      await _confirm(
+        title: "No Pending Data",
+        message:
+            "There is no pending data available.\n\nYou can try saving new forms offline to use this feature",
+        okText: "Okay",
+        icon: Icons.indeterminate_check_box_outlined,
+        confirmColor: const Color.fromARGB(255, 235, 103, 37),
+      );
+      return;
+    }
+
+    final ok = await _confirm(
+      title: "Upload Pending Data",
+      message:
+          "This will upload $pendingCount locally saved records to the server.\n\nAre you sure you want to continue?",
+      okText: "Upload Now",
+      icon: Icons.cloud_upload_rounded,
+      confirmColor: const Color(0xFF2563EB),
+    );
+    if (!ok) return;
+    final cachedSaveProgressModel = CachedSaveProgressModel();
+    // Get.dialog(
+    //   CachedSaveDialog(
+    //     cachedSaveProgressModel: cachedSaveProgressModel,
+    //   ),
+    //   barrierDismissible: false,
+    // );
+
+    final progressModel = SyncProgressModel(initialTitle: "Uploading Data");
+    Get.dialog(
+      SyncProgressDialog(
+        progressModel: progressModel,
+        reTry: actionPushPending,
+        showForcePush: true,
+      ),
+      barrierDismissible: false,
+    );
+    try {
+      await OfflineDbModule.startCachedSave(
+        cachedSaveProgressModel: cachedSaveProgressModel,
+        syncProgressModel: progressModel,
+      );
+
+      refreshPendingCount();
+    } catch (e, st) {
+      LogService.writeLog(message: "$tag[FAILED] $e \n$st");
+      refreshPendingCount();
+      Get.snackbar(
+        "Upload Error",
+        "Failed to process queue. Check logs.",
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+        icon: const Icon(Icons.warning, color: Colors.white),
+      );
+    } finally {
+      isLoading.value = false;
+      // progressModel.completeWithError(errorMsg: "errorMsg");
+    }
   }
 }

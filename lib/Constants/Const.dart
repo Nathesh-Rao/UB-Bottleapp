@@ -77,5 +77,6 @@ class Const {
     //     TextButtonThemeData(style: ButtonStyle(backgroundColor: MaterialStateColor.resolveWith((states) => Colors.grey)))
   );
 
-
+  static String get axm_recordid =>
+      '${globalVariableController.USER_NAME.value}_${DateTime.now().microsecondsSinceEpoch}';
 }

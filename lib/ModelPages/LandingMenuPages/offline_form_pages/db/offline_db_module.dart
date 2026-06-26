@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
+import 'dart:math' hide log;
 
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:intl/intl.dart';
@@ -8,6 +9,7 @@ import 'package:ubbottleapp/Constants/AppStorage.dart';
 import 'package:ubbottleapp/Constants/Const.dart';
 import 'package:ubbottleapp/Constants/GlobalVariableController.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/auto_sync/offline_sync_task_handler.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/cached_save_progress_model.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/form_page_model.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/submitData_APIResponseModel.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/sync_progress_model.dart';
@@ -81,12 +83,35 @@ class OfflineDbModule {
 
     _db = await openDatabase(
       dbPath,
-      version: 7, // ← bumped from 5 → 6
+      version: 9,
       onCreate: (db, _) async {
         await _createTables(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         const tag = "[OFFLINE_DB_UPGRADE_006]";
+        if (oldVersion < 9) {
+          try {
+            await db.execute(
+              'ALTER TABLE ${OfflineDBConstants.TABLE_CACHED_SAVE_QUEUE} '
+              'ADD COLUMN ${OfflineDBConstants.COL_QUEUE_RESPONSE} TEXT DEFAULT ""',
+            );
+          } catch (e) {/* column may already exist */}
+
+          try {
+            await db.execute(
+              'ALTER TABLE ${OfflineDBConstants.TABLE_CACHED_SAVE_QUEUE} '
+              'ADD COLUMN ${OfflineDBConstants.COL_FCM_RESPONSE} TEXT DEFAULT ""',
+            );
+          } catch (e) {/* column may already exist */}
+
+          LogService.writeLog(
+              message: "[V9] queue_response + fcm_response added.");
+        }
+        if (oldVersion < 8) {
+          await db.execute(OfflineDBConstants.CREATE_CACHED_SAVE_QUEUE_TABLE);
+          LogService.writeLog(message: "[V8] cached_save_queue table created.");
+        }
+
         if (oldVersion < 7) {
           await db.execute(
             'ALTER TABLE ${OfflineDBConstants.TABLE_PENDING_REQUESTS} RENAME TO ${OfflineDBConstants.TABLE_PENDING_REQUESTS}_backup',
@@ -122,56 +147,55 @@ class OfflineDbModule {
                 "$tag[V7] Added UNIQUE constraint on '${OfflineDBConstants.COL_REQUEST_JSON}' in ${OfflineDBConstants.TABLE_PENDING_REQUESTS}.",
           );
         }
-        // if (oldVersion < 5) {
-        //   await db.execute(OfflineDBConstants.CREATE_AUDIT_LOGS_TABLE);
-        //   LogService.writeLog(message: "$tag[V5] Audit logs table ensured.");
-        // }
 
-        // if (oldVersion < 6) {
-        // try {
-        //   await db.execute(
-        //     'ALTER TABLE ${OfflineDBConstants.TABLE_AUDIT_LOGS} '
-        //     'ADD COLUMN ${OfflineDBConstants.COL_IS_SYNCED} INTEGER NOT NULL DEFAULT 0',
-        //   );
-        //   LogService.writeLog(
-        //     message:
-        //         "$tag[V6] Added '${OfflineDBConstants.COL_IS_SYNCED}' to audit_logs.",
-        //   );
-        // } catch (e) {
-        //   LogService.writeLog(
-        //     message: "$tag[V6][SKIP] is_synced already present: $e",
-        //   );
-        // }
+        if (oldVersion < 6) {
+          try {
+            await db.execute(
+              'ALTER TABLE ${OfflineDBConstants.TABLE_AUDIT_LOGS} '
+              'ADD COLUMN ${OfflineDBConstants.COL_IS_SYNCED} INTEGER NOT NULL DEFAULT 0',
+            );
+            LogService.writeLog(
+              message:
+                  "$tag[V6] Added '${OfflineDBConstants.COL_IS_SYNCED}' to audit_logs.",
+            );
+          } catch (e) {
+            LogService.writeLog(
+              message: "$tag[V6][SKIP] is_synced already present: $e",
+            );
+          }
 
-        //   try {
-        //     await db.execute(
-        //       'ALTER TABLE ${OfflineDBConstants.TABLE_OFFLINE_USER} '
-        //       'ADD COLUMN ${OfflineDBConstants.COL_LAST_SYNCED} TEXT',
-        //     );
-        //     LogService.writeLog(
-        //       message:
-        //           "$tag[V6] Added '${OfflineDBConstants.COL_LAST_SYNCED}' to offline_user.",
-        //     );
-        //   } catch (e) {
-        //     LogService.writeLog(
-        //       message: "$tag[V6][SKIP] last_synced already present: $e",
-        //     );
-        //   }
-        // }
-
+          try {
+            await db.execute(
+              'ALTER TABLE ${OfflineDBConstants.TABLE_OFFLINE_USER} '
+              'ADD COLUMN ${OfflineDBConstants.COL_LAST_SYNCED} TEXT',
+            );
+            LogService.writeLog(
+              message:
+                  "$tag[V6] Added '${OfflineDBConstants.COL_LAST_SYNCED}' to offline_user.",
+            );
+          } catch (e) {
+            LogService.writeLog(
+              message: "$tag[V6][SKIP] last_synced already present: $e",
+            );
+          }
+        }
+        if (oldVersion < 5) {
+          await db.execute(OfflineDBConstants.CREATE_AUDIT_LOGS_TABLE);
+          LogService.writeLog(message: "$tag[V5] Audit logs table ensured.");
+        }
         // Audit the upgrade itself
-        // try {
-        //   await db.insert(OfflineDBConstants.TABLE_AUDIT_LOGS, {
-        //     OfflineDBConstants.COL_USERNAME: 'system',
-        //     OfflineDBConstants.COL_PROJECT_NAME: 'system',
-        //     OfflineDBConstants.COL_ACTION: 'DB_UPGRADE',
-        //     OfflineDBConstants.COL_REMARKS:
-        //         'Upgraded from $oldVersion to $newVersion.',
-        //     OfflineDBConstants.COL_CREATED_AT: DateTime.now().toIso8601String(),
-        //     OfflineDBConstants.COL_IS_ERROR: 0,
-        //     OfflineDBConstants.COL_IS_SYNCED: 0, // new column — default 0
-        //   });
-        // } catch (_) {}
+        try {
+          await db.insert(OfflineDBConstants.TABLE_AUDIT_LOGS, {
+            OfflineDBConstants.COL_USERNAME: 'system',
+            OfflineDBConstants.COL_PROJECT_NAME: 'system',
+            OfflineDBConstants.COL_ACTION: 'DB_UPGRADE',
+            OfflineDBConstants.COL_REMARKS:
+                'Upgraded from $oldVersion to $newVersion.',
+            OfflineDBConstants.COL_CREATED_AT: DateTime.now().toIso8601String(),
+            OfflineDBConstants.COL_IS_ERROR: 0,
+            OfflineDBConstants.COL_IS_SYNCED: 0, // new column — default 0
+          });
+        } catch (_) {}
 
         LogService.writeLog(
           message: "$tag[SUCCESS] Migration complete. Data preserved.",
@@ -195,6 +219,7 @@ class OfflineDbModule {
     await db.execute(OfflineDBConstants.CREATE_PENDING_REQUESTS_TABLE);
     await db.execute(OfflineDBConstants.CREATE_OFFLINE_USER_TABLE);
     await db.execute(OfflineDBConstants.CREATE_AUDIT_LOGS_TABLE);
+    await db.execute(OfflineDBConstants.CREATE_CACHED_SAVE_QUEUE_TABLE);
   }
 
   static Future<void> maintenanceDeleteOldLogs() async {
@@ -860,12 +885,26 @@ class OfflineDbModule {
     }
 //-----------------------OFFLINE--------------------------------------->
     try {
+      final String encodedBody = jsonEncode(submitBody);
+      // final existing = await _database.query(
+      //   OfflineDBConstants.TABLE_PENDING_REQUESTS,
+      //   where:
+      //       '${OfflineDBConstants.COL_REQUEST_JSON} = ? AND ${OfflineDBConstants.COL_STATUS} = ?',
+      //   whereArgs: [encodedBody, OfflineDBConstants.STATUS_PENDING],
+      //   limit: 1,
+      // );
+
+      // if (existing.isNotEmpty) {
+      //   LogService.writeLog(message: "[OFFLINE] Duplicate submission blocked");
+      //   return SubmitStatus.savedOffline;
+      // }
+
       final int rowId = await _database.insert(
         OfflineDBConstants.TABLE_PENDING_REQUESTS,
         {
           OfflineDBConstants.COL_USERNAME: username,
           OfflineDBConstants.COL_PROJECT_NAME: projectName,
-          OfflineDBConstants.COL_REQUEST_JSON: jsonEncode(submitBody),
+          OfflineDBConstants.COL_REQUEST_JSON: encodedBody,
           OfflineDBConstants.COL_STATUS: OfflineDBConstants.STATUS_PENDING,
           OfflineDBConstants.COL_CREATED_AT: DateTime.now().toIso8601String(),
         },
@@ -921,6 +960,7 @@ class OfflineDbModule {
     required bool isInternetAvailable,
     SyncProgressModel? progress,
   }) async {
+    // if (progress?.isLoading.value ?? false) return "Sync already running...";
     progress?.isSessionError.value = false;
     log("processpendingque started", name: processPendingQueTag);
     if (!isInternetAvailable) return "No internet connection";
@@ -941,11 +981,8 @@ class OfflineDbModule {
     if (currentSessionId.isEmpty) return "No active session to sync";
 
     progress?.updateMessage("Checking pending queue...");
-    final List<Map<String, Object?>> result = await _database.rawQuery(
-        'SELECT COUNT(*) as rec_count FROM ${OfflineDBConstants.TABLE_PENDING_REQUESTS}');
-    int count = (result.first['rec_count'] as int?) ?? 0;
-    LogService.writeLog(message: "RECORDS COUNT => ${count}");
-    await debugPrintPendingRequests();
+
+    // await debugPrintPendingRequests();
     final idRows = await _database.query(
       OfflineDBConstants.TABLE_PENDING_REQUESTS,
       columns: [OfflineDBConstants.COL_ID],
@@ -971,17 +1008,12 @@ class OfflineDbModule {
           remarks: "No pending records found to sync");
       return "Queue is empty";
     }
-
+///////////////////PUSH start/////////////////////////
     int successCount = 0;
     int failCount = 0;
     List<int> successIds = [];
     List<int> failedIds = [];
     int total = idRows.length;
-
-    progress?.clearFailedRecords();
-    progress?.init(
-        total: total, msg: "Found $total records. Starting upload...");
-
     final ServerConnections serverConnections = ServerConnections();
     final String url =
         Const.getFullARMUrl(ServerConnections.ARM_EXECUTE_PUBLISHED_API);
@@ -990,6 +1022,11 @@ class OfflineDbModule {
     bool isAuthFailed = false;
     String authFailedMessage = "";
     int authFailedCode = 0;
+
+    progress?.clearFailedRecords();
+    progress?.init(
+        total: total, msg: "Found $total records. Starting upload...");
+
     for (int i = 0; i < total; i++) {
       final id = idRows[i][OfflineDBConstants.COL_ID] as int;
 
@@ -1004,7 +1041,9 @@ class OfflineDbModule {
         );
 
         if (bodyStr == null || bodyStr.isEmpty) {
-          await _markAsError(id);
+          // await _markAsError(id);
+          failedIds.add(id);
+          failCount++;
           progress?.addFailedRecord(id, "Empty payload");
           progress?.increment(isSuccess: false);
           await logAudit(
@@ -1022,8 +1061,6 @@ class OfflineDbModule {
         // }
 
         originalPayload['ARMSessionId'] = currentSessionId;
-
-        originalPayload['ARMSessionId'] = currentSessionId;
         originalPayload['submitdata']['trace'] = isTraceOn ? "true" : "false";
         originalPayload['submitdata']['username'] =
             (originalPayload['submitdata']['username'] ?? "").isEmpty
@@ -1037,15 +1074,15 @@ class OfflineDbModule {
         // originalPayload['project'] =
         //     await AppStorage().retrieveValue(AppStorage.PROJECT_NAME);
 
-        final Map<String, dynamic> uploadPayload =
-            await _convertPayloadPathsToBase64(originalPayload);
-        log("processpendingque uploadPayload.length ${uploadPayload.length}",
-            name: processPendingQueTag);
-        progress?.updateMessage(
-            "Uploading${_isAssetHelper(uploadPayload)}record ${i + 1} of $total...");
-
+        Map<String, dynamic> uploadPayload = originalPayload;
         if (_isAsset(uploadPayload)) {
           try {
+            uploadPayload = await _convertPayloadPathsToBase64(originalPayload);
+            log("processpendingque uploadPayload.length ${uploadPayload.length}",
+                name: processPendingQueTag);
+            progress?.updateMessage(
+                "Uploading${_isAssetHelper(uploadPayload)}record ${i + 1} of $total...");
+
             var data = uploadPayload["submitdata"]["dataarray"]["data"];
             var fileMap =
                 data["dc1"]["row1"]["axpfile_file"] as Map<String, dynamic>;
@@ -1074,7 +1111,7 @@ class OfflineDbModule {
 
         LogService.writeLog(
             message:
-                "[API ERROR]||[API SUCCESS]  ${res.rawBody} ||  ${_isAssetHelper(uploadPayload)}");
+                "[API ERROR]||[API SUCCESS]  ${res.rawBody} ||  ${_isAssetHelper(uploadPayload)} || ${_getAxmRecId(uploadPayload)}");
         String displayMessage = res.message;
 
         /// =========================================================
@@ -1084,7 +1121,7 @@ class OfflineDbModule {
         if (res.success) {
           await _deletePayloadFiles(uploadPayload);
 
-          await _markAsSuccess(id);
+          // await _markAsSuccess(id);
 
           successIds.add(id);
 
@@ -1093,8 +1130,22 @@ class OfflineDbModule {
           log(
             "counting success failure => isSuccess => true",
           );
-
           progress?.increment(isSuccess: true);
+
+          //response check for duplicate axm_recordid
+          final body = jsonDecode(res.rawBody);
+          if (!body.containsKey('result')) {
+            LogService.writeLog(
+                message: "$id THIS ID IS A DUPLICATE ${res.rawBody}");
+
+            await logAudit(
+              action: processPendingQueTag,
+              isError: true,
+              response: uploadPayload.toString(),
+              remarks:
+                  "This ID[$id] contains duplicate axm_recordid \nstatuscode${res.statusCode}\nresponse${res.rawBody}",
+            );
+          }
 
           continue;
         }
@@ -1102,9 +1153,13 @@ class OfflineDbModule {
         /// =========================================================
         /// FAILURE FLOW
         /// =========================================================
-
+        ///
+        // await _markAsError(id);
+        failedIds.add(id);
+        failCount++;
+        progress?.increment(isSuccess: false);
+        progress?.addErrors(title: "Error", errorText: "${res.message}");
         progress?.addFailedRecord(id, displayMessage);
-
         await logAudit(
           action: processPendingQueTag,
           isError: true,
@@ -1118,45 +1173,38 @@ class OfflineDbModule {
 
         if (res.statusCode == 400) {
           final bool isSessionIssue = _isAuthenticationError(displayMessage);
-
           if (displayMessage.toLowerCase().contains("session")) {
             progress?.isSessionError.value = true;
           }
 
           /// AUTH FAILURE -> BREAK
           if (isSessionIssue) {
-            await _markAsError(id);
-
-            failedIds.add(id);
-
-            failCount++;
-
+            // failedIds.add(id);
+            // failCount++;
             authFailedCode = res.statusCode;
-
             isAuthFailed = true;
-
             authFailedMessage = displayMessage;
 
             break;
           }
 
           /// NORMAL VALIDATION ERROR -> CONTINUE
-          await _markAsError(id);
+          // await _markAsError(id);
 
-          failedIds.add(id);
+          // failedIds.add(id);
 
-          failCount++;
+          // failCount++;
 
-          progress?.addErrors(
-            title: "ID : $id",
-            errorText: displayMessage,
-          );
+          // progress?.addErrors(
+          //   title: "ID : $id",
+          //   errorText: displayMessage,
+          // );
 
           log(
             "counting success failure => isSuccess => false",
           );
 
-          progress?.increment(isSuccess: false);
+          // progress?.increment(isSuccess: false);
 
           continue;
         }
@@ -1169,11 +1217,11 @@ class OfflineDbModule {
           progress?.isSessionError.value = true;
         }
 
-        await _markAsError(id);
+        // await _markAsError(id);
 
-        failedIds.add(id);
+        // failedIds.add(id);
 
-        failCount++;
+        // failCount++;
 
         authFailedCode = res.statusCode;
 
@@ -1181,132 +1229,18 @@ class OfflineDbModule {
 
         authFailedMessage = displayMessage;
 
-        progress?.addErrors(
-          title: "ID : $id",
-          errorText: displayMessage,
-        );
+        // progress?.addErrors(
+        //   title: "ID : $id",
+        //   errorText: displayMessage,
+        // );
 
         log(
           "counting success failure => isSuccess => false",
         );
 
-        progress?.increment(isSuccess: false);
+        // progress?.increment(isSuccess: false);
 
         break;
-
-        // if (res.statusCode != 200) {
-        //   progress?.addFailedRecord(id, displayMessage);
-
-        //   await logAudit(
-        //     action: processPendingQueTag,
-        //     isError: true,
-        //     response:
-        //         res.rawBody.isEmpty ? "-- Empty Response --" : res.rawBody,
-        //     remarks: "[ID: $id] ${res.statusCode} — $displayMessage",
-        //   );
-
-        //   /// =====================================================
-        //   /// DIRECT BREAK
-        //   /// =====================================================
-
-        //   if (res.statusCode == 401 || res.statusCode == 500) {
-        //     await _markAsError(id);
-
-        //     failedIds.add(id);
-
-        //     failCount++;
-
-        //     authFailedCode = res.statusCode;
-
-        //     isAuthFailed = true;
-
-        //     authFailedMessage = displayMessage;
-
-        //     break;
-        //   }
-
-        //   /// =====================================================
-        //   /// 400 -> CHECK AUTH MESSAGE
-        //   /// =====================================================
-
-        //   if (res.statusCode == 400) {
-        //     final bool isSessionIssue = _isAuthenticationError(displayMessage);
-
-        //     if (isSessionIssue) {
-        //       await _markAsError(id);
-
-        //       failedIds.add(id);
-
-        //       failCount++;
-
-        //       authFailedCode = res.statusCode;
-
-        //       isAuthFailed = true;
-
-        //       authFailedMessage = displayMessage;
-
-        //       break;
-        //     }
-
-        //     /// normal validation error
-        //     await _markAsError(id);
-
-        //     failedIds.add(id);
-
-        //     failCount++;
-
-        //     progress?.addErrors(
-        //       title: "ID : $id",
-        //       errorText: displayMessage,
-        //     );
-
-        //     progress?.increment(isSuccess: false);
-
-        //     continue;
-        //   }
-
-        //   /// =====================================================
-        //   /// OTHER NON-200 ERRORS
-        //   /// =====================================================
-
-        //   await _markAsError(id);
-
-        //   failedIds.add(id);
-
-        //   failCount++;
-
-        //   progress?.addErrors(
-        //     title: "ID : $id",
-        //     errorText: displayMessage,
-        //   );
-
-        //   progress?.increment(isSuccess: false);
-
-        //   continue;
-        // }
-
-        // if (res.success) {
-        //   await _deletePayloadFiles(uploadPayload);
-        //   await _markAsSuccess(id);
-        //   successIds.add(id);
-        //   successCount++;
-        // } else {
-        //   await _markAsError(id);
-        //   failedIds.add(id);
-        //   progress?.addFailedRecord(id, res.message);
-        //   progress?.addErrors(title: "ID : $id", errorText: displayMessage);
-        //   failCount++;
-        //   await logAudit(
-        //     action: processPendingQueTag,
-        //     isError: true,
-        //     response: res.rawBody,
-        //     remarks:
-        //         "[ID: $id] Status: ${res.success ? 'SUCCESS' : 'FAILED'} | Key: ${uploadPayload['publickey']}",
-        //   );
-        // }
-        // log("counting success failure => isSuccess => ${res.success}");
-
-        // progress?.increment(isSuccess: res.success);
       } catch (e) {
         await logAudit(
           action: processPendingQueTag,
@@ -1314,9 +1248,11 @@ class OfflineDbModule {
           response: e.toString(),
           remarks: "Exception processing record ID: $id",
         );
-        await _markAsError(id);
+        failedIds.add(id);
+        // await _markAsError(id);
         progress?.addFailedRecord(id, e.toString());
         progress?.increment(isSuccess: false);
+        progress?.addErrors(title: "Error", errorText: e.toString());
         failCount++;
       }
     }
@@ -1759,6 +1695,27 @@ class OfflineDbModule {
     return ' ';
   }
 
+  static String _getAxmRecId(Map<String, dynamic> pl) {
+    String publicKey = pl["publickey"] ?? '';
+
+    if (publicKey.toLowerCase() == "inwardentry") {
+      var axm_recordid = pl["submitdata"]["dataarray"]["data"]["dc1"]["row1"]
+              ["axm_recordid"] ??
+          "";
+      return axm_recordid.isEmpty
+          ? " axm_recordid: EMPTY "
+          : " axm_recordid: $axm_recordid ";
+    } else if (publicKey.toLowerCase() == "inwardattach") {
+      var axm_recordid = pl["submitdata"]["dataarray"]["data"]["dc1"]["row1"]
+              ["axm_recordid"] ??
+          "";
+      return axm_recordid.isEmpty
+          ? " axm_recordid: EMPTY "
+          : " axm_recordid: $axm_recordid ";
+    }
+    return ' ';
+  }
+
   static Future<void> forcePushFailedRecords({
     required bool isInternetAvailable,
     required SyncProgressModel progress,
@@ -2076,7 +2033,7 @@ class OfflineDbModule {
         log("File found at $value, converting to base64",
             name: "AX_BUNDLE_LOG");
         var b64 = await fileToBase64Correct(file);
-        // return "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+
         return b64;
       } else {
         log("CRITICAL: File MISSING at $value during conversion!",
@@ -2171,7 +2128,7 @@ class OfflineDbModule {
   ) async {
     if (data is Map<String, dynamic>) {
       for (var key in data.keys) {
-        if (key == 'fileasbase64') {
+        if (key == 'fileasbase64' || key == 'FileData') {
           var value = data[key];
 
           if (value is String) {
@@ -2883,399 +2840,6 @@ class OfflineDbModule {
 
   static const String _bgPushTag = 'BG_PUSH_QUEUE_TAG';
 
-  // static Future<String> backgroundPushPendingQueue({
-  //   required String armUrl,
-  //   void Function(int current, int total)? onProgress,
-  // }) async {
-  //   final scope = await _getLastOfflineUserScope();
-  //   if (scope == null) {
-  //     await LogService.writeLog(message: '[$_bgPushTag] No user scope found.');
-  //     return 'No user session found';
-  //   }
-
-  //   final String username = scope['username']!;
-  //   final String projectName = scope['projectName']!;
-
-  //   final String sessionId =
-  //       await AppStorage().retrieveValue(AppStorage.SESSIONID) ?? '';
-  //   final String token =
-  //       await AppStorage().retrieveValue(AppStorage.TOKEN) ?? '';
-  //   final bool isTrace =
-  //       await AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? false;
-  //   await LogService.writeLog(
-  //     message:
-  //         '[BG_PUSH_QUEUE] Session: "${sessionId.isEmpty ? "EMPTY" : sessionId.substring(0, sessionId.length.clamp(0, 20))}..." | User: $username',
-  //   );
-  //   // Inside the for loop, just before httpClient.post()
-
-  //   if (sessionId.isEmpty) {
-  //     await LogService.writeLog(
-  //         message: '[$_bgPushTag] No active session. Aborting.');
-  //     return 'No active session';
-  //   }
-
-  //   final idRows = await _database.query(
-  //     OfflineDBConstants.TABLE_PENDING_REQUESTS,
-  //     columns: [OfflineDBConstants.COL_ID],
-  //     where: '''
-  //     ${OfflineDBConstants.COL_STATUS} IN (
-  //       ${OfflineDBConstants.STATUS_PENDING},
-  //       ${OfflineDBConstants.STATUS_ERROR}
-  //     )
-  //     AND ${OfflineDBConstants.COL_USERNAME}     = ?
-  //     AND ${OfflineDBConstants.COL_PROJECT_NAME} = ?
-  //   ''',
-  //     whereArgs: [username, projectName],
-  //     orderBy: OfflineDBConstants.COL_CREATED_AT,
-  //   );
-
-  //   if (idRows.isEmpty) {
-  //     await LogService.writeLog(message: '[$_bgPushTag] Queue is empty.');
-  //     return 'Queue is empty';
-  //   }
-
-  //   final http.Client httpClient = http.Client();
-  //   final String url = armUrl;
-  //   final Map<String, String> headers = {
-  //     'Content-Type': 'application/json',
-  //     'Authorization': 'Bearer $token',
-  //   };
-
-  //   int successCount = 0;
-  //   int failCount = 0;
-  //   final int total = idRows.length;
-  //   final List<int> successIds = [];
-  //   final List<int> failedIds = [];
-  //   await LogService.writeLog(
-  //     message: '[$_bgPushTag] Starting push. Total: $total | User: $username',
-  //   );
-
-  //   for (int i = 0; i < total; i++) {
-  //     final int id = idRows[i][OfflineDBConstants.COL_ID] as int;
-
-  //     try {
-  //       final String? bodyStr = await _readLargeString(
-  //         table: OfflineDBConstants.TABLE_PENDING_REQUESTS,
-  //         column: OfflineDBConstants.COL_REQUEST_JSON,
-  //         where: '${OfflineDBConstants.COL_ID} = ?',
-  //         whereArgs: [id],
-  //       );
-
-  //       if (bodyStr == null || bodyStr.isEmpty) {
-  //         await _markAsError(id);
-  //         await logAudit(
-  //           action: _bgPushTag,
-  //           isError: true,
-  //           remarks: '[ID: $id] Empty payload — skipping.',
-  //         );
-  //         failCount++;
-  //         continue;
-  //       }
-
-  //       final Map<String, dynamic> payload = jsonDecode(bodyStr);
-  //       payload['ARMSessionId'] = sessionId.trim();
-  //       payload['submitdata']['trace'] = isTrace ? 'true' : 'false';
-
-  //       final String? storedUsername = payload['submitdata']['username'];
-  //       if (storedUsername == null || storedUsername.isEmpty) {
-  //         payload['submitdata']['username'] =
-  //             AppStorage().retrieveValue(AppStorage.USER_NAME) ?? username;
-  //       }
-  //       await LogService.writeLog(
-  //         message:
-  //             '[$_bgPushTag] [ID: $id] Sending sessionId: "${payload['ARMSessionId'].toString()}"',
-  //       );
-  //       final Map<String, dynamic> uploadPayload =
-  //           await _convertPayloadPathsToBase64(payload);
-  //       if (uploadPayload.isEmpty) {
-  //         failedIds.add(id);
-  //         await _markAsError(id);
-  //         await logAudit(
-  //           action: _bgPushTag,
-  //           isError: true,
-  //           remarks: '[ID: $id] base64 conversion returned empty map.',
-  //         );
-  //         failCount++;
-  //         continue;
-  //       }
-
-  //       if (_isAsset(uploadPayload)) {
-  //         try {
-  //           final fileMap = uploadPayload['submitdata']['dataarray']['data']
-  //               ['dc1']['row1']['axpfile_file'] as Map<String, dynamic>;
-  //           fileMap.forEach((key, value) {
-  //             if (value is Map && value.containsKey('filename')) {
-  //               value['filename'] =
-  //                   value['filename'].toString().replaceAll('/', '_');
-  //             }
-  //           });
-  //         } catch (e) {
-  //           await LogService.writeLog(
-  //               message: '[$_bgPushTag] [ID: $id] Filename fix failed: $e');
-  //         }
-  //       }
-
-  //       // TODO DEBUG_ONLY: Hardcoded username and project name for imported DB testing.
-  //       // imported db push will fail without this 2 lines
-  //       // Remove before production build.
-  //       // uploadPayload['submitdata']['username'] =
-  //       //     await AppStorage().retrieveValue(AppStorage.USER_NAME);
-  //       // uploadPayload['project'] =
-  //       //     await AppStorage().retrieveValue(AppStorage.PROJECT_NAME);
-
-  //       final http.Response response = await httpClient
-  //           .post(
-  //             Uri.parse(url),
-  //             headers: headers,
-  //             body: jsonEncode(uploadPayload),
-  //           )
-  //           .timeout(const Duration(seconds: 60));
-
-  //       bool isSuccess = false;
-  //       String errorMsg = 'Unknown error';
-
-  //       // if (response.statusCode == 200 && response.body.isNotEmpty) {
-  //       //   try {
-  //       //     final decoded = jsonDecode(response.body);
-  //       //     if (decoded is Map<String, dynamic> && decoded['success'] == true) {
-  //       //       isSuccess = true;
-  //       //     } else {
-  //       //       errorMsg =
-  //       //           decoded['message']?.toString() ?? 'Server returned false';
-  //       //     }
-  //       //   } catch (e) {
-  //       //     errorMsg = 'Response parse error: $e';
-  //       //   }
-  //       // } else {
-  //       //   await LogService.writeLog(
-  //       //       message: "[$_bgPushTag] ${uploadPayload.toString()}");
-  //       //   await LogService.writeLog(
-  //       //       message:
-  //       //           '[$_bgPushTag] HTTP ${response.statusCode}: ${response.body.isEmpty ? "-- Empty Response Body -- ${response.toString()}" : response.body}');
-  //       //   await LogService.writeLog(
-  //       //     message:
-  //       //         '[$_bgPushTag] Unauthorized — session expired. Stopping cycle.',
-  //       //   );
-
-  //       //   await _markAsError(id);
-
-  //       //   failedIds.add(id);
-  //       //   failCount++;
-
-  //       //   await logAudit(
-  //       //     action: _bgPushTag,
-  //       //     isError: true,
-  //       //     response:
-  //       //         'HTTP ${response.statusCode}: ${response.body.isEmpty ? "-- Empty Response Body -- ${response.toString()}" : response.body}',
-  //       //     remarks: '[ID: $id] 401 Unauthorized. Stopping background push. '
-  //       //         '| Progress: ${i + 1}/$total processed '
-  //       //         '| Success count: ${successIds.length} — IDs: ${successIds.isEmpty ? 'none' : successIds.join(', ')} '
-  //       //         '| Failed count: ${failedIds.length} — IDs: ${failedIds.isEmpty ? 'none' : failedIds.join(', ')} '
-  //       //         '| Unprocessed count: ${total - (i + 1)} — IDs: ${idRows.sublist(i + 1).map((r) => r[OfflineDBConstants.COL_ID]).join(', ')}',
-  //       //   );
-
-  //       //   FlutterForegroundTask.sendDataToMain({
-  //       //     SyncDataKeys.event: SyncDataKeys.evtAuthFailed,
-  //       //     'statusCode': response.statusCode,
-  //       //     'body':
-  //       //         response.body.isEmpty ? '-- Empty Response --' : response.body,
-  //       //   });
-  //       //   errorMsg = 'HTTP ${response.statusCode}: ${response.body}';
-  //       //   break;
-  //       // }
-
-  //       if (response.statusCode == 200 && response.body.isNotEmpty) {
-  //         try {
-  //           final decoded = jsonDecode(response.body);
-
-  //           if (decoded is Map<String, dynamic> && decoded['success'] == true) {
-  //             isSuccess = true;
-  //           } else {
-  //             errorMsg =
-  //                 decoded['message']?.toString() ?? 'Server returned false';
-  //           }
-  //         } catch (e) {
-  //           errorMsg = 'Response parse error: $e';
-  //         }
-  //       } else {
-  //         final responseBody = response.body.isEmpty
-  //             ? "-- Empty Response Body -- ${response.toString()}"
-  //             : response.body;
-
-  //         String displayMessage = responseBody;
-
-  //         try {
-  //           final decoded = jsonDecode(response.body);
-
-  //           if (decoded is Map<String, dynamic>) {
-  //             displayMessage = decoded['message']?.toString() ?? responseBody;
-  //           }
-  //         } catch (_) {}
-
-  //         final bool isSessionIssue = _isAuthenticationError(displayMessage);
-
-  //         await LogService.writeLog(
-  //           message: "[$_bgPushTag] ${uploadPayload.toString()}",
-  //         );
-
-  //         await LogService.writeLog(
-  //           message: '[$_bgPushTag] HTTP ${response.statusCode}: $responseBody',
-  //         );
-
-  //         await LogService.writeLog(
-  //           message: isSessionIssue
-  //               ? '[$_bgPushTag] Authentication/session issue detected. Stopping cycle.'
-  //               : '[$_bgPushTag] Non-auth failure detected. Continuing sync.',
-  //         );
-
-  //         errorMsg = 'HTTP ${response.statusCode}: $displayMessage';
-  //         await logAudit(
-  //           action: _bgPushTag,
-  //           isError: true,
-  //           response: 'HTTP ${response.statusCode}: $responseBody',
-  //           remarks: '[ID: $id] ${response.statusCode} — $displayMessage '
-  //               '| Progress: ${i + 1}/$total processed '
-  //               '| Success count: ${successIds.length} — IDs: ${successIds.isEmpty ? 'none' : successIds.join(', ')} '
-  //               '| Failed count: ${failedIds.length} — IDs: ${failedIds.isEmpty ? 'none' : failedIds.join(', ')} '
-  //               '| Unprocessed count: ${total - (i + 1)} — IDs: ${idRows.sublist(i + 1).map((r) => r[OfflineDBConstants.COL_ID]).join(', ')}',
-  //         );
-  //         if (isSessionIssue) {
-  //           await _markAsError(id);
-
-  //           failedIds.add(id);
-  //           failCount++;
-
-  //           FlutterForegroundTask.sendDataToMain({
-  //             SyncDataKeys.event: SyncDataKeys.evtAuthFailed,
-  //             'statusCode': response.statusCode,
-  //             'body': displayMessage,
-  //           });
-
-  //           break;
-  //         }
-  //       }
-
-  //       if (isSuccess) {
-  //         successIds.add(id);
-  //         await _deletePayloadFiles(uploadPayload);
-  //         await _markAsSuccess(id);
-  //         successCount++;
-  //       } else {
-  //         failedIds.add(id);
-  //         await _markAsError(id);
-  //         failCount++;
-  //         await logAudit(
-  //           action: _bgPushTag,
-  //           isError: true,
-  //           response: response.body,
-  //           remarks:
-  //               '[ID: $id] ${isSuccess ? "SUCCESS" : "FAILED"} | Key: ${uploadPayload['publickey']}',
-  //         );
-  //       }
-  //       onProgress?.call(i + 1, total);
-  //       await LogService.writeLog(
-  //         message:
-  //             '[$_bgPushTag] [ID: $id] ${isSuccess ? "SUCCESS" : "FAILED: $errorMsg"}',
-  //       );
-  //     } catch (e) {
-  //       await _markAsError(id);
-  //       failCount++;
-  //       failedIds.add(id);
-  //       await LogService.writeLog(
-  //           message: '[$_bgPushTag] [ID: $id] Exception: $e');
-  //       await logAudit(
-  //         action: _bgPushTag,
-  //         isError: true,
-  //         response: e.toString(),
-  //         remarks: '[ID: $id] Exception during background push.',
-  //       );
-  //     }
-  //   }
-
-  //   httpClient.close();
-  //   if (successIds.isNotEmpty) {
-  //     await _database.rawUpdate(
-  //       '''UPDATE ${OfflineDBConstants.TABLE_PENDING_REQUESTS}
-  //        SET ${OfflineDBConstants.COL_STATUS} = ${OfflineDBConstants.STATUS_SUCCESS}
-  //        WHERE ${OfflineDBConstants.COL_ID} IN (${successIds.join(',')})''',
-  //     );
-  //     await LogService.writeLog(
-  //         message:
-  //             '[$_bgPushTag] Batch SUCCESS update: ${successIds.length} rows — IDs: $successIds');
-  //   }
-
-  //   if (failedIds.isNotEmpty) {
-  //     await _database.rawUpdate(
-  //       '''UPDATE ${OfflineDBConstants.TABLE_PENDING_REQUESTS}
-  //        SET ${OfflineDBConstants.COL_STATUS} = ${OfflineDBConstants.STATUS_ERROR}
-  //        WHERE ${OfflineDBConstants.COL_ID} IN (${failedIds.join(',')})''',
-  //     );
-  //     await LogService.writeLog(
-  //         message:
-  //             '[$_bgPushTag] Batch ERROR update: ${failedIds.length} rows — IDs: $failedIds');
-  //   }
-  //   final String result = 'Processed: $successCount success, $failCount failed';
-  //   await LogService.writeLog(message: '[$_bgPushTag] Done. $result');
-  //   await backgroundPushAuditLogs(
-  //     armUrl: armUrl,
-  //     onStatusUpdate: (msg) => onProgress?.call(-1, -1),
-  //   );
-  //   return result;
-  // }
-
-  // static Future<Set<String>> getExistingUbgeNos() async {
-  //   final scope = await _getLastOfflineUserScope();
-  //   if (scope == null) return {};
-
-  //   final rows = await _database.query(
-  //     OfflineDBConstants.TABLE_PENDING_REQUESTS,
-  //     columns: [OfflineDBConstants.COL_ID, OfflineDBConstants.COL_REQUEST_JSON],
-  //     where: '''
-  //     ${OfflineDBConstants.COL_STATUS} IN (
-  //       ${OfflineDBConstants.STATUS_PENDING},
-  //       ${OfflineDBConstants.STATUS_ERROR},
-  //       ${OfflineDBConstants.STATUS_SUCCESS}
-  //     )
-  //     AND ${OfflineDBConstants.COL_USERNAME} = ?
-  //     AND ${OfflineDBConstants.COL_PROJECT_NAME} = ?
-  //   ''',
-  //     whereArgs: [scope['username'], scope['projectName']],
-  //   );
-
-  //   final Set<String> result = {};
-
-  //   for (final row in rows) {
-  //     try {
-  //       final bodyStr = await _readLargeString(
-  //         table: OfflineDBConstants.TABLE_PENDING_REQUESTS,
-  //         column: OfflineDBConstants.COL_REQUEST_JSON,
-  //         where: '${OfflineDBConstants.COL_ID} = ?',
-  //         whereArgs: [row[OfflineDBConstants.COL_ID]],
-  //       );
-
-  //       if (bodyStr == null || bodyStr.isEmpty) continue;
-
-  //       final Map<String, dynamic> payload = jsonDecode(bodyStr);
-
-  //       final String publicKey =
-  //           (payload['publickey'] ?? '').toString().toLowerCase();
-  //       if (publicKey != 'inwardentry') continue;
-
-  //       final String? ubgeNo = payload['submitdata']?['dataarray']?['data']
-  //               ?['dc1']?['row1']?['ub_ge_no']
-  //           ?.toString();
-
-  //       if (ubgeNo != null && ubgeNo.trim().isNotEmpty) {
-  //         result.add(ubgeNo.trim().toUpperCase());
-  //       }
-  //     } catch (e) {
-  //       debugPrint("[UBGE_CHECK] Error parsing record: $e");
-  //     }
-  //   }
-
-  //   return result;
-  // }
-
   static Future<String> backgroundPushPendingQueue({
     required String armUrl,
     void Function(int current, int total)? onProgress,
@@ -3352,7 +2916,7 @@ class OfflineDbModule {
         );
 
         if (bodyStr == null || bodyStr.isEmpty) {
-          await _markAsError(id);
+          // await _markAsError(id);
           await logAudit(
             action: _bgPushTag,
             isError: true,
@@ -3382,7 +2946,7 @@ class OfflineDbModule {
 
         if (uploadPayload.isEmpty) {
           failedIds.add(id);
-          await _markAsError(id);
+          // await _markAsError(id);
           await logAudit(
             action: _bgPushTag,
             isError: true,
@@ -3498,7 +3062,7 @@ class OfflineDbModule {
         if (res.success) {
           await _deletePayloadFiles(uploadPayload);
 
-          await _markAsSuccess(id);
+          // await _markAsSuccess(id);
 
           successIds.add(id);
 
@@ -3524,7 +3088,7 @@ class OfflineDbModule {
 
             /// AUTH FAILURE -> BREAK
             if (isSessionIssue) {
-              await _markAsError(id);
+              // await _markAsError(id);
 
               failedIds.add(id);
 
@@ -3540,7 +3104,7 @@ class OfflineDbModule {
             }
 
             /// NORMAL VALIDATION ERROR -> CONTINUE
-            await _markAsError(id);
+            // await _markAsError(id);
 
             failedIds.add(id);
 
@@ -3553,7 +3117,7 @@ class OfflineDbModule {
           /// ALL OTHER FAILURES -> BREAK
           /// =====================================================
 
-          await _markAsError(id);
+          // await _markAsError(id);
 
           failedIds.add(id);
 
@@ -3591,7 +3155,7 @@ class OfflineDbModule {
               '[$_bgPushTag] [ID: $id] ${res.success ? "SUCCESS" : "FAILED: $displayMessage"}',
         );
       } catch (e) {
-        await _markAsError(id);
+        // await _markAsError(id);
         failCount++;
         failedIds.add(id);
         await LogService.writeLog(
@@ -4152,5 +3716,932 @@ class OfflineDbModule {
     onStatusUpdate?.call(result);
 
     return result;
+  }
+
+////////////////////////////////////////////////////////////////////////
+/////////////////CACHED-SAVE-METHODS////////////////////////////
+////////////////////////////////////////////////////////////////////////
+
+  // static Future<void> startCachedSave({
+  //   required CachedSaveProgressModel cachedSaveProgressModel,
+  //   required SyncProgressModel syncProgressModel,
+  // }) async {
+  //   // final random = Random();
+
+  //   // const int totalRecords = 90;
+  //   // const int batchSize = 30;
+  //   // int processedCount = 0;
+  //   // int queueIndex = 1;
+
+  //   // // 1. FIRE AND FORGET: Push all batches to the UI immediately
+  //   // while (processedCount < totalRecords) {
+  //   //   int currentBatchSize = (totalRecords - processedCount) > batchSize
+  //   //       ? batchSize
+  //   //       : (totalRecords - processedCount);
+
+  //   //   String queueId =
+  //   //       "AXM_${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}_$queueIndex";
+
+  //   //   List<int> batchRecordIds = List.generate(
+  //   //     currentBatchSize,
+  //   //     (index) => processedCount + index + 1000,
+  //   //   );
+
+  //   // var queueItem = CachedSaveProgressItemModel(
+  //   //   axm_queueid: queueId,
+  //   //   payloadsCount: currentBatchSize,
+  //   //   pushedAxmRecIds: batchRecordIds,
+  //   //   successAxmRecIds: [],
+  //   //   failedAxmRecIds: [],
+  //   // );
+
+  //   //   // Add to UI immediately. State will be "PENDING / Waiting for response"
+  //   //   cachedSaveProgressModel.cachedSaveUpdateMap.add(queueItem);
+
+  //   //   processedCount += currentBatchSize;
+  //   //   queueIndex++;
+  //   // }
+
+  //   // // 2. SIMULATE WEBHOOK NOTIFICATIONS ARRIVING RANDOMLY
+  //   // // In your real code, this happens in whatever service listens to your messages.
+  //   // for (var item in cachedSaveProgressModel.cachedSaveUpdateMap) {
+  //   //   // Simulate a random delay for the server to process and send the notification (2 to 6 seconds)
+  //   //   Future.delayed(Duration(milliseconds: 2000 + random.nextInt(4000)), () {
+  //   //     // Mock notification payload: Some succeed, maybe a few fail
+  //   //     for (int id in item.pushedAxmRecIds) {
+  //   //       if (random.nextInt(100) > 10) {
+  //   //         // 90% success rate
+  //   //         item.successAxmRecIds.add(id);
+  //   //       } else {
+  //   //         item.failedAxmRecIds.add(id);
+  //   //       }
+  //   //     }
+
+  //   //     // Trigger UI rebuild for this specific item
+  //   //     cachedSaveProgressModel.cachedSaveUpdateMap.refresh();
+
+  //   //     // Note: The Dialog auto-closes itself now because of the `ever()` listener
+  //   //     // we added inside `CachedSaveDialog.build()`!
+  //   //   });
+  //   // }
+
+  //   await buildAndPushCachedSaveQueue(
+  //       isInternetAvailable: true, progress: syncProgressModel);
+
+  //   syncProgressModel.complete();
+  // }
+
+  static Future<void> startCachedSave({
+    required CachedSaveProgressModel cachedSaveProgressModel,
+    required SyncProgressModel syncProgressModel,
+  }) async {
+    const String tag = "[START_CACHED_SAVE]";
+
+    int batchNumber = 0;
+    int totalPushed = 0;
+
+    while (true) {
+      final int remaining = await getPendingQueueCount();
+
+      if (remaining == 0) {
+        LogService.writeLog(
+          message: "$tag All batches pushed. Total pushed: $totalPushed",
+        );
+        break;
+      }
+
+      batchNumber++;
+      LogService.writeLog(
+        message: "$tag Starting batch #$batchNumber | "
+            "remaining PENDING rows: $remaining",
+      );
+
+      syncProgressModel.updateMessage(
+        "Batch #$batchNumber — $remaining record(s) remaining...",
+      );
+
+      final String result = await buildAndPushCachedSaveQueue(
+        isInternetAvailable: true,
+        progress: null,
+      );
+
+      LogService.writeLog(message: "$tag Batch #$batchNumber result: $result");
+
+      if (result.contains("failed") || result.contains("empty")) {
+        LogService.writeLog(
+          message: "$tag Stopping loop: $result",
+        );
+        break;
+      }
+
+      totalPushed +=
+          (remaining > _cachedSaveBatchSize) ? _cachedSaveBatchSize : remaining;
+    }
+
+    syncProgressModel.updateMessage(
+      batchNumber == 0
+          ? "Nothing to push — queue is empty."
+          : "All $batchNumber batch(es) pushed. "
+              "Waiting for server confirmation...",
+    );
+
+    syncProgressModel.complete();
+  }
+/////////////OLD_SAVEPAYLOADFORQUE//////////////////////
+  // static Future<int> savePayloadForQueue({
+  //   required Map<String, dynamic> payload,
+  // }) async {
+  //   const String tag = "[SAVE_PAYLOAD_FOR_QUEUE]";
+
+  //   final scope = await _getLastOfflineUserScope();
+  //   if (scope == null) {
+  //     LogService.writeLog(message: "$tag No user scope — aborting.");
+  //     return -1;
+  //   }
+
+  //   final String username = scope['username']!;
+  //   final String projectName = scope['projectName']!;
+
+  //   try {
+  //     // Step 1: Insert with axm_recid = "0" placeholder
+  //     final String encodedPayload = jsonEncode(payload);
+
+  //     final int rowId = await _database.insert(
+  //       OfflineDBConstants.TABLE_PENDING_REQUESTS,
+  //       {
+  //         OfflineDBConstants.COL_USERNAME: username,
+  //         OfflineDBConstants.COL_PROJECT_NAME: projectName,
+  //         OfflineDBConstants.COL_REQUEST_JSON: encodedPayload,
+  //         OfflineDBConstants.COL_STATUS: OfflineDBConstants.STATUS_PENDING,
+  //         OfflineDBConstants.COL_CREATED_AT: DateTime.now().toIso8601String(),
+  //       },
+  //       conflictAlgorithm: ConflictAlgorithm.replace,
+  //     );
+
+  //     // Step 2: Patch axm_recid = actual SQLite row-id
+  //     final Map<String, dynamic> patchedPayload =
+  //         Map<String, dynamic>.from(payload);
+  //     patchedPayload['axm_recid'] = rowId.toString();
+
+  //     await _database.update(
+  //       OfflineDBConstants.TABLE_PENDING_REQUESTS,
+  //       {OfflineDBConstants.COL_REQUEST_JSON: jsonEncode(patchedPayload)},
+  //       where: '${OfflineDBConstants.COL_ID} = ?',
+  //       whereArgs: [rowId],
+  //     );
+
+  //     LogService.writeLog(
+  //       message: "$tag rowId=$rowId transid=${payload['transid']} "
+  //           "axm_recid=$rowId",
+  //     );
+
+  //     return rowId;
+  //   } catch (e) {
+  //     LogService.writeLog(message: "$tag Exception: $e");
+  //     return -1;
+  //   }
+  // }
+
+  static Future<int> savePayloadForQueue({
+    required Map<String, dynamic> payload,
+  }) async {
+    const String tag = "[SAVE_PAYLOAD_FOR_QUEUE]";
+
+    final scope = await _getLastOfflineUserScope();
+    if (scope == null) {
+      LogService.writeLog(message: "$tag No user scope — aborting.");
+      return -1;
+    }
+
+    final String username = scope['username']!;
+    final String projectName = scope['projectName']!;
+
+    try {
+      // ── Step 1: Read current seq from sqlite_sequence ────────
+      // AUTOINCREMENT guarantees next id = seq + 1.
+      // If table has never been inserted into, sqlite_sequence
+      // won't have a row for it yet — default to 0 in that case.
+      final List<Map<String, dynamic>> seqResult = await _database.rawQuery(
+        "SELECT seq FROM sqlite_sequence WHERE name = ?",
+        [OfflineDBConstants.TABLE_PENDING_REQUESTS],
+      );
+
+      final int currentSeq =
+          seqResult.isNotEmpty ? (seqResult.first['seq'] as int? ?? 0) : 0;
+
+      final int nextRowId = currentSeq + 1;
+
+      // ── Step 2: Stamp axm_recid into payload BEFORE insert ───
+      final Map<String, dynamic> stampedPayload =
+          Map<String, dynamic>.from(payload);
+      stampedPayload['axm_recid'] = nextRowId.toString();
+
+      // ── Step 3: insert ────────────────────────────────
+      final int insertedId = await _database.insert(
+        OfflineDBConstants.TABLE_PENDING_REQUESTS,
+        {
+          OfflineDBConstants.COL_USERNAME: username,
+          OfflineDBConstants.COL_PROJECT_NAME: projectName,
+          OfflineDBConstants.COL_REQUEST_JSON: jsonEncode(stampedPayload),
+          OfflineDBConstants.COL_STATUS: OfflineDBConstants.STATUS_PENDING,
+          OfflineDBConstants.COL_CREATED_AT: DateTime.now().toIso8601String(),
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+
+      // ── Step 4: Sanity check (debug only) ───────────────────
+      // insertedId should always equal nextRowId.
+      // Log a warning if they diverge (shouldn't happen with AUTOINCREMENT).
+      if (insertedId != nextRowId) {
+        LogService.writeLog(
+          message: "$tag WARNING: predicted=$nextRowId actual=$insertedId "
+              "— axm_recid in JSON is $nextRowId but row id is $insertedId. "
+              "This should not happen with AUTOINCREMENT.",
+        );
+      }
+
+      LogService.writeLog(
+        message: "$tag saved rowId=$insertedId transid=${payload['transid']} "
+            "axm_recid=$nextRowId",
+      );
+
+      return insertedId;
+    } catch (e) {
+      LogService.writeLog(message: "$tag Exception: $e");
+      return -1;
+    }
+  }
+
+// ─────────────────────────────────────────────────────────────
+// SECTION B — BUILD AND PUSH A CACHED-SAVE QUEUE BATCH
+// ─────────────────────────────────────────────────────────────
+
+  static const String _cachedSaveTag = "BUILD_CACHED_SAVE_QUEUE";
+  static const int _cachedSaveBatchSize = 13;
+//TODO check for the already running variable and return if its true
+  static Future<String> buildAndPushCachedSaveQueue({
+    required bool isInternetAvailable,
+    SyncProgressModel? progress,
+  }) async {
+    if (!isInternetAvailable) return "No internet connection";
+
+    final scope = await _getLastOfflineUserScope();
+    if (scope == null) return "No user session found";
+
+    final String username = scope['username']!;
+    final String projectName = scope['projectName']!;
+    final String sessionId =
+        await AppStorage().retrieveValue(AppStorage.SESSIONID) ?? "";
+    final String authToken =
+        await AppStorage().retrieveValue(AppStorage.TOKEN) ?? "";
+
+    if (sessionId.isEmpty) return "No active session";
+
+    // ── 1. Fetch next batch of PENDING rows ──────────────────
+    final List<Map<String, dynamic>> rows = await _database.query(
+      OfflineDBConstants.TABLE_PENDING_REQUESTS,
+      columns: [OfflineDBConstants.COL_ID],
+      where: '''
+      ${OfflineDBConstants.COL_STATUS}       = ${OfflineDBConstants.STATUS_PENDING}
+      AND ${OfflineDBConstants.COL_USERNAME}     = ?
+      AND ${OfflineDBConstants.COL_PROJECT_NAME} = ?
+    ''',
+      whereArgs: [username, projectName],
+      orderBy: OfflineDBConstants.COL_CREATED_AT,
+      limit: _cachedSaveBatchSize,
+    );
+
+    if (rows.isEmpty) {
+      progress?.complete();
+      return "Queue is empty";
+    }
+
+    progress?.init(total: rows.length, msg: "Building queue batch...");
+
+    // ── 2. Read payloads and apply Layer-1 stringify for inwac ─
+    final List<int> axmRecIds = [];
+    final List<Map<String, dynamic>> dataItems = [];
+
+    for (final row in rows) {
+      final int id = row[OfflineDBConstants.COL_ID] as int;
+
+      final String? bodyStr = await _readLargeString(
+        table: OfflineDBConstants.TABLE_PENDING_REQUESTS,
+        column: OfflineDBConstants.COL_REQUEST_JSON,
+        where: '${OfflineDBConstants.COL_ID} = ?',
+        whereArgs: [id],
+      );
+
+      if (bodyStr == null || bodyStr.isEmpty) continue;
+
+      // Deep-decode so we can mutate freely without touching stored data
+      Map<String, dynamic> payload = jsonDecode(bodyStr);
+
+      // ── Layer 1: stringify axpfile_file for inwac payloads ──
+      // SQLite stored axpfile_file as a raw List (decoded from JSON).
+      // The C# backend needs it as an already-stringified JSON string
+      // inside the outer payload so it can deserialize List<AxAttachments>
+      // in a second pass.
+      _tempFixTatMfgDate(payload);
+      // payload['dc1']['row1']['ub_ge_no'] = "AXM_TEST_700_$id";
+      if (payload['transid'] == 'inwac') {
+        payload = await _convertPayloadPathsToBase64(payload);
+        try {
+          final dynamic rawFileField =
+              payload['submitdata']?['dc1']?['row1']?['axpfile_file'];
+
+          if (rawFileField is List) {
+            payload['submitdata']['dc1']['row1']['axpfile_file'] =
+                jsonEncode(rawFileField);
+          }
+          //TODO remove on prod
+          if (payload['submitdata']['dc1']['row1'].contains('axm_recordid')) {
+            payload['submitdata']['dc1']['row1'].remove('axm_recordid');
+          }
+        } catch (e) {
+          LogService.writeLog(
+            message: "$_cachedSaveTag [ID:$id] axpfile_file Layer-1 "
+                "stringify failed: $e",
+          );
+        }
+      }
+
+      axmRecIds.add(id);
+      dataItems.add(payload);
+    }
+
+    if (dataItems.isEmpty) return "No valid payloads found";
+
+    final String epoch = DateTime.now().millisecondsSinceEpoch.toString();
+    final String queueId = "AXM_${epoch.substring(epoch.length - 8)}_1";
+
+    final Map<String, dynamic> parameters = {
+      "ARMSessionId": sessionId,
+      "ARMToken": authToken,
+      "isaxput": "true",
+      "mobile": "true",
+      "axm_queueid": queueId,
+      "project": projectName,
+      "username": username,
+      "trace": false,
+      "validateonly": false,
+      "axclient_dateformat": "yyyy-MM-dd",
+      "millisecsintimestamp": true,
+      "data": dataItems,
+    };
+
+    final Map<String, dynamic> queuePayload = {
+      "queuename": "CachedSaveQueue",
+      "queuedata": jsonEncode({
+        "_parameters": [parameters],
+      }),
+    };
+
+    // ── Payload size + file dump ──────────────────────────────
+    final String finalBodyStr = jsonEncode(queuePayload);
+    final int payloadSizeBytes = finalBodyStr.length;
+    final double payloadSizeKB = payloadSizeBytes / 1024;
+    final double payloadSizeMB = payloadSizeKB / 1024;
+
+    LogService.writeLog(
+      message: "$_cachedSaveTag [PAYLOAD SIZE] "
+          "queue_id=$queueId | "
+          "records=${dataItems.length} | "
+          "size=${payloadSizeBytes} bytes "
+          "(${payloadSizeKB.toStringAsFixed(2)} KB / "
+          "${payloadSizeMB.toStringAsFixed(3)} MB)",
+    );
+
+    await _logQueuePayloadToFile(
+      queueId: queueId,
+      dataItems: dataItems,
+      bodyStr: finalBodyStr,
+      sizeBytes: payloadSizeBytes,
+      sizeKB: payloadSizeKB,
+      sizeMB: payloadSizeMB,
+    );
+    LogService.writeLog(
+      message: "$_cachedSaveTag queue_id=$queueId "
+          "items=${dataItems.length}",
+    );
+
+    progress
+        ?.updateMessage("Pushing $queueId (${dataItems.length} records)...");
+
+    bool pushSuccess = false;
+    String serverResponse = "";
+
+    try {
+      final ServerConnections serverConnections = ServerConnections();
+      final String url =
+          Const.getFullARMUrl(ServerConnections.ARM_PUSH_TO_QUEUE);
+      LogService.printLongString("API_POST_BODY: ${jsonEncode(queuePayload)}");
+      final dynamic responseStr = await serverConnections.postToServer(
+        url: url,
+        body: jsonEncode(queuePayload),
+        isBearer: true,
+      );
+      serverResponse = responseStr?.toString() ?? "";
+      log(serverResponse, name: _cachedSaveTag);
+
+      if (serverResponse.isNotEmpty) {
+        final decoded = jsonDecode(serverResponse);
+
+        if (decoded is Map<String, dynamic> &&
+            decoded['result'] != null &&
+            decoded['result']['success'] == true) {
+          pushSuccess = true;
+        }
+      }
+    } catch (e) {
+      serverResponse = e.toString();
+      LogService.writeLog(message: "$_cachedSaveTag POST exception: $e");
+    }
+
+    // ── 6. On success ─────────────────────────────────────────
+    if (pushSuccess) {
+      await _saveCachedSaveQueueRecord(
+        queueId: queueId,
+        username: username,
+        projectName: projectName,
+        axmRecIds: axmRecIds,
+        payloadsCount: dataItems.length,
+        queueResponse: serverResponse,
+      );
+
+      await _batchUpdateStatus(axmRecIds, OfflineDBConstants.STATUS_QUEUED);
+
+      await logAudit(
+        action: _cachedSaveTag,
+        remarks: "Queue $queueId pushed. axm_recids=$axmRecIds",
+      );
+
+      progress?.complete();
+      return "Queue pushed: ${dataItems.length} records (queue_id=$queueId)";
+    }
+
+    // ── 7. On failure — rows stay PENDING for retry ───────────
+    await logAudit(
+      action: _cachedSaveTag,
+      isError: true,
+      response: serverResponse,
+      remarks: "Queue $queueId FAILED. Records remain PENDING.",
+    );
+
+    progress?.completeWithError(
+      errorMsg: "Queue push failed. Records remain pending.",
+      statuscode: "500",
+    );
+
+    return "Queue push failed. Records remain pending.";
+  }
+
+// -------------------------------------------------------------
+  // TEMP HACK: Format 'tat_mfg_date' ONLY (Can be removed later)
+  // -------------------------------------------------------------
+  static void _tempFixTatMfgDate(Map<String, dynamic> payload) {
+    try {
+      final submitdata = payload['submitdata'];
+      if (submitdata == null || submitdata['dc2'] == null) return;
+
+      final dc2 = submitdata['dc2'];
+      if (dc2 is Map) {
+        for (var rowKey in dc2.keys) {
+          final row = dc2[rowKey];
+
+          if (row is Map && row.containsKey('tat_mfg_date')) {
+            String dateVal = row['tat_mfg_date']?.toString().trim() ?? "";
+
+            if (dateVal.isNotEmpty && dateVal.contains('/')) {
+              final parts = dateVal.split('/');
+              if (parts.length == 3) {
+                row['tat_mfg_date'] = '${parts[2]}-${parts[1]}-${parts[0]}';
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      print("Temp Date Fix Error: $e");
+    }
+  }
+
+// ─────────────────────────────────────────────────────────────
+// SECTION C — SAVE QUEUE RECORD (internal helper)
+// ─────────────────────────────────────────────────────────────
+  static Future<void> _saveCachedSaveQueueRecord({
+    required String queueId,
+    required String username,
+    required String projectName,
+    required List<int> axmRecIds,
+    required int payloadsCount,
+    required String queueResponse,
+  }) async {
+    try {
+      final String now = DateTime.now().toIso8601String();
+      await _database.insert(
+        OfflineDBConstants.TABLE_CACHED_SAVE_QUEUE,
+        {
+          OfflineDBConstants.COL_QUEUE_ID: queueId,
+          OfflineDBConstants.COL_USERNAME: username,
+          OfflineDBConstants.COL_PROJECT_NAME: projectName,
+          OfflineDBConstants.COL_AXM_RECIDS: jsonEncode(axmRecIds),
+          OfflineDBConstants.COL_PAYLOADS_COUNT: payloadsCount,
+          OfflineDBConstants.COL_STATUS: OfflineDBConstants.STATUS_PENDING,
+          OfflineDBConstants.COL_QUEUE_RESPONSE: queueResponse,
+          OfflineDBConstants.COL_FCM_RESPONSE: '',
+          OfflineDBConstants.COL_CREATED_AT: now,
+          OfflineDBConstants.COL_UPDATED_AT: now,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    } catch (e) {
+      LogService.writeLog(message: "[SAVE_QUEUE_RECORD] Exception: $e");
+    }
+  }
+// ─────────────────────────────────────────────────────────────
+// SECTION D — FCM UPDATE
+// ─────────────────────────────────────────────────────────────
+
+  // static Future<void> handleCachedSaveQueueFcmUpdate({
+  //   required String queueId,
+  //   required List<int> successRecIds,
+  //   required List<int> failedRecIds,
+  // }) async {
+  //   const String tag = "[FCM_CACHED_SAVE_UPDATE]";
+
+  //   try {
+  //     if (successRecIds.isNotEmpty) {
+  //       await _batchUpdateStatus(
+  //           successRecIds, OfflineDBConstants.STATUS_SUCCESS);
+  //     }
+  //     if (failedRecIds.isNotEmpty) {
+  //       await _batchUpdateStatus(failedRecIds, OfflineDBConstants.STATUS_ERROR);
+  //     }
+
+  //     final int queueStatus = failedRecIds.isEmpty
+  //         ? OfflineDBConstants.STATUS_SUCCESS
+  //         : successRecIds.isEmpty
+  //             ? OfflineDBConstants.STATUS_ERROR
+  //             : OfflineDBConstants.STATUS_PARTIAL;
+
+  //     await _database.update(
+  //       OfflineDBConstants.TABLE_CACHED_SAVE_QUEUE,
+  //       {
+  //         OfflineDBConstants.COL_STATUS: queueStatus,
+  //         OfflineDBConstants.COL_UPDATED_AT: DateTime.now().toIso8601String(),
+  //       },
+  //       where: '${OfflineDBConstants.COL_QUEUE_ID} = ?',
+  //       whereArgs: [queueId],
+  //     );
+
+  //     await logAudit(
+  //       action: tag,
+  //       remarks: "queue_id=$queueId status=$queueStatus "
+  //           "success=${successRecIds.length} failed=${failedRecIds.length}",
+  //     );
+
+  //     LogService.writeLog(
+  //       message: "$tag queue_id=$queueId status=$queueStatus "
+  //           "success=$successRecIds failed=$failedRecIds",
+  //     );
+  //   } catch (e) {
+  //     LogService.writeLog(message: "$tag Exception: $e");
+  //     await logAudit(
+  //       action: tag,
+  //       isError: true,
+  //       response: e.toString(),
+  //       remarks: "Exception handling FCM for queue_id=$queueId",
+  //     );
+  //   }
+  // }
+
+  static Future<void> handleCachedSaveQueueFcmUpdate({
+    required String queueId,
+    required List<int> successRecIds,
+    required List<int> failedRecIds,
+    String? rawFcmPayload,
+  }) async {
+    const String tag = "[FCM_CACHED_SAVE_UPDATE]";
+
+    try {
+      // ── 1. Batch-update row statuses ────────────────────────
+      if (successRecIds.isNotEmpty) {
+        await _batchUpdateStatus(
+            successRecIds, OfflineDBConstants.STATUS_SUCCESS);
+      }
+      if (failedRecIds.isNotEmpty) {
+        await _batchUpdateStatus(failedRecIds, OfflineDBConstants.STATUS_ERROR);
+      }
+
+      if (successRecIds.isNotEmpty) {
+        for (final int recId in successRecIds) {
+          try {
+            final String? bodyStr = await _readLargeString(
+              table: OfflineDBConstants.TABLE_PENDING_REQUESTS,
+              column: OfflineDBConstants.COL_REQUEST_JSON,
+              where: '${OfflineDBConstants.COL_ID} = ?',
+              whereArgs: [recId],
+            );
+
+            if (bodyStr == null || bodyStr.isEmpty) continue;
+
+            final Map<String, dynamic> payload = jsonDecode(bodyStr);
+
+            // Only inwac rows have files on disk
+            if (payload['transid'] != 'inwac') continue;
+
+            await _deletePayloadFiles(payload);
+
+            LogService.writeLog(
+              message: "$tag Deleted disk files for inwac recId=$recId",
+            );
+          } catch (e) {
+            LogService.writeLog(
+              message: "$tag Error deleting files for recId=$recId: $e",
+            );
+          }
+        }
+      }
+
+      final int queueStatus = failedRecIds.isEmpty
+          ? OfflineDBConstants.STATUS_SUCCESS
+          : successRecIds.isEmpty
+              ? OfflineDBConstants.STATUS_ERROR
+              : OfflineDBConstants.STATUS_PARTIAL;
+
+      await _database.update(
+        OfflineDBConstants.TABLE_CACHED_SAVE_QUEUE,
+        {
+          OfflineDBConstants.COL_STATUS: queueStatus,
+          OfflineDBConstants.COL_FCM_RESPONSE: rawFcmPayload ?? '',
+          OfflineDBConstants.COL_UPDATED_AT: DateTime.now().toIso8601String(),
+        },
+        where: '${OfflineDBConstants.COL_QUEUE_ID} = ?',
+        whereArgs: [queueId],
+      );
+
+      // ── 4. Audit ─────────────────────────────────────────────
+      await logAudit(
+        action: tag,
+        remarks: "queue_id=$queueId status=$queueStatus "
+            "success=${successRecIds.length} "
+            "failed=${failedRecIds.length} "
+            "files_deleted_for=${successRecIds.where((id) => true).length} inwac rows",
+      );
+
+      LogService.writeLog(
+        message: "$tag queue_id=$queueId status=$queueStatus "
+            "success=$successRecIds failed=$failedRecIds",
+      );
+    } catch (e) {
+      LogService.writeLog(message: "$tag Exception: $e");
+      await logAudit(
+        action: tag,
+        isError: true,
+        response: e.toString(),
+        remarks: "Exception handling FCM for queue_id=$queueId",
+      );
+    }
+  }
+// ─────────────────────────────────────────────────────────────
+// SECTION E — QUERY HELPERS
+// ─────────────────────────────────────────────────────────────
+
+  /// All pushed queue batches for the current user, newest first.
+  static Future<List<Map<String, dynamic>>> getCachedSaveQueueHistory() async {
+    final scope = await _getLastOfflineUserScope();
+    if (scope == null) return [];
+
+    return _database.query(
+      OfflineDBConstants.TABLE_CACHED_SAVE_QUEUE,
+      where: '''
+      ${OfflineDBConstants.COL_USERNAME}     = ? AND
+      ${OfflineDBConstants.COL_PROJECT_NAME} = ?
+    ''',
+      whereArgs: [scope['username'], scope['projectName']],
+      orderBy: '${OfflineDBConstants.COL_CREATED_AT} DESC',
+    );
+  }
+
+  static Future<int> getPendingQueueCount() async {
+    final scope = await _getLastOfflineUserScope();
+    if (scope == null) return 0;
+
+    final result = await _database.rawQuery(
+      '''
+    SELECT COUNT(*) as cnt
+    FROM ${OfflineDBConstants.TABLE_PENDING_REQUESTS}
+    WHERE ${OfflineDBConstants.COL_STATUS}       = ${OfflineDBConstants.STATUS_PENDING}
+      AND ${OfflineDBConstants.COL_USERNAME}     = ?
+      AND ${OfflineDBConstants.COL_PROJECT_NAME} = ?
+    ''',
+      [scope['username'], scope['projectName']],
+    );
+
+    return Sqflite.firstIntValue(result) ?? 0;
+  }
+
+  static Future<void> processCachedSaveQueueFCM(
+      Map<String, dynamic> messageData) async {
+    try {
+      // 1. Grab the Queue ID
+      final String? queueId = messageData['axm_queueid']?.toString();
+
+      if (queueId == null || queueId.isEmpty) {
+        print("[FCM_PARSER] Ignored: No axm_queueid found in payload.");
+        return; // Not a CachedSave webhook, ignore it.
+      }
+
+      print("[FCM_PARSER] Processing Webhook for Queue: $queueId");
+
+      List<int> successRecIds = [];
+      List<int> failedRecIds = [];
+
+      if (messageData['success_transactions'] != null) {
+        final dynamic rawSuccess = messageData['success_transactions'];
+        final List<dynamic> successList =
+            rawSuccess is String ? jsonDecode(rawSuccess) : rawSuccess as List;
+
+        for (var item in successList) {
+          if (item['axm_recid'] != null) {
+            int? recId = int.tryParse(item['axm_recid'].toString());
+            if (recId != null) successRecIds.add(recId);
+          }
+        }
+      }
+
+      if (messageData['failed_transactions'] != null) {
+        final dynamic rawFailed = messageData['failed_transactions'];
+        final List<dynamic> failedList =
+            rawFailed is String ? jsonDecode(rawFailed) : rawFailed as List;
+
+        for (var item in failedList) {
+          if (item['axm_recid'] != null) {
+            int? recId = int.tryParse(item['axm_recid'].toString());
+            if (recId != null) failedRecIds.add(recId);
+          }
+        }
+      }
+
+      print(
+          "[FCM_PARSER] Queue $queueId -> Success IDs: $successRecIds | Failed IDs: $failedRecIds");
+
+      await OfflineDbModule.handleCachedSaveQueueFcmUpdate(
+        queueId: queueId,
+        successRecIds: successRecIds,
+        failedRecIds: failedRecIds,
+        rawFcmPayload: jsonEncode(messageData),
+      );
+
+      print("[FCM_PARSER] Database successfully updated from Webhook!");
+    } catch (e) {
+      print("[FCM_PARSER] Critical Error parsing FCM payload: $e");
+    }
+  }
+
+  static Future<void> _logQueuePayloadToFile({
+    required String queueId,
+    required List<Map<String, dynamic>> dataItems,
+    required String bodyStr,
+    required int sizeBytes,
+    required double sizeKB,
+    required double sizeMB,
+  }) async {
+    try {
+      Directory appDir;
+
+      // Force it into the public Downloads folder on Android
+      if (Platform.isAndroid) {
+        appDir = Directory('/storage/emulated/0/Download/q_13_images');
+      } else {
+        // Fallback for iOS (saves to the app's document directory)
+        appDir = await getApplicationDocumentsDirectory();
+      }
+
+      final String fileName = "queue_debug_$queueId.txt";
+      final File file = File("${appDir.path}/$fileName");
+
+      final StringBuffer buf = StringBuffer();
+
+      buf.writeln("=" * 60);
+      buf.writeln("CACHED SAVE QUEUE — DEBUG REPORT");
+      buf.writeln("=" * 60);
+      buf.writeln("Queue ID      : $queueId");
+      buf.writeln("Generated at  : ${DateTime.now().toIso8601String()}");
+      buf.writeln("Total records : ${dataItems.length}");
+      buf.writeln("Payload size  : $sizeBytes bytes");
+      buf.writeln("              : ${sizeKB.toStringAsFixed(2)} KB");
+      buf.writeln("              : ${sizeMB.toStringAsFixed(3)} MB");
+      buf.writeln("=" * 60);
+      buf.writeln();
+
+      buf.writeln("RECORD BREAKDOWN");
+      buf.writeln("-" * 60);
+
+      int inwaeCount = 0;
+      int inwacCount = 0;
+
+      for (int i = 0; i < dataItems.length; i++) {
+        final Map<String, dynamic> item = dataItems[i];
+        final String transid = item['transid']?.toString() ?? "unknown";
+        final String axmRecId = item['axm_recid']?.toString() ?? "unknown";
+        final String action = item['action']?.toString() ?? "unknown";
+
+        // Per-record size estimate
+        final int itemSizeBytes = jsonEncode(item).length;
+        final double itemSizeKB = itemSizeBytes / 1024;
+
+        String extra = "";
+        if (transid == "inwae") {
+          inwaeCount++;
+          final ubgeNo =
+              item['submitdata']?['dc1']?['row1']?['ub_ge_no']?.toString() ??
+                  "";
+          final dc2Count = (item['submitdata']?['dc2'] as Map?)?.length ?? 0;
+          extra = "ub_ge_no=$ubgeNo | dc2_rows=$dc2Count";
+        } else if (transid == "inwac") {
+          inwacCount++;
+          final category =
+              item['submitdata']?['dc1']?['row1']?['category']?.toString() ??
+                  "";
+          final ubgeNo =
+              item['submitdata']?['dc1']?['row1']?['ub_gen_no']?.toString() ??
+                  "";
+
+          int imageCount = 0;
+          final dynamic axpFile =
+              item['submitdata']?['dc1']?['row1']?['axpfile_file'];
+          if (axpFile is List) {
+            imageCount = axpFile.length;
+          } else if (axpFile is String) {
+            try {
+              imageCount = (jsonDecode(axpFile) as List).length;
+            } catch (_) {}
+          }
+
+          extra = "ub_gen_no=$ubgeNo | category=$category | images=$imageCount";
+        }
+
+        buf.writeln(
+          "[${(i + 1).toString().padLeft(3, '0')}] "
+          "transid=$transid | axm_recid=$axmRecId | action=$action | "
+          "size=${itemSizeKB.toStringAsFixed(2)}KB | $extra",
+        );
+      }
+
+      buf.writeln();
+      buf.writeln("Summary: inwae=$inwaeCount | inwac=$inwacCount | "
+          "total=${inwaeCount + inwacCount}");
+      buf.writeln("=" * 60);
+      buf.writeln();
+
+      buf.writeln("FULL PAYLOAD (pretty-printed)");
+      buf.writeln("-" * 60);
+
+      try {
+        // final Map<String, dynamic> outerDecoded = jsonDecode(bodyStr);
+        // final dynamic queuedataRaw = outerDecoded['queuedata'];
+
+        // if (queuedataRaw is String) {
+        //   final Map<String, dynamic> innerDecoded = jsonDecode(queuedataRaw);
+        //   outerDecoded['queuedata_decoded'] = innerDecoded;
+        //   outerDecoded['queuedata'] =
+        //       "(see queuedata_decoded above — stringified for server)";
+        // }
+
+        // final JsonEncoder prettyEncoder = const JsonEncoder.withIndent('  ');
+        buf.writeln(bodyStr);
+      } catch (e) {
+        buf.writeln("[Pretty print failed: $e]");
+        buf.writeln(bodyStr);
+      }
+// [FCM_CACHED_SAVE_UPDATE],[BUILD_CACHED_SAVE_QUEUE],[PAYLOAD SIZE],[DEBUG FILE]
+      buf.writeln();
+      buf.writeln("=" * 60);
+      buf.writeln("END OF REPORT");
+      buf.writeln("=" * 60);
+
+      await file.writeAsString(buf.toString());
+
+      LogService.writeLog(
+        message:
+            "$_cachedSaveTag [DEBUG FILE] Saved to public Downloads: ${file.path}",
+      );
+
+      // Optional: Show a snackbar so you know exactly when it finished saving
+      // try {
+      // Get.snackbar(
+      //   "Debug File Saved",
+      //   "Check your Downloads folder!\n${file.path}",
+      //   duration: const Duration(seconds: 6),
+      //   snackPosition: SnackPosition.BOTTOM,
+      // );
+      // } catch (_) {}
+    } catch (e) {
+      LogService.writeLog(
+        message: "$_cachedSaveTag [DEBUG FILE] Failed to write: $e",
+      );
+    }
   }
 }

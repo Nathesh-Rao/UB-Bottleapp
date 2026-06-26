@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:ubbottleapp/Constants/AppStorage.dart';
 import 'package:ubbottleapp/Constants/Routes.dart';
 import 'package:ubbottleapp/Constants/Const.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_module.dart';
 import 'package:ubbottleapp/ModelPages/LandingPage/Controller/LandingPageController.dart';
 import 'package:ubbottleapp/ModelPages/LandingPage/Models/FirebaseMessageModel.dart';
 import 'package:ubbottleapp/Services/LocationServiceManager/LocationServiceManager.dart';
@@ -62,7 +64,12 @@ initialize() async {
 }
 
 onMessageListener(RemoteMessage message) {
-  decodeFirebaseMessage(message);
+  log("message");
+  if (message.data.containsKey('axm_queueid')) {
+    OfflineDbModule.processCachedSaveQueueFCM(message.data);
+  } else {
+    decodeFirebaseMessage(message);
+  }
 }
 
 @pragma('vm:entry-point')

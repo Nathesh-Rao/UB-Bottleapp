@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart'; // To get safe storage location
 import 'package:path/path.dart' as p;
@@ -216,10 +217,19 @@ class InwardEntryConsolidatedPage
                           controller.isLoading.value)
                       ? null
                       : () async {
+                          log("submitpageforque called button1",
+                              name: "submitpageforque");
+
                           // controller.uploadForm();
                           controller.isSubmitButtonClicked.value = true;
-                          await controller.submit();
+                          // await controller.submit();
+                          await controller.submitPageForQue();
                         },
+
+                  // onPressed: () async {
+                  //   log("submitpageforque called 1${controller.isSubmitButtonClicked.value}${controller.isLoading.value}",
+                  //       name: "submitpageforque");
+                  // },
                   child: controller.isLoading.value
                       ? CupertinoActivityIndicator()
                       : const Text("Submit"),

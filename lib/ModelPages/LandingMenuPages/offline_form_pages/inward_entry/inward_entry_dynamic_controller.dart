@@ -7,6 +7,7 @@ import 'package:ubbottleapp/Constants/CommonMethods.dart';
 import 'package:ubbottleapp/Constants/Const.dart' hide globalVariableController;
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_module.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/inward_entry/inward_entry_consolidated_page.dart';
+import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
 import 'package:ubbottleapp/Utils/ServerConnections/InternetConnectivity.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -22,7 +23,7 @@ class InwardEntryDynamicController extends GetxController {
   final Map<String, RxString> dropdownCtrls = {};
   final ScrollController scrollCtrl = ScrollController();
   final PageController pageController = PageController();
-  Map<String, dynamic> mainFormJson = {};
+  // Map<String, dynamic> mainFormJson = {};
   Map<String, dynamic> dc1SubmitFormJson = {};
 
   // List<Map<String, dynamic>> sampleGridJson = [];
@@ -76,7 +77,7 @@ class InwardEntryDynamicController extends GetxController {
     isFormPreparing.value = true;
     schema = newSchema;
     // 1. clear old stuff
-    resetForm();
+    // resetForm();
     // scrollCtrl.animateTo(
     //   0,
     //   duration: const Duration(milliseconds: 500),
@@ -104,6 +105,7 @@ class InwardEntryDynamicController extends GetxController {
     }
 
     isFormPreparing.value = false;
+    update();
   }
 
   Future<void> loadDatasources() async {
@@ -127,6 +129,21 @@ class InwardEntryDynamicController extends GetxController {
     update();
   }
 
+  void updateFieldValue(
+    Map<String, dynamic> field,
+    String fieldName,
+    dynamic value,
+  ) {
+    if (field['fld_name'] != fieldName) return;
+
+    final type = field['fld_type'];
+
+    if (type == 'dd') {
+      getDropdownCtrl(fieldName).value = value;
+    } else {
+      getTextCtrl(fieldName).text = value?.toString() ?? '';
+    }
+  }
   // ================== BUILD CONTROLLERS FROM JSON ==================
 
   void _buildControllersFromSchema() {
@@ -150,7 +167,7 @@ class InwardEntryDynamicController extends GetxController {
         }
       } else {
         final ctrl = TextEditingController(text: defValue);
-        textCtrls[name] = ctrl;
+
         if (isUpper) {
           ctrl.addListener(() {
             final String text = ctrl.text;
@@ -181,6 +198,12 @@ class InwardEntryDynamicController extends GetxController {
             // errors[name] = "duplicate ubge no, please update";
           });
         }
+
+        if (name == 'axm_recordid') {
+          ctrl.text = Const.axm_recordid;
+        }
+
+        textCtrls[name] = ctrl;
       }
     }
   }
@@ -204,6 +227,8 @@ class InwardEntryDynamicController extends GetxController {
         //   duration: const Duration(seconds: 3),
         //   icon: const Icon(Icons.error_outline, color: Colors.white),
         // );
+      } else {
+        errors.remove(fieldName);
       }
     } catch (e) {
       debugPrint("[UBGE_VALIDATE] Error: $e");
@@ -1293,7 +1318,69 @@ class InwardEntryDynamicController extends GetxController {
     }
     clearSampleGrid();
     showMiniFab.value = false;
+    sampleSummaryJson.clear();
+    dc1SubmitFormJson.clear();
     errors.clear();
+  }
+
+  Future<void> startNewTransaction() async {
+    log("start new transaction clicked");
+    try {
+      isFormPreparing.value = true;
+
+      // Clear text controllers
+      for (final controller in textCtrls.values) {
+        controller.clear();
+      }
+
+      // Clear dropdown values
+      dropdownCtrls.clear();
+
+      // Clear form errors
+      errors.clear();
+
+      // Clear sample/grid data
+      sampleGridRows.clear();
+
+      // Clear runtime JSONs
+      // mainFormJson.clear();
+      dc1SubmitFormJson.clear();
+      sampleSummaryJson.clear();
+
+      // Clear image data
+      imageAttachmentJson.clear();
+      filteredSummary.clear();
+      imageErrors.clear();
+
+      // Reset card index
+      currentCardIndex.value = 0;
+
+      // Dispose old controllers
+      for (final controller in textCtrls.values) {
+        controller.dispose();
+      }
+
+      textCtrls.clear();
+
+      // Rebuild everything from schema
+      await prepareForm(schema);
+
+      // Scroll to top
+      if (scrollCtrl.hasClients) {
+        scrollCtrl.jumpTo(0);
+      }
+
+      update();
+
+      imageAttachmentJson.refresh();
+      filteredSummary.refresh();
+    } catch (e, st) {
+      LogService.writeLog(
+        message: "startNewTransaction error => $e\n$st",
+      );
+    } finally {
+      isFormPreparing.value = false;
+    }
   }
 
   Future<bool> validateForm() async {
@@ -1365,7 +1452,7 @@ class InwardEntryDynamicController extends GetxController {
     sampleSummaryJson = buildSampleSummaryJson();
 
     debugPrint("====== MAIN FORM JSON ======");
-    debugPrint(mainFormJson.toString());
+    // debugPrint(mainFormJson.toString());
 
     // debugPrint("====== SAMPLE GRID JSON ======");
     // debugPrint(sampleGridJson.toString());
@@ -1582,6 +1669,7 @@ class InwardEntryDynamicController extends GetxController {
   }
 
   Future<void> submit() async {
+    if (isLoading.value) return;
     try {
       if (validateImages()) {
         await submitPage();
@@ -1753,159 +1841,6 @@ class InwardEntryDynamicController extends GetxController {
     };
   }
 
-  // Future<void> submitPage() async {
-  //   if (!validateForm()) {
-  //     Get.snackbar("Required", "Please fill mandatory fields");
-  //     return;
-  //   }
-
-  //   try {
-  //     isLoading.value = true;
-
-  //     final isOnline = await Get.find<InternetConnectivity>().check();
-  //     final Map<String, dynamic> mainBody = generateSubmitPayload();
-
-  //     final SubmitStatus status = await OfflineDbModule.submitFormSmart(
-  //       submitBody: mainBody,
-  //       isInternetAvailable: isOnline,
-  //     );
-
-  //     switch (status) {
-  //       case SubmitStatus.success:
-  //         resetForm();
-  //         Get.back();
-
-  //         Get.snackbar(
-  //           "Success",
-  //           "Form submitted successfully!",
-  //           backgroundColor: Colors.green,
-  //           colorText: Colors.white,
-  //           duration: const Duration(seconds: 3),
-  //         );
-  //         break;
-
-  //       case SubmitStatus.savedOffline:
-  //         resetForm();
-  //         Get.back();
-
-  //         Get.snackbar(
-  //           "Saved Offline",
-  //           "No Internet. Form saved to pending queue.",
-  //           backgroundColor: Colors.blueAccent,
-  //           colorText: Colors.white,
-  //           duration: const Duration(seconds: 3),
-  //         );
-  //         break;
-
-  //       case SubmitStatus.apiFailure:
-  //         // SHOW THE ERROR! Do not close the form.
-  //         // Let user correct data or try again.
-  //         Get.snackbar(
-  //           "Submission Failed",
-  //           "Server rejected the request. Please check your data.",
-  //           backgroundColor: Colors.redAccent,
-  //           colorText: Colors.white,
-  //           duration: const Duration(seconds: 4),
-  //         );
-  //         break;
-  //     }
-  //   } catch (e) {
-  //     Get.snackbar("Error", "Unexpected error: $e");
-  //   } finally {
-  //     isLoading.value = false;
-  //   }
-  // }
-
-  // Future<void> submitPage() async {
-  //   if (!validateForm()) {
-  //     Get.snackbar("Required", "Please fill mandatory fields");
-  //     return;
-  //   }
-
-  //   try {
-  //     isLoading.value = true;
-  //     final isOnline = await Get.find<InternetConnectivity>().check();
-
-  //     final Map<String, dynamic> mainBody = generateSubmitPayload();
-
-  //     final SubmitStatus mainStatus = await OfflineDbModule.submitFormSmart(
-  //       submitBody: mainBody,
-  //       isInternetAvailable: isOnline,
-  //     );
-
-  //     if (mainStatus == SubmitStatus.apiFailure) {
-  //       Get.snackbar(
-  //         "Submission Failed",
-  //         "Server rejected the main form. Please check your data.",
-  //         backgroundColor: Colors.redAccent,
-  //         colorText: Colors.white,
-  //         duration: const Duration(seconds: 4),
-  //       );
-  //       return;
-  //     }
-
-  //     // ignore: unused_local_variable
-  //     int imagesUploaded = 0;
-  //     // ignore: unused_local_variable
-  //     int imagesQueued = 0;
-  //     int imagesFailed = 0;
-
-  //     final List<Map<String, dynamic>> attachmentPayloads =
-  //         generateAttachmentPayloads();
-
-  //     if (attachmentPayloads.isNotEmpty) {
-  //       for (final attachBody in attachmentPayloads) {
-  //         final SubmitStatus imgStatus = await OfflineDbModule.submitFormSmart(
-  //           submitBody: attachBody,
-  //           isInternetAvailable: isOnline,
-  //         );
-
-  //         if (imgStatus == SubmitStatus.success)
-  //           imagesUploaded++;
-  //         else if (imgStatus == SubmitStatus.savedOffline)
-  //           imagesQueued++;
-  //         else
-  //           imagesFailed++;
-  //       }
-  //     }
-
-  //     resetForm();
-  //     prepareForm(schema);
-  //     Get.back();
-  //     isLoading.value = false;
-
-  //     if (mainStatus == SubmitStatus.savedOffline) {
-  //       Get.snackbar(
-  //         "Saved Offline",
-  //         "No Internet. Main form + ${attachmentPayloads.length} attachments saved to queue.",
-  //         backgroundColor: Colors.blueAccent,
-  //         colorText: Colors.white,
-  //         duration: const Duration(seconds: 4),
-  //       );
-  //     } else if (imagesFailed == 0) {
-  //       Get.snackbar(
-  //         "Success",
-  //         "Form and all attachments submitted successfully!",
-  //         backgroundColor: Colors.green,
-  //         colorText: Colors.white,
-  //         duration: const Duration(seconds: 3),
-  //       );
-  //     } else {
-  //       Get.snackbar(
-  //         "Partial Success",
-  //         "Main form submitted, but $imagesFailed images failed to upload.",
-  //         backgroundColor: Colors.orangeAccent,
-  //         colorText: Colors.black,
-  //         duration: const Duration(seconds: 5),
-  //       );
-  //     }
-  //   } catch (e) {
-  //     Get.snackbar("Error", "Unexpected error: $e");
-  //   } finally {
-  //     isLoading.value = false;
-  //   }
-  // }
-
   // Add this variable to your controller
   var submitStatus = "".obs;
   Future<void> submitPage() async {
@@ -1979,9 +1914,10 @@ class InwardEntryDynamicController extends GetxController {
       submitStatus.value = "Finalizing...";
       await Future.delayed(Duration(milliseconds: 500));
 // todo Form widget
-      resetForm();
+      // resetForm();
+      await startNewTransaction();
       isLoading.value = false;
-      prepareForm(schema);
+      // prepareForm(schema);
       submitStatus.value = "";
       Get.back();
 
@@ -2018,8 +1954,7 @@ class InwardEntryDynamicController extends GetxController {
   List<Map<String, dynamic>> generateAttachmentPayloads() {
     final List<Map<String, dynamic>> payloads = [];
 
-    final String refNo = (textCtrls["ub_ge_no"]?.text.trim() ?? "UNKNOWN_REF")
-        .replaceAll("/", "_");
+    final String refNo = (textCtrls["ub_ge_no"]?.text.trim() ?? "UNKNOWN_REF");
     final String sessionId = AppStorage().retrieveValue(AppStorage.SESSIONID);
     final String username = AppStorage().retrieveValue(AppStorage.USER_NAME);
     imageAttachmentJson.forEach((categoryKey, base64List) {
@@ -2028,7 +1963,6 @@ class InwardEntryDynamicController extends GetxController {
       final Map<String, dynamic> fileMap = {};
       for (int i = 0; i < base64List.length; i++) {
         String rawFileName = "${refNo}_${categoryKey}_${i + 1}.jpg";
-
         String cleanFileName = rawFileName.replaceAll("/", "_");
 
         fileMap["file${i + 1}"] = {
@@ -2053,7 +1987,7 @@ class InwardEntryDynamicController extends GetxController {
               "dc1": {
                 "row1": {
                   "ub_gen_no": refNo,
-                  // "axm_recordid": "${Const.axm_recordid}",
+                  "axm_recordid": Const.axm_recordid,
                   "category": categoryKey,
                   "axpfile_file": fileMap,
                   "axpfilepath_file": ""
@@ -2064,7 +1998,7 @@ class InwardEntryDynamicController extends GetxController {
         }
       };
       final prettyJson = const JsonEncoder.withIndent('  ').convert(payload);
-      log(prettyJson, name: 'ATTACH_BODY');
+      log(prettyJson, name: 'ATTACHMENT_BODY');
       payloads.add(payload);
     });
 
@@ -2121,6 +2055,230 @@ class InwardEntryDynamicController extends GetxController {
 
     if (confirm) {
       Get.back();
+    }
+  }
+// ============================================================
+// NEW METHODS — add to InwardEntryDynamicController
+// These are additive only; no existing methods are changed.
+// ============================================================
+
+// -------------------------------------------------------
+// 1. INWAE payload — goes inside data[] in the queue JSON
+// -------------------------------------------------------
+  /// Builds the inwae (master form) payload shaped for CachedSaveQueue.
+  /// All field values are flattened to String (C# backend requirement).
+  /// axm_recid is left as "0" — OfflineDbModule stamps the real row-id after insert.
+  Map<String, dynamic> generateSubmitPayloadCachedSave() {
+    // --- DC1: all values must be flat strings ---
+    final Map<String, dynamic> dc1Data = {};
+    final List fields = schema["fields"];
+
+    for (final f in fields) {
+      final String name = f["fld_name"];
+      final String type = f["fld_type"];
+
+      dynamic value;
+      if (type == "dd") {
+        value = dropdownCtrls[name]?.value ?? "";
+      } else {
+        value = textCtrls[name]?.text.trim() ?? "";
+      }
+      dc1Data[name] = value.toString(); // flatten everything — no ints/bools
+    }
+
+    // --- DC2 ---
+    final Map<String, dynamic> dc2Data = {};
+    final List gridFields = schema["fillgrids"]["fields"];
+    int rowIndex = 1;
+    for (final row in sampleGridRows) {
+      final Map<String, dynamic> rowData = {};
+      for (final f in gridFields) {
+        final String name = f["fld_name"];
+        rowData[name] = row[name]?.text.trim() ?? "";
+      }
+      rowData["fillrows"] = rowIndex.toString();
+      dc2Data["row$rowIndex"] = rowData;
+      rowIndex++;
+    }
+
+    // --- DC3 (totals summary) ---
+    final Map<String, int> summary = {};
+    for (final f in gridFields) {
+      if (f["data_type"] == "n") summary[f["fld_name"]] = 0;
+    }
+    for (final row in sampleGridRows) {
+      for (final f in gridFields) {
+        if (f["data_type"] == "n") {
+          final String name = f["fld_name"];
+          final int n = int.tryParse(row[name]?.text.trim() ?? "0") ?? 0;
+          summary[name] = (summary[name] ?? 0) + n;
+        }
+      }
+    }
+
+    final Map<String, dynamic> dc3Data = {
+      "row1": {
+        "tot_broken": summary["broken"]?.toString() ?? "0",
+        "tot_neckchip": summary["neck_chip"]?.toString() ?? "0",
+        "tot_extradirty": summary["extra_dirty"]?.toString() ?? "0",
+        "tot_short": summary["short"]?.toString() ?? "0",
+        "tot_otherbrand": summary["other_brand"]?.toString() ?? "0",
+        "tot_otherkf": summary["other_kf"]?.toString() ?? "0",
+        "tot_tornbags": summary["torn_bags"]?.toString() ?? "0",
+      }
+    };
+
+    return {
+      "transid": "inwae",
+      "axm_recid": "0", // placeholder — replaced by savePayloadForQueue()
+      "action": "create",
+      "submitdata": {
+        "dc1": {"row1": dc1Data},
+        "dc2": dc2Data,
+        "dc3": dc3Data,
+      },
+    };
+  }
+
+// -------------------------------------------------------
+// 2. INWAC payloads — one map per image category
+// -------------------------------------------------------
+  List<Map<String, dynamic>> generateAttachmentPayloadsCachedSave() {
+    final List<Map<String, dynamic>> payloads = [];
+    final String refNo = textCtrls["ub_ge_no"]?.text.trim() ?? "UNKNOWN_REF";
+
+    imageAttachmentJson.forEach((categoryKey, base64List) {
+      if (base64List.isEmpty) return;
+
+      final List<Map<String, dynamic>> fileArray = [];
+      for (int i = 0; i < base64List.length; i++) {
+        final String cleanFileName =
+            "${refNo}_${categoryKey}_${i + 1}.jpg".replaceAll("/", "_");
+
+        fileArray.add({
+          "FileName": cleanFileName,
+          "FileType": "jpg",
+          "AttachmentType": "AXPFILE",
+          "DataFormat": "BASE64",
+          "FileData": base64List[i],
+        });
+      }
+
+      payloads.add({
+        "transid": "inwac",
+        "axm_recid": "0",
+        "action": "create",
+        "submitdata": {
+          "dc1": {
+            "row1": {
+              "ub_gen_no": refNo,
+              // "axm_recordid": Const.axm_recordid,
+              "category": categoryKey,
+              "axpfile_file": fileArray,
+              "axpfilepath_file": "",
+            }
+          }
+        },
+      });
+    });
+
+    return payloads;
+  }
+
+// -------------------------------------------------------
+// 3. submitPageForQue — new submit path
+//    Queue-first always. No direct API call even if online.
+// -------------------------------------------------------
+  Future<void> submitPageForQue() async {
+    log("submitpageforque called 1", name: "submitpageforque");
+    if (isLoading.value) return;
+
+    if (!await validateForm()) {
+      Get.snackbar(
+        "Missing Fields",
+        "Please fill all required fields before proceeding.",
+        backgroundColor: MyColors.baseRed,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(12),
+        duration: const Duration(seconds: 2),
+      );
+      return;
+    }
+
+    final bool gridOk = validateAllGridSamples();
+    if (!gridOk) {
+      openSampleDetailsDialog(clearValidation: false);
+      return;
+    }
+
+    if (!validateImages()) {
+      Get.snackbar(
+        "Missing Images",
+        "Please add at least one image for the highlighted items.",
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+      );
+      return;
+    }
+
+    try {
+      isLoading.value = true;
+      submitStatus.value = "Saving to queue...";
+
+      // Build payloads — axpfile_file is still a raw List at this point
+      final Map<String, dynamic> mainPayload =
+          generateSubmitPayloadCachedSave();
+      final List<Map<String, dynamic>> attachmentPayloads =
+          generateAttachmentPayloadsCachedSave();
+
+      // Insert inwae row — savePayloadForQueue stamps axm_recid = its SQLite id
+      final int mainRecId =
+          await OfflineDbModule.savePayloadForQueue(payload: mainPayload);
+
+      if (mainRecId == -1) {
+        throw Exception("Failed to save main form payload to queue.");
+      }
+
+      // Insert each inwac row
+      // change to unique id
+      final List<int> attachmentRecIds = [];
+      for (final ap in attachmentPayloads) {
+        final int recId =
+            await OfflineDbModule.savePayloadForQueue(payload: ap);
+        if (recId != -1) attachmentRecIds.add(recId);
+      }
+
+      submitStatus.value = "Saved to queue!";
+
+      await startNewTransaction();
+      isLoading.value = false;
+      submitStatus.value = "";
+      Get.back();
+
+      final int total = 1 + attachmentRecIds.length;
+      Get.snackbar(
+        "Saved to Queue",
+        "$total record(s) queued. Push when ready to upload.",
+        backgroundColor: Colors.blueAccent,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 3),
+      );
+    } catch (e) {
+      isLoading.value = false;
+      submitStatus.value = "";
+      debugPrint("SUBMIT_FOR_QUE ERROR: $e");
+      Get.snackbar(
+        "Error",
+        "Could not save to queue: $e",
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    } finally {
+      isSubmitButtonClicked.value = false;
     }
   }
 }

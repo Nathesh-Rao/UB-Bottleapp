@@ -1,8 +1,3 @@
-import 'dart:developer';
-
-import 'package:animate_do/animate_do.dart';
-import 'package:ubbottleapp/Constants/CommonMethods.dart';
-import 'package:ubbottleapp/Constants/Const.dart';
 import 'package:ubbottleapp/Constants/MyColors.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../Constants/const.dart' hide globalVariableController;
 import 'inward_entry_dynamic_controller.dart';
 
 class InwardEntryDynamicPageV1 extends GetView<InwardEntryDynamicController> {
@@ -65,7 +61,9 @@ class InwardEntryDynamicPageV1 extends GetView<InwardEntryDynamicController> {
             //   icon: Icon(Icons.history, color: MyColors.green),
             // ),
             IconButton(
-              onPressed: () => controller.prepareForm(schema),
+              onPressed: () {
+                controller.startNewTransaction();
+              },
               icon: Icon(Icons.history, color: MyColors.baseYellow),
             )
           ],
@@ -89,7 +87,6 @@ class InwardEntryDynamicPageV1 extends GetView<InwardEntryDynamicController> {
                       final sectionFields = entry.value;
                       if (areAllFieldsHiddenInSection(sectionFields))
                         return SizedBox.shrink();
-
                       return _Section(
                         title: sectionTitle,
                         children: sectionFields.map((f) {
@@ -179,24 +176,10 @@ class InwardEntryDynamicPageV1 extends GetView<InwardEntryDynamicController> {
     );
   }
 
-  void updateFieldValue(
-    Map<String, dynamic> field,
-    String fieldName,
-    dynamic value,
-  ) {
-    if (field['fld_name'] != fieldName) return;
 
-    final type = field['fld_type'];
-
-    if (type == 'dd') {
-      controller.getDropdownCtrl(fieldName).value = value;
-    } else {
-      controller.getTextCtrl(fieldName).text = value?.toString() ?? '';
-    }
-  }
 
   Widget _buildFieldFromSchema(BuildContext context, Map<String, dynamic> f) {
-    // updateFieldValue(f, "axm_recordid", Const.axm_recordid);
+
 
     final String rawType = f["fld_type"];
     final String name = f["fld_name"];

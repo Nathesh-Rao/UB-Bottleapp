@@ -138,6 +138,19 @@ class LandingPage extends StatelessWidget {
                                 .toString()
                             : null,
                       )),
+
+                  Obx(() => _simpleRow(
+                        icon: Icons.file_upload_outlined,
+                        color: Colors.deepOrange,
+                        title: "Push Pending (Cached)",
+                        subtitle: "Upload queued data to server",
+                        onTap:
+                            offlineFormController.actionPushPendingByCachedSave,
+                        badge: offlineFormController.pendingCount.value != 0
+                            ? offlineFormController.pendingCount.value
+                                .toString()
+                            : null,
+                      )),
                   Obx(
                     () => globalVariableController.USER_ROLE.value == 'default'
                         ? Column(

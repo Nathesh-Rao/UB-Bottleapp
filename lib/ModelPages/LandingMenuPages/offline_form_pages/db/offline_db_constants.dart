@@ -35,7 +35,9 @@ class OfflineDBConstants {
   static const int STATUS_SUCCESS = 1;
   static const int STATUS_ERROR = 2;
   static const int STATUS_FORCE_PUSHED = 3;
-
+  static const int STATUS_PARTIAL = 4; // partial queue failures for que
+  static const int STATUS_QUEUED =
+      5; // while we push the record to que and waiting for FCM
   // ================= TABLE NAMES =================
 
   static const String TABLE_OFFLINE_PAGES = 'offline_pages';
@@ -87,6 +89,19 @@ class OfflineDBConstants {
   static const String COL_LAST_LOGIN_AT = 'last_login_at';
   static const String COL_PASSWORD_HASH = 'password_hash';
 
+// ================= QUEUE TABLE NAME =================
+  static const String TABLE_CACHED_SAVE_QUEUE = 'cached_save_queue';
+
+// ================= QUEUE TABLE COLUMNS =================
+  static const String COL_QUEUE_ID = 'queue_id';
+  static const String COL_AXM_RECIDS = 'axm_recids';
+  static const String COL_PAYLOADS_COUNT = 'payloads_count';
+  static const String COL_STATUS_TEXT = 'status_text';
+  static const String COL_UPDATED_AT = 'updated_at';
+  static const String COL_QUEUE_RESPONSE =
+      'queue_response'; // server reply at push time
+  static const String COL_FCM_RESPONSE =
+      'fcm_response'; // FCM payload at confirm time
   // ================= CREATE TABLE QUERIES =================
 
   // -------- OFFLINE PAGES --------
@@ -203,6 +218,37 @@ class OfflineDBConstants {
     $COL_RESPONSE     TEXT             DEFAULT '',
     $COL_REMARKS      TEXT             DEFAULT '',
     $COL_IS_SYNCED    INTEGER NOT NULL DEFAULT 0
+  )
+''';
+
+// ================= CREATE QUEUE TABLE =================
+//   static const String CREATE_CACHED_SAVE_QUEUE_TABLE = '''
+//   CREATE TABLE IF NOT EXISTS $TABLE_CACHED_SAVE_QUEUE (
+//     $COL_ID           INTEGER PRIMARY KEY AUTOINCREMENT,
+//     $COL_QUEUE_ID     TEXT    NOT NULL UNIQUE,
+//     $COL_USERNAME     TEXT    NOT NULL,
+//     $COL_PROJECT_NAME TEXT    NOT NULL,
+//     $COL_AXM_RECIDS   TEXT    NOT NULL DEFAULT '[]',
+//     $COL_PAYLOADS_COUNT INTEGER NOT NULL DEFAULT 0,
+//     $COL_STATUS       INTEGER NOT NULL DEFAULT 0,
+//     $COL_CREATED_AT   TEXT    NOT NULL,
+//     $COL_UPDATED_AT   TEXT    NOT NULL
+//   )
+// ''';
+
+  static const String CREATE_CACHED_SAVE_QUEUE_TABLE = '''
+  CREATE TABLE IF NOT EXISTS $TABLE_CACHED_SAVE_QUEUE (
+    $COL_ID              INTEGER PRIMARY KEY AUTOINCREMENT,
+    $COL_QUEUE_ID        TEXT    NOT NULL UNIQUE,
+    $COL_USERNAME        TEXT    NOT NULL,
+    $COL_PROJECT_NAME    TEXT    NOT NULL,
+    $COL_AXM_RECIDS      TEXT    NOT NULL DEFAULT '[]',
+    $COL_PAYLOADS_COUNT  INTEGER NOT NULL DEFAULT 0,
+    $COL_STATUS          INTEGER NOT NULL DEFAULT 0,
+    $COL_QUEUE_RESPONSE  TEXT             DEFAULT '',
+    $COL_FCM_RESPONSE    TEXT             DEFAULT '',
+    $COL_CREATED_AT      TEXT    NOT NULL,
+    $COL_UPDATED_AT      TEXT    NOT NULL
   )
 ''';
 }

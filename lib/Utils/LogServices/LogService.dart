@@ -96,6 +96,14 @@ class LogService {
     _logWithColor("console-log: $message", skyBlue);
   }
 
+  static printLongString(String text) {
+    final RegExp pattern =
+        RegExp('.{1,800}'); // Slices into 800-character chunks
+    pattern
+        .allMatches(text)
+        .forEach((RegExpMatch match) => print(match.group(0)));
+  }
+
   static writeLog({String message = ""}) async {
     _logWithColor(message, yellow);
     if (Const.isLogEnabled) {

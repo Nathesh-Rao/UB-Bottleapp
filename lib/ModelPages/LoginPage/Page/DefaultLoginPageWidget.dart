@@ -179,8 +179,11 @@ class _DefaultLoginPageWidgetState extends State<DefaultLoginPageWidget> {
                           children: [
                             Obx(
                               () => WidgetLoginTextField(
-                                prefixIcon: Icon(Icons.person),
+                                style2: true,
+                                key: const ValueKey("username"),
+                                hintText: "Enter Username",
                                 label: "Username",
+                                prefixIcon: const Icon(Icons.person),
                                 isLoading:
                                     loginController.isUserDataLoading.value,
                                 controller: loginController.userNameController,
