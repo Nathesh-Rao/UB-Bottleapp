@@ -4,7 +4,7 @@ class OfflineDBConstants {
   OfflineDBConstants._();
 
   static String OFFLINE_PAGES_URL() {
-    return "https://raw.githubusercontent.com/amrith4agile/offline_sample_pages/refs/heads/main/offline_pages.json";
+    // return "https://raw.githubusercontent.com/amrith4agile/offline_sample_pages/refs/heads/main/offline_pages.json";
 
     String userEnteredUrl = AppStorage().retrieveValue(AppStorage.PROJECT_URL);
     if (!userEnteredUrl.startsWith('http')) {
@@ -29,15 +29,31 @@ class OfflineDBConstants {
     return "$baseUrl/MobileOfflineStruct/offline_config.json";
   }
 
+  static String VERSION_INFO_URL() {
+    String userEnteredUrl = AppStorage().retrieveValue(AppStorage.PROJECT_URL);
+    if (!userEnteredUrl.startsWith('http')) {
+      userEnteredUrl = 'https://$userEnteredUrl';
+    }
+    Uri uri = Uri.parse(userEnteredUrl);
+
+    String baseUrl = "${uri.scheme}://${uri.host}";
+
+    return "$baseUrl/MobileOfflineStruct/appVersionInfo.json";
+  }
+
   static const String CREATE_QUERY = 'CREATE TABLE IF NOT EXISTS ';
 
-  static const int STATUS_PENDING = 0;
-  static const int STATUS_SUCCESS = 1;
-  static const int STATUS_ERROR = 2;
-  static const int STATUS_FORCE_PUSHED = 3;
-  static const int STATUS_PARTIAL = 4; // partial queue failures for que
-  static const int STATUS_QUEUED =
-      5; // while we push the record to que and waiting for FCM
+  static const int RECORD_STATUS_PENDING = 0;
+  static const int RECORD_STATUS_SUCCESS = 1;
+  static const int RECORD_STATUS_ERROR = 2;
+  static const int RECORD_STATUS_QUEUED = 3;
+
+  static const int QUEUE_STATUS_PENDING = 0;
+  static const int QUEUE_STATUS_SUCCESS = 1;
+  static const int QUEUE_STATUS_ERROR = 2;
+  static const int QUEUE_STATUS_PARTIAL = 3;
+
+  // static const int STATUS_FORCE_PUSHED = 3;
   // ================= TABLE NAMES =================
 
   static const String TABLE_OFFLINE_PAGES = 'offline_pages';
@@ -46,6 +62,8 @@ class OfflineDBConstants {
   static const String TABLE_PENDING_REQUESTS = 'offline_pending_requests';
   static const String TABLE_OFFLINE_USER = 'offline_user';
   static const String TABLE_AUDIT_LOGS = 'ax_audit_logs';
+  static const String TABLE_CACHED_SAVE_QUEUE = 'cached_save_queue';
+
   // ================= COMMON COLUMNS =================
 
   static const String COL_ID = 'id';
@@ -73,6 +91,7 @@ class OfflineDBConstants {
 
   static const String COL_REQUEST_JSON = 'request_json';
   static const String COL_STATUS = 'status';
+  // static const String COL_RESPONSE = 'response';
 
   // ================= Audit TABLE =================
   static const String COL_ACTION = 'action';
@@ -90,7 +109,6 @@ class OfflineDBConstants {
   static const String COL_PASSWORD_HASH = 'password_hash';
 
 // ================= QUEUE TABLE NAME =================
-  static const String TABLE_CACHED_SAVE_QUEUE = 'cached_save_queue';
 
 // ================= QUEUE TABLE COLUMNS =================
   static const String COL_QUEUE_ID = 'queue_id';
@@ -102,8 +120,18 @@ class OfflineDBConstants {
       'queue_response'; // server reply at push time
   static const String COL_FCM_RESPONSE =
       'fcm_response'; // FCM payload at confirm time
-  // ================= CREATE TABLE QUERIES =================
+  static const String COL_SOURCE_TABLE = 'source_table';
 
+// ================= MIGRATIONS =================
+  static const String ALTER_PENDING_REQUESTS_ADD_RESPONSE =
+      'ALTER TABLE $TABLE_PENDING_REQUESTS ADD COLUMN $COL_RESPONSE TEXT';
+
+  static const String ALTER_CACHED_SAVE_QUEUE_ADD_SOURCE_TABLE =
+      'ALTER TABLE $TABLE_CACHED_SAVE_QUEUE ADD COLUMN $COL_SOURCE_TABLE TEXT NOT NULL DEFAULT \'$TABLE_PENDING_REQUESTS\'';
+
+  static const String ALTER_AUDIT_LOGS_ADD_STATUS =
+      'ALTER TABLE $TABLE_AUDIT_LOGS ADD COLUMN $COL_STATUS INTEGER NOT NULL DEFAULT $RECORD_STATUS_PENDING';
+  // ================= CREATE TABLE QUERIES =================
   // -------- OFFLINE PAGES --------
   static final String CREATE_OFFLINE_PAGES_TABLE = CREATE_QUERY +
       TABLE_OFFLINE_PAGES +
@@ -149,16 +177,16 @@ class OfflineDBConstants {
   static final String CREATE_PENDING_REQUESTS_TABLE = CREATE_QUERY +
       TABLE_PENDING_REQUESTS +
       '''
-      (
-        $COL_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-        $COL_USERNAME TEXT,
-        $COL_PROJECT_NAME TEXT,
-        $COL_REQUEST_JSON TEXT UNIQUE,
-        $COL_STATUS INTEGER,
-        $COL_CREATED_AT TEXT
-      );
-    ''';
-
+    (
+      $COL_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+      $COL_USERNAME TEXT,
+      $COL_PROJECT_NAME TEXT,
+      $COL_REQUEST_JSON TEXT UNIQUE,
+      $COL_STATUS INTEGER,
+      $COL_RESPONSE TEXT,
+      $COL_CREATED_AT TEXT
+    );
+  ''';
   // -------- OFFLINE USER --------
   // static final String CREATE_OFFLINE_USER_TABLE = CREATE_QUERY +
   //     TABLE_OFFLINE_USER +
@@ -240,6 +268,7 @@ class OfflineDBConstants {
   CREATE TABLE IF NOT EXISTS $TABLE_CACHED_SAVE_QUEUE (
     $COL_ID              INTEGER PRIMARY KEY AUTOINCREMENT,
     $COL_QUEUE_ID        TEXT    NOT NULL UNIQUE,
+    $COL_SOURCE_TABLE    TEXT    NOT NULL DEFAULT '$TABLE_PENDING_REQUESTS',
     $COL_USERNAME        TEXT    NOT NULL,
     $COL_PROJECT_NAME    TEXT    NOT NULL,
     $COL_AXM_RECIDS      TEXT    NOT NULL DEFAULT '[]',

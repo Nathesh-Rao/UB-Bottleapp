@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'package:ubbottleapp/Constants/AppStorage.dart';
 import 'package:ubbottleapp/Constants/const.dart';
+import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
 import 'package:ubbottleapp/Utils/ServerConnections/ExecuteApi.dart';
 import 'package:ubbottleapp/Utils/ServerConnections/ServerConnections.dart';
 import 'package:flutter/material.dart';
@@ -79,29 +81,140 @@ class OfflineDatasources {
     }
   }
 
-  static Future<String?> fetchDatasource({
-    required String datasourceName,
+  // static Future<String?> fetchDatasource({
+  //   required String datasourceName,
+  //   required String sessionId,
+  //   required String username,
+  //   required String appName,
+  //   Map<String, dynamic>? sqlParams,
+  // }) async {
+  //   final url =
+  //       Const.getFullARMUrl(ServerConnections.API_GET_DATASOURCE_RESPONSE);
+
+  //   final body = {
+  //     "ARMSessionId": sessionId,
+  //     "username": username,
+  //     "appname": appName,
+  //     "datasource": datasourceName,
+  //     "sqlParams": sqlParams ?? {},
+  //   };
+  //   debugPrint("DATA_SOURCE body=> $body");
+
+  //   return await ServerConnections().postToServer(
+  //     url: url,
+  //     isBearer: true,
+  //     body: jsonEncode(body),
+  //   );
+  // }
+
+  static Future<Map<String, String>> fetchDatasourceBulk({
+    required List<String> datasourceNames,
     required String sessionId,
     required String username,
     required String appName,
     Map<String, dynamic>? sqlParams,
   }) async {
-    final url =
-        Const.getFullARMUrl(ServerConnections.API_GET_DATASOURCE_RESPONSE);
+    const String tag = "[FETCH_DS_BULK]";
+    if (datasourceNames.isEmpty) return {};
 
-    final body = {
+    final url = Const.getFullARMUrl(ServerConnections.ARM_AXLIST);
+    var isTraceOn =
+        await AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? false;
+    final Map<String, dynamic> body = {
       "ARMSessionId": sessionId,
-      "username": username,
-      "appname": appName,
-      "datasource": datasourceName,
-      "sqlParams": sqlParams ?? {},
+      "action": "view",
+      "ADSNames": datasourceNames,
+      "trace": isTraceOn,
+      "pageno": 1,
+      "pagesize": 0,
+      "getallrecordscount": false,
+      "CachePermissions": true,
+      "sqlparams": sqlParams ?? {},
     };
-    debugPrint("DATA_SOURCE body=> $body");
 
-    return await ServerConnections().postToServer(
+    debugPrint("DATA_SOURCE_BULK body=> $body");
+    LogService.writeLog(
+      message:
+          "$tag REQUEST ds=$datasourceNames url=$url body=${jsonEncode(body)}",
+    );
+
+    final dynamic responseStr = await ServerConnections().postDsToServer(
       url: url,
       isBearer: true,
       body: jsonEncode(body),
     );
+
+    final String serverResponse = responseStr?.toString() ?? "";
+    LogService.writeLog(
+      message:
+          "$tag RAW_RESPONSE ds=$datasourceNames response_len=${serverResponse.length}",
+    );
+
+    if (serverResponse.isEmpty ||
+        ServerConnections.isDsErrorResponse(serverResponse)) {
+      LogService.writeLog(
+        message:
+            "$tag NON_SUCCESS_RESPONSE ds=$datasourceNames — returning {}.",
+      );
+      return {};
+    }
+
+    Map<String, dynamic> decoded;
+    try {
+      decoded = jsonDecode(serverResponse);
+    } catch (e) {
+      LogService.writeLog(
+          message: "$tag DECODE_FAILED ds=$datasourceNames — $e");
+      return {};
+    }
+
+    final result = decoded['result'];
+    if (result is! Map<String, dynamic> || result['success'] != true) {
+      LogService.writeLog(
+        message: "$tag NOT_SUCCESS ds=$datasourceNames — "
+            "message=${result is Map ? result['message'] : result}.",
+      );
+      return {};
+    }
+
+    final dsWrappers = result['data'];
+    if (dsWrappers is! List) {
+      LogService.writeLog(
+        message:
+            "$tag NO_DS_WRAPPERS ds=$datasourceNames — result.data not a List.",
+      );
+      return {};
+    }
+
+    final Map<String, String> out = {};
+    for (final wrapper in dsWrappers) {
+      if (wrapper is! Map<String, dynamic>) continue;
+      final String? adsname = wrapper['adsname']?.toString();
+      if (adsname == null || adsname.isEmpty) continue;
+      if (wrapper.containsKey('error')) {
+        LogService.writeLog(
+            message:
+                "$tag DS_ERROR adsname=$adsname error=${wrapper['error']}");
+        continue;
+      }
+      final rows = wrapper['data'];
+      final List rowsList = rows is List ? rows : [];
+
+      out[adsname] = jsonEncode({
+        "result": {
+          "message": "success",
+          "data": rowsList,
+          "success": true,
+        },
+      });
+    }
+
+    LogService.writeLog(
+      message: "$tag PARSED_OK requested=${datasourceNames.length} "
+          "returned=${out.keys.toList()} missing="
+          "${datasourceNames.where((d) => !out.containsKey(d)).toList()}",
+    );
+
+    return out;
   }
 }

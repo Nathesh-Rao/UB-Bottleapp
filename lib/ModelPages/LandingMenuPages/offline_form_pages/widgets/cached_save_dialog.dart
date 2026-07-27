@@ -1,346 +1,713 @@
-import 'package:flutter/cupertino.dart';
+import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get/state_manager.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
-import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/cached_save_progress_model.dart';
+import 'package:ubbottleapp/Constants/MyColors.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/controller/offline_form_controller.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/cached_save_item_model.dart';
 
-class CachedSaveDialog extends StatelessWidget {
-  const CachedSaveDialog({super.key, required this.cachedSaveProgressModel});
-
-  final CachedSaveProgressModel cachedSaveProgressModel;
-
-  // Helper to check if everything is fully complete
-  void _checkIfAllComplete() {
-    final items = cachedSaveProgressModel.cachedSaveUpdateMap;
-    if (items.isEmpty) return;
-
-    bool allResolved = items.every((item) {
-      final processedCount =
-          item.successAxmRecIds.length + item.failedAxmRecIds.length;
-      return processedCount >= item.payloadsCount && item.payloadsCount > 0;
-    });
-
-    if (allResolved && Get.isDialogOpen == true) {
-      // Add a slight delay so the user can see the final green checks before it closes
-      Future.delayed(const Duration(milliseconds: 800), () {
-        if (Get.isDialogOpen == true) Get.back();
-      });
-    }
-  }
+class CachedSaveDialogWidget extends GetView<OfflineFormController> {
+  const CachedSaveDialogWidget({
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    // Listen to changes and auto-close when all are done
-    ever(cachedSaveProgressModel.cachedSaveUpdateMap,
-        (_) => _checkIfAllComplete());
-
+    controller.cachedSaveQueItems.clear();
     return PopScope(
       canPop: false,
       child: Dialog(
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
         elevation: 0,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-        child: Container(
-          width: double.infinity,
-          constraints: const BoxConstraints(maxHeight: 550),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E20) : Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 15, 20, 5),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      "Uploading pending data",
+                      style: GoogleFonts.inter(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildHeader(context, isDark),
-              _buildQueueList(),
-            ],
-          ),
+            ),
+            Divider(),
+            _getQueueUploadWidget(),
+            const SizedBox(height: 14),
+            Obx(() => !controller.isCachedSaveActive.value
+                ? Container(
+                    margin: const EdgeInsets.fromLTRB(20, 5, 20, 18),
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Get.back();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xff212529),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: Text(
+                        "Close",
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  )
+                : SizedBox.shrink())
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: isDark
-                ? Colors.white.withOpacity(0.05)
-                : Colors.black.withOpacity(0.05),
-            width: 1,
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            height: 52,
-            width: 52,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2563EB).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Lottie.asset(
-              'assets/animations/uploading.json',
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => const Icon(
-                CupertinoIcons.cloud_upload_fill,
-                color: Color(0xFF2563EB),
-                size: 28,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+  Column _getQueueUploadWidget() {
+    return Column(
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20),
+          child: Obx(() {
+            final queueCount = controller.cachedSaveQueItems.length;
+
+            final totalItems = controller.cachedSaveQueItems.fold<int>(
+              0,
+              (sum, item) => sum + item.value.totalItems,
+            );
+
+            final successItems = controller.cachedSaveQueItems.fold<int>(
+              0,
+              (sum, item) => sum + item.value.successItems,
+            );
+            final failedItems = controller.cachedSaveQueItems.fold<int>(
+              0,
+              (sum, item) => sum + item.value.failedItems,
+            );
+            return Row(
+              spacing: 10,
+              // runSpacing: 10,
+              // alignment: WrapAlignment.end,
               children: [
-                Text(
-                  'Syncing Data',
-                  style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? Colors.white : const Color(0xFF111827),
-                    letterSpacing: -0.3,
+                Expanded(
+                  child: _summaryChip(
+                    hideChip: queueCount == 0,
+                    icon: Icons.layers_outlined,
+                    label: "$queueCount",
+                    color: const Color(0xFF6366F1),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Awaiting server confirmations...',
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
-                    color: isDark ? Colors.white60 : const Color(0xFF6B7280),
+                Expanded(
+                  child: _summaryChip(
+                    hideChip: totalItems == 0,
+                    icon: Icons.inventory_2_outlined,
+                    label: "$totalItems",
+                    color: const Color(0xFF0EA5E9),
+                  ),
+                ),
+                Expanded(
+                  child: _summaryChip(
+                    hideChip: successItems == 0,
+                    icon: Icons.check_circle_outline,
+                    label: "$successItems",
+                    color: Colors.green,
+                  ),
+                ),
+                Expanded(
+                  child: _summaryChip(
+                    hideChip: failedItems == 0,
+                    icon: Icons.cancel_outlined,
+                    label: "$failedItems",
+                    color: Colors.red,
                   ),
                 ),
               ],
+            );
+          }),
+        ),
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 18),
+            Obx(() {
+              if (controller.cachedSaveQueItems.isEmpty) {
+                return SizedBox(
+                  height: 200,
+                  child: Center(
+                    child: Lottie.asset(
+                      "assets/lotties/loading.json",
+                    ),
+                  ),
+                );
+              }
+
+              return ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxHeight: 380,
+                ),
+                child: ListView.separated(
+                  // reverse: true,
+                  padding: const EdgeInsets.fromLTRB(20, 5, 20, 18),
+                  physics: BouncingScrollPhysics(),
+                  itemCount: controller.cachedSaveQueItems.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (_, i) {
+                    return _InfoTile2(
+                      key: ValueKey(
+                        controller.cachedSaveQueItems[i].value.qId,
+                      ),
+                      model: controller.cachedSaveQueItems[i],
+                    );
+                  },
+                ),
+              );
+            }),
+            Container(
+              height: 80,
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              decoration: BoxDecoration(
+                  borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(50),
+                      topRight: Radius.circular(50)),
+                  border: Border(
+                      top: BorderSide(
+                          color: MyColors.AXMGray.withValues(alpha: 0.1),
+                          width: 3))),
+              child: Center(
+                child: Obx(
+                  () => AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder: (child, animation) => FadeTransition(
+                      opacity: animation,
+                      child: child,
+                    ),
+                    child: Text(
+                      controller.cachedSaveUpdateMessage.value,
+                      key: ValueKey(controller.cachedSaveUpdateMessage.value),
+                      textAlign: TextAlign.center,
+                      maxLines: 4,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        )
+      ],
+    );
+  }
+
+  Widget _summaryChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+    bool hideChip = false,
+  }) {
+    if (hideChip) return SizedBox();
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 7,
+      ),
+      decoration: BoxDecoration(
+        color: color.withOpacity(.10),
+        borderRadius: BorderRadius.circular(100),
+        border: Border.all(
+          color: color.withOpacity(.18),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 15,
+            color: color,
+          ),
+          // const SizedBox(width: 6),
+          Expanded(
+            child: Center(
+              child: Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+                textAlign: TextAlign.center,
+              ),
             ),
           ),
         ],
       ),
     );
   }
-
-  Widget _buildQueueList() {
-    return Flexible(
-      child: Obx(() {
-        final items = cachedSaveProgressModel.cachedSaveUpdateMap;
-
-        if (items.isEmpty) {
-          return Padding(
-            padding: const EdgeInsets.all(40.0),
-            child: Center(
-              child: CupertinoActivityIndicator(radius: 14),
-            ),
-          );
-        }
-
-        return ListView.separated(
-          padding: const EdgeInsets.all(20),
-          shrinkWrap: true,
-          itemCount: items.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (context, index) {
-            return _QueueItemCard(item: items[index]);
-          },
-        );
-      }),
-    );
-  }
 }
 
-class _QueueItemCard extends StatelessWidget {
-  const _QueueItemCard({required this.item});
+class _InfoTile2 extends StatelessWidget {
+  const _InfoTile2({
+    super.key,
+    required this.model,
+  });
 
-  final CachedSaveProgressItemModel item;
+  final Rx<CachedSaveItemModel> model;
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    return Obx(() {
+      var item = model.value;
+      return Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          // color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  /// Top row
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Image.asset(
+                        getStatusImage(item.submissionStatus),
+                        width: 15,
+                        height: 15,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          item.qId,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      _statusChip(),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
 
-    final int processedCount =
-        item.successAxmRecIds.length + item.failedAxmRecIds.length;
-    // If no items have been processed, we are waiting for the notification
-    final bool isWaiting = processedCount == 0;
-    final bool hasErrors = item.failedAxmRecIds.isNotEmpty;
+                  // Text(
+                  //   item.smallStatusMessage,
+                  //   maxLines: 1,
+                  //   overflow: TextOverflow.ellipsis,
+                  //   style: GoogleFonts.inter(
+                  //     fontSize: 12,
+                  //     color: Colors.grey.shade600,
+                  //   ),
+                  // ),
+                  _miniChip(
+                    Icons.info,
+                    "${item.smallStatusMessage}",
+                    Colors.grey,
+                  ),
 
-    // Determine card styling based on state
-    Color cardBgColor =
-        isDark ? const Color(0xFF2A2A2D) : const Color(0xFFF9FAFB);
-    Color borderColor = Colors.transparent;
+                  const SizedBox(height: 3),
 
-    if (!isWaiting) {
-      cardBgColor = hasErrors
-          ? const Color(0xFFFEF2F2) // Light Red
-          : const Color(0xFFF0FDF4); // Light Green
-      borderColor =
-          hasErrors ? const Color(0xFFFCA5A5) : const Color(0xFF86EFAC);
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      alignment: WrapAlignment.end,
+                      children: [
+                        _miniChip(
+                          Icons.check_circle,
+                          "${item.successItems}",
+                          Colors.green,
+                        ),
+                        _miniChip(
+                          Icons.cancel,
+                          "${item.failedItems}",
+                          Colors.red,
+                        ),
+                        _miniChip(
+                          item.fcmRecived
+                              ? Icons.cloud_done
+                              : Icons.cloud_upload_outlined,
+                          item.fcmRecived ? "FCM" : "Waiting",
+                          item.fcmRecived ? Colors.teal : Colors.orange,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
 
-      if (isDark) {
-        cardBgColor =
-            hasErrors ? const Color(0xFF451A1A) : const Color(0xFF14331E);
-        borderColor =
-            hasErrors ? const Color(0xFF7F1D1D) : const Color(0xFF14532D);
-      }
-    }
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.easeOutCubic,
-      padding: const EdgeInsets.all(16),
+  Widget _miniChip(
+    IconData icon,
+    String text,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 4,
+      ),
       decoration: BoxDecoration(
-        color: cardBgColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor, width: 1),
+        color: color.withOpacity(.1),
+        borderRadius: BorderRadius.circular(50),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          _buildLeadingIcon(isWaiting, hasErrors),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Queue ID: ${item.axm_queueid}',
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: isDark ? Colors.white : const Color(0xFF111827),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                _buildSubtitle(isWaiting, hasErrors, isDark),
-              ],
+          Icon(
+            icon,
+            size: 12,
+            color: color,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: color,
             ),
           ),
-          const SizedBox(width: 12),
-          _buildStatusBadge(isWaiting, hasErrors, isDark),
         ],
       ),
     );
   }
 
-  Widget _buildLeadingIcon(bool isWaiting, bool hasErrors) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
-      child: isWaiting
-          ? Container(
-              key: const ValueKey('waiting'),
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFF3B82F6).withOpacity(0.15),
-                shape: BoxShape.circle,
-              ),
-              child: const SizedBox(
-                height: 18,
-                width: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3B82F6)),
-                ),
-              ),
-            )
-          : Container(
-              key: const ValueKey('done'),
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: hasErrors
-                    ? const Color(0xFFEF4444)
-                    : const Color(0xFF10B981),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                hasErrors ? Icons.warning_rounded : Icons.check_rounded,
-                color: Colors.white,
-                size: 18,
-              ),
-            ),
-    );
-  }
+  Widget _statusChip() {
+    Color bg;
+    Color fg;
+    String text;
+    var item = model.value;
+    switch (item.submissionStatus) {
+      case QueueSubmissionStatus.success:
+        bg = Colors.green.withOpacity(.12);
+        fg = Colors.green;
+        text = "SUCCESS";
+        break;
 
-  Widget _buildSubtitle(bool isWaiting, bool hasErrors, bool isDark) {
-    if (isWaiting) {
-      return Text(
-        'Waiting for response (${item.payloadsCount} payloads)',
-        style: GoogleFonts.poppins(
-          fontSize: 12,
-          color: const Color(0xFF3B82F6),
-          fontWeight: FontWeight.w500,
-        ),
-      );
-    }
+      case QueueSubmissionStatus.error:
+        bg = Colors.red.withOpacity(.12);
+        fg = Colors.red;
+        text = "ERROR";
+        break;
 
-    if (hasErrors) {
-      return Text(
-        '${item.successAxmRecIds.length} Success • ${item.failedAxmRecIds.length} Failed',
-        style: GoogleFonts.poppins(
-          fontSize: 12,
-          color: hasErrors ? const Color(0xFFDC2626) : const Color(0xFF059669),
-          fontWeight: FontWeight.w500,
-        ),
-      );
-    }
+      case QueueSubmissionStatus.pending:
+        bg = Colors.orange.withOpacity(.12);
+        fg = Colors.orange;
+        text = "PENDING";
+        break;
 
-    return Text(
-      'Successfully synced ${item.payloadsCount} records',
-      style: GoogleFonts.poppins(
-        fontSize: 12,
-        color: isDark ? const Color(0xFF34D399) : const Color(0xFF059669),
-        fontWeight: FontWeight.w500,
-      ),
-    );
-  }
+      case QueueSubmissionStatus.partial:
+        bg = Colors.blue.withOpacity(.12);
+        fg = Colors.blue;
+        text = "PARTIAL";
+        break;
 
-  Widget _buildStatusBadge(bool isWaiting, bool hasErrors, bool isDark) {
-    if (isWaiting) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          'PENDING',
-          style: GoogleFonts.poppins(
-            fontSize: 10,
-            fontWeight: FontWeight.w700,
-            color: isDark ? Colors.white54 : Colors.black54,
-          ),
-        ),
-      );
+      case QueueSubmissionStatus.refetch:
+        bg = Colors.purple.withOpacity(.12);
+        fg = Colors.purple;
+        text = "REFETCH";
+        break;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 5,
+      ),
       decoration: BoxDecoration(
-        color: hasErrors
-            ? const Color(0xFFEF4444).withOpacity(0.15)
-            : const Color(0xFF10B981).withOpacity(0.15),
+        color: bg,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        hasErrors ? 'ISSUES' : 'DONE',
-        style: GoogleFonts.poppins(
-          fontSize: 10,
+        text,
+        style: GoogleFonts.inter(
+          fontSize: 8,
           fontWeight: FontWeight.w700,
-          color: hasErrors ? const Color(0xFFDC2626) : const Color(0xFF059669),
+          color: fg,
         ),
       ),
     );
   }
+
+  String getStatusImage(QueueSubmissionStatus status) {
+    switch (status) {
+      case QueueSubmissionStatus.success:
+        return 'assets/images/q-success2.png';
+      case QueueSubmissionStatus.error:
+        return 'assets/images/q-error2.png';
+      case QueueSubmissionStatus.pending:
+        return 'assets/images/q-pending2.png';
+      case QueueSubmissionStatus.partial:
+        return 'assets/images/q-partial2.png';
+      case QueueSubmissionStatus.refetch:
+        return 'assets/images/q-refetch2.png';
+    }
+  }
 }
+
+
+// class _InfoTile2 extends StatelessWidget {
+//   const _InfoTile2({
+//     required this.item,
+//   });
+
+//   final CachedSaveItemModel item;
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       margin: const EdgeInsets.only(bottom: 10),
+//       padding: const EdgeInsets.symmetric(
+//         horizontal: 12,
+//         vertical: 10,
+//       ),
+//       decoration: BoxDecoration(
+//         color: Colors.grey.shade50,
+//         borderRadius: BorderRadius.circular(14),
+//         border: Border.all(
+//           color: Colors.grey.shade200,
+//         ),
+//       ),
+//       child: Row(
+//         crossAxisAlignment: CrossAxisAlignment.center,
+//         children: [
+//           /// Status Icon
+//           SizedBox(
+//             width: 36,
+//             child: Center(
+//               child: Image.asset(
+//                 getStatusImage(item.submissionStatus),
+//                 width: 28,
+//                 height: 28,
+//               ),
+//             ),
+//           ),
+
+//           const SizedBox(width: 12),
+
+//           /// Content
+//           Expanded(
+//             child: Column(
+//               crossAxisAlignment: CrossAxisAlignment.start,
+//               children: [
+//                 /// Header
+//                 Row(
+//                   children: [
+//                     Expanded(
+//                       child: Text(
+//                         "ID : ${item.qId}",
+//                         overflow: TextOverflow.ellipsis,
+//                         style: GoogleFonts.inter(
+//                           fontSize: 13,
+//                           fontWeight: FontWeight.w700,
+//                         ),
+//                       ),
+//                     ),
+
+//                     const SizedBox(width: 8),
+
+//                     _statusChip(),
+//                   ],
+//                 ),
+
+//                 const SizedBox(height: 6),
+
+//                 /// Message + Chips
+//                 Row(
+//                   crossAxisAlignment: CrossAxisAlignment.start,
+//                   children: [
+//                     Expanded(
+//                       child: Text(
+//                         item.smallStatusMessage,
+//                         style: GoogleFonts.inter(
+//                           fontSize: 12,
+//                           height: 1.3,
+//                           color: Colors.grey.shade600,
+//                         ),
+//                       ),
+//                     ),
+
+//                     const SizedBox(width: 8),
+
+//                     Flexible(
+//                       child: Wrap(
+//                         alignment: WrapAlignment.end,
+//                         spacing: 5,
+//                         runSpacing: 5,
+//                         children: [
+//                           _miniChip(
+//                             Icons.check_circle_rounded,
+//                             "${item.successItems}",
+//                             Colors.green,
+//                           ),
+//                           _miniChip(
+//                             Icons.cancel_rounded,
+//                             "${item.failedItems}",
+//                             Colors.red,
+//                           ),
+//                           _miniChip(
+//                             item.fcmRecived
+//                                 ? Icons.cloud_done_rounded
+//                                 : Icons.cloud_upload_rounded,
+//                             item.fcmRecived ? "FCM" : "Wait",
+//                             item.fcmRecived
+//                                 ? Colors.teal
+//                                 : Colors.orange,
+//                           ),
+//                         ],
+//                       ),
+//                     ),
+//                   ],
+//                 ),
+//               ],
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+
+//   Widget _miniChip(
+//     IconData icon,
+//     String text,
+//     Color color,
+//   ) {
+//     return Container(
+//       padding: const EdgeInsets.symmetric(
+//         horizontal: 8,
+//         vertical: 4,
+//       ),
+//       decoration: BoxDecoration(
+//         color: color.withOpacity(.1),
+//         borderRadius: BorderRadius.circular(100),
+//       ),
+//       child: Row(
+//         mainAxisSize: MainAxisSize.min,
+//         children: [
+//           Icon(
+//             icon,
+//             size: 12,
+//             color: color,
+//           ),
+//           const SizedBox(width: 4),
+//           Text(
+//             text,
+//             style: GoogleFonts.inter(
+//               fontSize: 10,
+//               fontWeight: FontWeight.w600,
+//               color: color,
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+
+//   Widget _statusChip() {
+//     late final Color bg;
+//     late final Color fg;
+//     late final String text;
+
+//     switch (item.submissionStatus) {
+//       case QueueSubmissionStatus.success:
+//         bg = Colors.green.withOpacity(.1);
+//         fg = Colors.green;
+//         text = "SUCCESS";
+//         break;
+
+//       case QueueSubmissionStatus.error:
+//         bg = Colors.red.withOpacity(.1);
+//         fg = Colors.red;
+//         text = "ERROR";
+//         break;
+
+//       case QueueSubmissionStatus.pending:
+//         bg = Colors.orange.withOpacity(.1);
+//         fg = Colors.orange;
+//         text = "PENDING";
+//         break;
+
+//       case QueueSubmissionStatus.partial:
+//         bg = Colors.blue.withOpacity(.1);
+//         fg = Colors.blue;
+//         text = "PARTIAL";
+//         break;
+
+//       case QueueSubmissionStatus.refetch:
+//         bg = Colors.purple.withOpacity(.1);
+//         fg = Colors.purple;
+//         text = "REFETCH";
+//         break;
+//     }
+
+//     return Container(
+//       padding: const EdgeInsets.symmetric(
+//         horizontal: 9,
+//         vertical: 4,
+//       ),
+//       decoration: BoxDecoration(
+//         color: bg,
+//         borderRadius: BorderRadius.circular(100),
+//       ),
+//       child: Text(
+//         text,
+//         style: GoogleFonts.inter(
+//           fontSize: 10,
+//           fontWeight: FontWeight.w700,
+//           color: fg,
+//         ),
+//       ),
+//     );
+//   }
+
+//   String getStatusImage(QueueSubmissionStatus status) {
+//     switch (status) {
+//       case QueueSubmissionStatus.success:
+//         return 'assets/images/q-success2.png';
+//       case QueueSubmissionStatus.error:
+//         return 'assets/images/q-error2.png';
+//       case QueueSubmissionStatus.pending:
+//         return 'assets/images/q-pending2.png';
+//       case QueueSubmissionStatus.partial:
+//         return 'assets/images/q-partial2.png';
+//       case QueueSubmissionStatus.refetch:
+//         return 'assets/images/q-refetch2.png';
+//     }
+//   }
+// }

@@ -22,6 +22,7 @@ import 'package:ubbottleapp/ModelPages/LandingPage/Models/FirebaseMessageModel.d
 import 'package:ubbottleapp/ModelPages/LandingPage/Widgets/NoInternetWidget.dart';
 import 'package:ubbottleapp/ModelPages/LandingPage/Widgets/WidgetBanner.dart';
 import 'package:ubbottleapp/ModelPages/LandingPage/Widgets/WidgetNotification.dart';
+import 'package:ubbottleapp/ModelPages/LoginPage/Page/LoginPage.dart';
 import 'package:ubbottleapp/Utils/ServerConnections/InternetConnectivity.dart';
 import 'package:ubbottleapp/Utils/ServerConnections/ServerConnections.dart';
 import 'package:carousel_slider/carousel_controller.dart';
@@ -608,9 +609,10 @@ class LandingPageController extends GetxController with WidgetsBindingObserver {
     if (validForm()) {
       FocusManager.instance.primaryFocus!.unfocus();
       var passBody = {
-        "ARMSessionId": appStorage.retrieveValue(AppStorage.SESSIONID),
-        "CurrentPassword": oPassCtrl.text.trim(),
-        "UpdatedPassword": nPassCtrl.text.trim(),
+        "appname": globalVariableController.PROJECT_NAME.value,
+        "username": globalVariableController.USER_NAME.value,
+        "OldPassword": generateMd5(oPassCtrl.text.trim()),
+        "NewPassword": nPassCtrl.text.trim(),
       };
       var url = Const.getFullARMUrl(ServerConnections.API_CHANGE_PASSWORD);
       var resp = await serverConnections.postToServer(
@@ -620,21 +622,43 @@ class LandingPageController extends GetxController with WidgetsBindingObserver {
         if (jsonResp['result']['success'].toString() == 'false') {
           error(jsonResp['result']['message'].toString());
         } else {
-          Get.defaultDialog(
+          await Get.defaultDialog(
               title: "Success!",
               middleText: jsonResp['result']['message'].toString(),
               confirm: ElevatedButton(
                   onPressed: () {
-                    Get.back();
-                    Get.back();
+                    Get.close(2);
                   },
                   child: Text("Ok")));
+          clearPassword(
+              projectName: globalVariableController.PROJECT_NAME.value,
+              username: globalVariableController.USER_NAME.value);
+          Get.offAll(LoginPage());
         }
       }
       print(resp);
     }
     // if success
     // closeProfileDialog();
+  }
+
+  void clearPassword({
+    required String projectName,
+    required String username,
+  }) {
+    try {
+      final users = Map<String, dynamic>.from(
+          appStorage.retrieveValue(AppStorage.USERID) ?? {});
+      final passwords = Map<String, dynamic>.from(
+          appStorage.retrieveValue(AppStorage.USER_PASSWORD) ?? {});
+
+      if (users[projectName] == username) {
+        passwords[projectName] = "";
+        appStorage.storeValue(AppStorage.USER_PASSWORD, passwords);
+      }
+    } catch (e) {
+      debugPrint("Failed to clear password: $e");
+    }
   }
 
   error(var msg) {
@@ -827,40 +851,30 @@ class LandingPageController extends GetxController with WidgetsBindingObserver {
   }
 
   bool validForm() {
-    Pattern pattern =
-        r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~]).{7,}$';
-    RegExp regex = RegExp(pattern.toString());
-    errOPass.value = errNPass.value = errCNPass.value = '';
-    if (oPassCtrl.text.trim().toString() == '') {
+    errOPass.value = '';
+    errNPass.value = '';
+    errCNPass.value = '';
+
+    if (oPassCtrl.text.trim().isEmpty) {
       errOPass.value = "Enter Existing password";
       return false;
     }
-    /* if (!regex.hasMatch(oPassCtrl.text.trim())) {
-      errOPass.value = "Password should contain upper,lower,digit and Special character";
-      return false;
-    }*/
-    if (nPassCtrl.text.trim().toString() == '') {
+
+    if (nPassCtrl.text.trim().isEmpty) {
       errNPass.value = "Enter New password";
       return false;
     }
-    if (!regex.hasMatch(nPassCtrl.text.trim())) {
-      errNPass.value =
-          "Password should contain upper,lower,digit and Special character";
-      return false;
-    }
-    if (cnPassCtrl.text.trim().toString() == '') {
+
+    if (cnPassCtrl.text.trim().isEmpty) {
       errCNPass.value = "Enter Confirm password";
       return false;
     }
-    if (!regex.hasMatch(cnPassCtrl.text.trim())) {
-      errCNPass.value =
-          "Password should contain upper,lower,digit and Special character";
-      return false;
-    }
+
     if (nPassCtrl.text.trim() != cnPassCtrl.text.trim()) {
-      errCNPass.value = "Password does not match";
+      errCNPass.value = "New password and Confirm password do not match";
       return false;
     }
+
     return true;
   }
 
@@ -1432,7 +1446,7 @@ class LandingPageController extends GetxController with WidgetsBindingObserver {
           controller: userCtrl,
           enableInteractiveSelection: false,
           keyboardType: TextInputType.text,
-          style: GoogleFonts.nunitoSans(fontSize: 14.0),
+          style: const TextStyle(fontFamily: "nunitobold", fontSize: 14.0),
           decoration: const InputDecoration(
             labelText: 'User Name',
             hintText: 'User Name',
@@ -1450,14 +1464,12 @@ class LandingPageController extends GetxController with WidgetsBindingObserver {
               borderRadius: BorderRadius.all(Radius.circular(5)),
             ),
             padding: const EdgeInsets.fromLTRB(3.0, 6.0, 3.0, 3.0),
-            child: Column(children: [
+            child: Column(children: const [
               Text(
                 'Cancel',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.nunitoSans(
-                  color: Colors.white,
-                  fontSize: 14,
-                ),
+                style: TextStyle(
+                    color: Colors.white, fontSize: 14, fontFamily: "nunitoreg"),
               ),
             ]),
           ),
@@ -1475,7 +1487,7 @@ class LandingPageController extends GetxController with WidgetsBindingObserver {
               obscureText: !showOldPass.value,
               keyboardType: TextInputType.text,
               onChanged: (value) {},
-              style: GoogleFonts.nunitoSans(fontSize: 14.0),
+              style: const TextStyle(fontFamily: "nunitobold", fontSize: 14.0),
               decoration: InputDecoration(
                 labelText: 'Old Password',
                 hintText: 'Enter your old password',
@@ -1496,7 +1508,7 @@ class LandingPageController extends GetxController with WidgetsBindingObserver {
               obscureText: !showNewPass.value,
               keyboardType: TextInputType.text,
               onChanged: (value) {},
-              style: GoogleFonts.nunitoSans(fontSize: 14.0),
+              style: const TextStyle(fontFamily: "nunitobold", fontSize: 14.0),
               decoration: InputDecoration(
                 labelText: 'New Password',
                 hintText: 'Enter your new password',
@@ -1517,7 +1529,7 @@ class LandingPageController extends GetxController with WidgetsBindingObserver {
               obscureText: !showConNewPass.value,
               keyboardType: TextInputType.text,
               onChanged: (value) {},
-              style: GoogleFonts.nunitoSans(fontSize: 14.0),
+              style: const TextStyle(fontFamily: "nunitobold", fontSize: 14.0),
               decoration: InputDecoration(
                 labelText: 'Confrmation Password',
                 hintText: 'Enter your Confrmation password',
@@ -1550,13 +1562,13 @@ class LandingPageController extends GetxController with WidgetsBindingObserver {
                       borderRadius: BorderRadius.all(Radius.circular(5)),
                     ),
                     padding: const EdgeInsets.fromLTRB(3.0, 6.0, 3.0, 3.0),
-                    child: Column(children: [
+                    child: Column(children: const [
                       Text('Cancel',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.nunitoSans(
-                            color: Colors.white,
-                            fontSize: 14,
-                          ))
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontFamily: "nunitoreg"))
                     ]),
                   ),
                 ),
@@ -1583,11 +1595,10 @@ class LandingPageController extends GetxController with WidgetsBindingObserver {
                     child: Text(
                       'Update',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.nunitoSans(
-                        color: Colors.white,
-                        fontSize: 14,
-                        // fontFamily: "nunitoreg",
-                      ),
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontFamily: "nunitoreg"),
                     ),
                   ),
                 ),

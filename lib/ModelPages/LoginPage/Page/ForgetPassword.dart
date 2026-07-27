@@ -1,8 +1,7 @@
-import 'package:ubbottleapp/Constants/MyColors.dart';
-import 'package:ubbottleapp/ModelPages/LoginPage/Controller/ForgetPasswordController.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:ubbottleapp/Constants/MyColors.dart';
+import 'package:ubbottleapp/ModelPages/LoginPage/Controller/ForgetPasswordController.dart';
 
 class ForgetPassword extends StatelessWidget {
   ForgetPassword({super.key});
@@ -26,11 +25,11 @@ class ForgetPassword extends StatelessWidget {
                 }),
             title: Text(
               "Forgot Password",
-              style: GoogleFonts.redHatText(
-                fontWeight: FontWeight.bold,
-                fontSize: 18.0,
-                color: MyColors.blue2,
-              ),
+              style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18.0,
+                  color: MyColors.blue2,
+                  fontFamily: 'redhatsmbold'),
             ),
             actions: [
               Visibility(
@@ -65,12 +64,12 @@ class ForgetPassword extends StatelessWidget {
                           Text(
                             "OTP sent successfully",
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.openSans(
-                              fontWeight: FontWeight.bold,
-                              fontSize:
-                                  MediaQuery.of(context).size.height * 0.02,
-                              color: MyColors.blue1,
-                            ),
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize:
+                                    MediaQuery.of(context).size.height * 0.02,
+                                color: MyColors.blue1,
+                                fontFamily: 'opensansbold'),
                           ),
                           SizedBox(height: 30),
                           Row(
@@ -79,12 +78,13 @@ class ForgetPassword extends StatelessWidget {
                               Text(
                                 'Enter OTP',
                                 textAlign: TextAlign.left,
-                                style: GoogleFonts.openSans(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize:
-                                      MediaQuery.of(context).size.height * 0.02,
-                                  color: MyColors.blue2,
-                                ),
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize:
+                                        MediaQuery.of(context).size.height *
+                                            0.02,
+                                    color: MyColors.blue2,
+                                    fontFamily: 'poppinssemibold'),
                               ),
                               forgetPasswordController.showTimer.value
                                   ? Text(
@@ -112,9 +112,9 @@ class ForgetPassword extends StatelessWidget {
                                                 color: MyColors.blue2)),
                                         child: Text(
                                           "Resend OTP",
-                                          style: GoogleFonts.redHatText(
+                                          style: TextStyle(
                                               color: MyColors.blue2,
-                                              // fontFamily: 'redhabold',
+                                              fontFamily: 'redhabold',
                                               fontSize: MediaQuery.of(context)
                                                       .size
                                                       .height *
@@ -157,9 +157,9 @@ class ForgetPassword extends StatelessWidget {
                               ),
                               filled: true,
                               fillColor: MyColors.color_grey,
-                              labelStyle: GoogleFonts.poppins(
+                              labelStyle: const TextStyle(
                                 fontSize: 15,
-                                // fontFamily: 'Proxima_Nova_Regular',
+                                fontFamily: 'Proxima_Nova_Regular',
                               ),
                               contentPadding: const EdgeInsets.only(left: 10),
                               enabledBorder: OutlineInputBorder(
@@ -181,13 +181,13 @@ class ForgetPassword extends StatelessWidget {
                               Text(
                                 'Enter New Password',
                                 textAlign: TextAlign.left,
-                                style: GoogleFonts.poppins(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize:
-                                      MediaQuery.of(context).size.height * 0.02,
-                                  color: MyColors.blue2,
-                                  // fontFamily: 'poppinssemibold',
-                                ),
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize:
+                                        MediaQuery.of(context).size.height *
+                                            0.02,
+                                    color: MyColors.blue2,
+                                    fontFamily: 'poppinssemibold'),
                               ),
                             ],
                           ),
@@ -224,9 +224,9 @@ class ForgetPassword extends StatelessWidget {
                               ),
                               filled: true,
                               fillColor: MyColors.color_grey,
-                              labelStyle: GoogleFonts.poppins(
+                              labelStyle: const TextStyle(
                                 fontSize: 15,
-                                // fontFamily: 'Proxima_Nova_Regular',
+                                fontFamily: 'Proxima_Nova_Regular',
                               ),
                               contentPadding: const EdgeInsets.only(left: 10),
                               enabledBorder: OutlineInputBorder(
@@ -248,13 +248,13 @@ class ForgetPassword extends StatelessWidget {
                               Text(
                                 'Enter Confirm Password',
                                 textAlign: TextAlign.left,
-                                style: GoogleFonts.poppins(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize:
-                                      MediaQuery.of(context).size.height * 0.02,
-                                  color: MyColors.blue2,
-                                  // fontFamily: 'poppinssemibold',
-                                ),
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize:
+                                        MediaQuery.of(context).size.height *
+                                            0.02,
+                                    color: MyColors.blue2,
+                                    fontFamily: 'poppinssemibold'),
                               ),
                             ],
                           ),
@@ -290,9 +290,9 @@ class ForgetPassword extends StatelessWidget {
                               ),
                               filled: true,
                               fillColor: MyColors.color_grey,
-                              labelStyle: GoogleFonts.poppins(
+                              labelStyle: const TextStyle(
                                 fontSize: 15,
-                                // fontFamily: 'Proxima_Nova_Regular',
+                                fontFamily: 'Proxima_Nova_Regular',
                               ),
                               contentPadding: const EdgeInsets.only(left: 10),
                               enabledBorder: OutlineInputBorder(
@@ -349,13 +349,12 @@ class ForgetPassword extends StatelessWidget {
                           SizedBox(height: 20),
                           Text(
                             'Forgot Password',
-                            style: GoogleFonts.redHatText(
-                              fontWeight: FontWeight.bold,
-                              fontSize:
-                                  MediaQuery.of(context).size.height * 0.03,
-                              color: MyColors.blue2,
-                              // fontFamily: 'redhatsmbold',
-                            ),
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize:
+                                    MediaQuery.of(context).size.height * 0.03,
+                                color: MyColors.blue2,
+                                fontFamily: 'redhatsmbold'),
                           ),
                           SizedBox(height: 20),
                           Text(
@@ -399,6 +398,7 @@ class ForgetPassword extends StatelessWidget {
                           TextField(
                             controller:
                                 forgetPasswordController.userNameController,
+                            readOnly: true,
                             textInputAction: TextInputAction.next,
                             //keyboardType: TextInputType.emailAddress,
                             //  enabled: false,
@@ -414,9 +414,9 @@ class ForgetPassword extends StatelessWidget {
                               ),
                               filled: true,
                               fillColor: MyColors.color_grey,
-                              labelStyle: GoogleFonts.poppins(
+                              labelStyle: const TextStyle(
                                 fontSize: 15,
-                                // fontFamily: 'Proxima_Nova_Regular',
+                                fontFamily: 'Proxima_Nova_Regular',
                               ),
                               contentPadding: const EdgeInsets.only(left: 10),
                               enabledBorder: OutlineInputBorder(
@@ -451,9 +451,9 @@ class ForgetPassword extends StatelessWidget {
                               ),
                               filled: true,
                               fillColor: MyColors.color_grey,
-                              labelStyle: GoogleFonts.poppins(
+                              labelStyle: const TextStyle(
                                 fontSize: 15,
-                                // fontFamily: 'Proxima_Nova_Regular',
+                                fontFamily: 'Proxima_Nova_Regular',
                               ),
                               contentPadding: const EdgeInsets.only(left: 10),
                               enabledBorder: OutlineInputBorder(

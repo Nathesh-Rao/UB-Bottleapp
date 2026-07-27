@@ -11,10 +11,13 @@ import 'package:ubbottleapp/ModelPages/InApplicationWebView/controller/webview_c
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_bundle_service.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_constants.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_module.dart';
-import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/cached_save_progress_model.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/cached_save_item_model.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/sync_progress_model.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/widgets/cached_refresh_dialog.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/widgets/cached_save_dialog.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/widgets/session_validation__dialog.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/widgets/sync_progress_dialog.dart';
+import 'package:ubbottleapp/ModelPages/LoginPage/Page/LoginPage.dart';
 import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
 import 'package:ubbottleapp/Utils/ServerConnections/InternetConnectivity.dart';
 import 'package:file_picker/file_picker.dart';
@@ -28,6 +31,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:ubbottleapp/Utils/ServerConnections/ServerConnections.dart';
 
 class OfflineFormController extends GetxController {
   late OfflineFormPageModel page;
@@ -1799,14 +1803,143 @@ class OfflineFormController extends GetxController {
   //////////////CACHED_SAVE//////////////////////
   ////////////////////////////////////////////////////////
 
+  Future<bool> validateSession() async {
+    try {
+      final Map<String, dynamic> payload = {
+        "ARMSessionId": await AppStorage().retrieveValue(AppStorage.SESSIONID)
+      };
+
+      final dynamic res = await ServerConnections().postDsToServer(
+        strictAuth: false,
+        url: Const.getFullARMUrl(ServerConnections.API_VALIDATE_SESSION),
+        body: jsonEncode(payload),
+        isBearer: true,
+        show_errorSnackbar: false,
+      );
+      await Future.delayed(Duration(seconds: 2));
+      bool isSuccess = false;
+      if (res != null && res.isNotEmpty) {
+        final decoded = jsonDecode(res);
+        if (decoded is Map && decoded['result']['success'] == true) {
+          isSuccess = true;
+        }
+      }
+      return isSuccess;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Future<void> actionPushPendingByCachedSave() async {
+  //   const tag = "[OFFLINE_ACTION_PUSH_PENDING_BY_CACHED_SAVE]";
+  //   if (!await _isInternetAvailable()) {
+  //     _showNeedInternetDialog();
+  //     return;
+  //   }
+
+  //   var pendingCount = await OfflineDbModule.getPendingCount();
+  //   if (pendingCount == 0) {
+  //     await _confirm(
+  //       title: "No Pending Data",
+  //       message:
+  //           "There is no pending data available.\n\nYou can try saving new forms offline to use this feature",
+  //       okText: "Okay",
+  //       icon: Icons.indeterminate_check_box_outlined,
+  //       confirmColor: const Color.fromARGB(255, 235, 103, 37),
+  //     );
+  //     return;
+  //   }
+
+  //   final ok = await _confirm(
+  //     title: "Upload Pending Data",
+  //     message:
+  //         "This will upload $pendingCount locally saved records to the server.\n\nAre you sure you want to continue?",
+  //     okText: "Upload Now",
+  //     icon: Icons.cloud_upload_rounded,
+  //     confirmColor: const Color(0xFF2563EB),
+  //   );
+  //   if (!ok) return;
+
+  //   cachedSaveUpdateMessage.value = "Starting Process";
+  //   isCachedSaveActive.value = true;
+  //   final result = await Get.dialog<CachedRefreshResult>(
+  //     CachedRefreshDialogWidget(),
+  //     barrierDismissible: false,
+  //   );
+
+  //   switch (result) {
+  //     case CachedRefreshResult.refreshed:
+  //       break;
+  //     case CachedRefreshResult.cancelled:
+  //       break;
+  //     case CachedRefreshResult.sessionInvalid:
+  //     case null:
+  //       if (Get.isDialogOpen ?? true) {
+  //         Get.back();
+  //       }
+  //       var ok = await _confirm(
+  //         title: "Invalid Session",
+  //         message:
+  //             "Your session has expired. Log back in to sync your pending data and access your forms.",
+  //         okText: "Okay",
+  //         icon: Icons.indeterminate_check_box_outlined,
+  //         confirmColor: const Color.fromARGB(255, 235, 103, 37),
+  //       );
+  //       cachedSaveUpdateMessage.value = "Invalid session";
+
+  //       if (ok) {
+  //         Get.offAll(LoginPage());
+  //       }
+  //       return;
+  //   }
+
+  //   cachedSaveUpdateMessage.value = "Validating session";
+
+  //   // if (!await validateSession()) {
+  //   //   if (Get.isDialogOpen ?? true) {
+  //   //     Get.back();
+  //   //   }
+
+  //   //   return;
+  //   // }
+  //   Get.dialog(
+  //     CachedSaveDialogWidget(),
+  //     barrierDismissible: false,
+  //   );
+  //   try {
+  //     await OfflineDbModule.startCachedSave(
+  //       // cachedSaveProgressModel: cachedSaveProgressModel,
+  //       // syncProgressModel: progressModel,
+  //       controller: Get.find<OfflineFormController>(),
+  //     );
+  //   } catch (e, st) {
+  //     LogService.writeLog(message: "$tag[FAILED] $e \n$st");
+  //     Get.snackbar(
+  //       "Upload Error",
+  //       "Failed to process queue. Check logs.",
+  //       backgroundColor: Colors.redAccent,
+  //       colorText: Colors.white,
+  //       icon: const Icon(Icons.warning, color: Colors.white),
+  //     );
+  //   } finally {
+  //     isCachedSaveActive.value = false;
+  //     isLoading.value = false;
+  //     refreshPendingCount();
+
+  //     // progressModel.completeWithError(errorMsg: "errorMsg");
+  //   }
+  // }
+
   Future<void> actionPushPendingByCachedSave() async {
     const tag = "[OFFLINE_ACTION_PUSH_PENDING_BY_CACHED_SAVE]";
+
     if (!await _isInternetAvailable()) {
       _showNeedInternetDialog();
       return;
     }
 
-    var pendingCount = await OfflineDbModule.getPendingCount();
+    final pendingCount = await OfflineDbModule.getPendingCount();
+
     if (pendingCount == 0) {
       await _confirm(
         title: "No Pending Data",
@@ -1827,44 +1960,177 @@ class OfflineFormController extends GetxController {
       icon: Icons.cloud_upload_rounded,
       confirmColor: const Color(0xFF2563EB),
     );
-    if (!ok) return;
-    final cachedSaveProgressModel = CachedSaveProgressModel();
-    // Get.dialog(
-    //   CachedSaveDialog(
-    //     cachedSaveProgressModel: cachedSaveProgressModel,
-    //   ),
-    //   barrierDismissible: false,
-    // );
 
-    final progressModel = SyncProgressModel(initialTitle: "Uploading Data");
-    Get.dialog(
-      SyncProgressDialog(
-        progressModel: progressModel,
-        reTry: actionPushPending,
-        showForcePush: true,
-      ),
-      barrierDismissible: false,
-    );
+    if (!ok) return;
+
+    cachedSaveUpdateMessage.value = "Starting Process";
+    isCachedSaveActive.value = true;
+
     try {
-      await OfflineDbModule.startCachedSave(
-        cachedSaveProgressModel: cachedSaveProgressModel,
-        syncProgressModel: progressModel,
+      /// ----------------------------------------------------------
+      /// STEP 1 : Validate Session
+      /// ----------------------------------------------------------
+      final sessionResult = await Get.dialog<CachedSessionValidationResult>(
+        const CachedSessionValidationDialog(),
+        barrierDismissible: false,
       );
 
-      refreshPendingCount();
+      if (sessionResult != CachedSessionValidationResult.valid) {
+        final login = await _confirm(
+          title: "Invalid Session",
+          message:
+              "Your session has expired. Log back in to sync your pending data and access your forms.",
+          okText: "Okay",
+          icon: Icons.indeterminate_check_box_outlined,
+          confirmColor: const Color.fromARGB(255, 235, 103, 37),
+        );
+
+        cachedSaveUpdateMessage.value = "Invalid Session";
+
+        if (login) {
+          Get.offAll(LoginPage());
+        }
+
+        return;
+      }
+
+      /// ----------------------------------------------------------
+      /// STEP 2 : Check Pending Queue Refresh Count
+      /// ----------------------------------------------------------
+      final refreshQueueRows = await OfflineDbModule.getPendigQueuesToRefresh();
+
+      /// ----------------------------------------------------------
+      /// STEP 3 : Refresh Queue (only if required)
+      /// ----------------------------------------------------------
+      if (refreshQueueRows.length > 0) {
+        final refreshResult = await Get.dialog<CachedRefreshResult>(
+          CachedRefreshDialogWidget(
+            refreshQueueRows: refreshQueueRows,
+          ),
+          barrierDismissible: false,
+        );
+
+        if (refreshResult != CachedRefreshResult.refreshed) {
+          return;
+        }
+      }
+
+      /// ----------------------------------------------------------
+      /// STEP 4 : Upload Pending Data
+      /// ----------------------------------------------------------
+      cachedSaveUpdateMessage.value = "Uploading Pending Data";
+
+      Get.dialog(
+        CachedSaveDialogWidget(),
+        barrierDismissible: false,
+      );
+
+      await OfflineDbModule.startCachedSave(
+        controller: Get.find<OfflineFormController>(),
+      );
     } catch (e, st) {
-      LogService.writeLog(message: "$tag[FAILED] $e \n$st");
-      refreshPendingCount();
+      LogService.writeLog(
+        message: "$tag [FAILED]\n$e\n$st",
+      );
+
       Get.snackbar(
         "Upload Error",
         "Failed to process queue. Check logs.",
         backgroundColor: Colors.redAccent,
         colorText: Colors.white,
-        icon: const Icon(Icons.warning, color: Colors.white),
+        icon: const Icon(
+          Icons.warning,
+          color: Colors.white,
+        ),
       );
     } finally {
+      isCachedSaveActive.value = false;
       isLoading.value = false;
-      // progressModel.completeWithError(errorMsg: "errorMsg");
+      refreshPendingCount();
     }
+  }
+
+//////////////////////////////////////////////////////////////////////////////
+  //////// Cached save progress update items/////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
+  var isSessionCheckingForCachedSave = false.obs;
+  var isPendingQuesRefreshing = false.obs;
+  var isCachedSaveActive = false.obs;
+  final cachedSaveQueItems = <Rx<CachedSaveItemModel>>[].obs;
+  var cachedSaveUpdateMessage = ''.obs;
+  final RxSet<String> sentQueueIds = <String>{}.obs;
+  final RxSet<String> receivedQueueIds = <String>{}.obs;
+
+  void registerSentQueueId(String queueId) {
+    sentQueueIds.add(queueId);
+    LogService.writeLog(
+      message: "[QUEUE_TRACKING] SENT queue_id=$queueId | "
+          "sent_total=${sentQueueIds.length} received_total=${receivedQueueIds.length}",
+    );
+  }
+
+  void registerReceivedQueueId(String queueId) {
+    receivedQueueIds.add(queueId);
+    LogService.writeLog(
+      message: "[QUEUE_TRACKING] RECEIVED queue_id=$queueId | "
+          "sent_total=${sentQueueIds.length} received_total=${receivedQueueIds.length}",
+    );
+    _checkIfAllQueuesResolved();
+  }
+
+  void _checkIfAllQueuesResolved() {
+    if (sentQueueIds.isEmpty) return;
+
+    final bool allResolved = sentQueueIds.every(receivedQueueIds.contains);
+
+    if (allResolved) {
+      cachedSaveUpdateMessage.value =
+          "Server confirmation received for all ${sentQueueIds.length} batch${sentQueueIds.length == 0 ? '' : "es"}.\nSync is complete.";
+    }
+  }
+
+  void resetQueueTracking() {
+    sentQueueIds.clear();
+    receivedQueueIds.clear();
+    LogService.writeLog(message: "[QUEUE_TRACKING] RESET for new run");
+  }
+
+  static const Map<QueueSubmissionStatus, int> _statusPriority = {
+    QueueSubmissionStatus.refetch: 0,
+    QueueSubmissionStatus.error: 1,
+    QueueSubmissionStatus.partial: 2,
+    QueueSubmissionStatus.success: 3,
+    QueueSubmissionStatus.pending: 4,
+  };
+  void _sortQueueItems() {
+    cachedSaveQueItems.sort((a, b) {
+      final priorityA = _statusPriority[a.value.submissionStatus]!;
+      final priorityB = _statusPriority[b.value.submissionStatus]!;
+
+      if (priorityA != priorityB) {
+        return priorityA.compareTo(priorityB);
+      }
+
+      return 0;
+    });
+  }
+
+  void addQueue(CachedSaveItemModel item) {
+    registerSentQueueId(item.qId);
+    cachedSaveQueItems.add(item.obs);
+  }
+
+  void updateQueueItem(
+    String qId,
+    CachedSaveItemModel Function(CachedSaveItemModel) updater,
+  ) {
+    final index = cachedSaveQueItems.indexWhere(
+      (e) => e.value.qId == qId,
+    );
+
+    if (index == -1) return;
+
+    cachedSaveQueItems[index].value = updater(cachedSaveQueItems[index].value);
+    _sortQueueItems();
   }
 }

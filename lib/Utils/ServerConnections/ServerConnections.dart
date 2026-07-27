@@ -177,11 +177,13 @@ class ServerConnections {
   static const String API_RESEND_OTP = "AxAuth/api/v1/ResendOTP";
   static const String API_CONNECTTOAXPERT = "AxAuth/api/v1/ARMConnectToAxpert";
   static const String API_SIGNOUT = "AxAuth/api/v1/ARMSignOut";
-
+  static const String API_VALIDATE_SESSION = "AxAuth/api/v1/AxValidateSession";
+  static const String API_FORGOTPASSWORD = "AxAuth/api/v1/AxForgotPassword";
+  static const String API_CHANGE_PASSWORD = "AxAuth/api/v1/AxResetPassword";
   //AxList ARM Services
   static const String API_GET_CARDS_WITH_DATA =
       "AxList/api/v1/GetCardsWithData";
-
+  static const ARM_AXLIST = "AxList/api/v1/AxList";
   //AxUtils ARM Services
   static const String API_GET_MENU = "AxUtils/api/v1/ARMGetMenu";
   static const String API_GET_MENU_V2 = "AxUtils/api/v1/ARMGetMenu";
@@ -194,7 +196,6 @@ class ServerConnections {
       "ARMNotificationHub/api/v1/ARMMobileNotification";
   static const String API_GET_DASHBOARD_DATA =
       "ARM_APIs/api/v1/ARMGetCardsData";
-  static const String API_CHANGE_PASSWORD = "ARM_APIs/api/v1/ARMChangePassword";
   static const String API_GET_PENDING_ACTIVETASK =
       "ARM_APIs/api/v1/ARMGetPendingActiveTasks";
   static const String API_GET_PENDING_ACTIVETASK_COUNT =
@@ -236,7 +237,6 @@ class ServerConnections {
   static const String API_ADDUSER = "ARM_APIs/api/v1/ARMAddUser";
   static const String API_OTP_VALIDATE_USER =
       "ARM_APIs/api/v1/ARMValidateAddUser";
-  static const String API_FORGOTPASSWORD = "ARM_APIs/api/v1/ARMForgotPassword";
   static const String API_VALIDATE_FORGETPASSWORD =
       "ARM_APIs/api/v1/ARMValidateForgotPassword";
   static const String API_GOOGLESIGNIN_SSO = "ARM_APIs/api/v1/ARMSigninSSO";
@@ -270,7 +270,7 @@ class ServerConnections {
       String body = '',
       String ClientID = '',
       bool isBearer = false,
-      bool strictAuth = false,
+      bool strictAuth = true,
       var show_errorSnackbar = true}) async {
     var API_NAME = url.substring(url.lastIndexOf("/") + 1, url.length);
     if (await _connectivity.connectionStatus)
@@ -344,11 +344,11 @@ class ServerConnections {
               return '__AUTH_FAILED__${response.body}';
             }
 
-            if (isSessionInvalid) {
-              LandingPageController landingPageController = Get.find();
-              landingPageController.showSignOutDialog_sessionExpired();
-            } else
-              return response.body;
+            // if (isSessionInvalid) {
+            //   LandingPageController landingPageController = Get.find();
+            //   landingPageController.showSignOutDialog_sessionExpired();
+            // } else
+            //   return response.body;
           } else {
             print("API_ERROR: $API_NAME: ${response.body}");
             LogService.writeLog(
@@ -389,6 +389,145 @@ class ServerConnections {
     return "";
   }
 
+  /// Dedicated POST method for datasource/list-view calls (ARMGetDataResponse
+  /// and similar). Kept separate from postToServer so existing call sites
+  /// are untouched.
+  ///
+  /// Unlike postToServer, this NEVER silently returns "" on a non-200
+  /// response — every path returns either the real response body (200)
+  /// or a clearly-marked error string starting with '__ERROR_',
+  /// '__AUTH_FAILED__', '__EXCEPTION__', or '__NO_CONNECTIVITY__' so the
+  /// caller can tell success from failure without guessing.
+  Future<String> postDsToServer({
+    required String url,
+    var header = '',
+    required String body,
+    bool isBearer = true,
+    bool strictAuth = true,
+    bool show_errorSnackbar = true,
+  }) async {
+    final String apiName = url.substring(url.lastIndexOf("/") + 1, url.length);
+    const String tag = "[POST_DS]";
+
+    if (!await _connectivity.connectionStatus) {
+      LogService.writeLog(message: "$tag NO_CONNECTIVITY api=$apiName");
+      return '__NO_CONNECTIVITY__';
+    }
+
+    try {
+      if (header == '') header = {"Content-Type": "application/json"};
+      if (isBearer) {
+        header = {
+          "Content-Type": "application/json",
+          'Authorization': 'Bearer ' +
+              (appStorage.retrieveValue(AppStorage.TOKEN)?.toString() ?? ""),
+        };
+      }
+      // LogService.writeLog(
+      //   message: "$tag REQUEST api=$apiName url=$url body=$body",
+      // );
+
+      final response =
+          await client.post(Uri.parse(url), headers: header, body: body);
+      print("$tag RESPONSE api=$apiName statusCode=${response.statusCode} "
+          "body=${response.body}");
+      // LogService.writeLog(
+      //   message: "$tag RESPONSE api=$apiName statusCode=${response.statusCode} "
+      //       "body=${response.body}",
+      // );
+
+      // ── 200: success, hand back the real body ──────────────────
+      // amr i added the 206 here beacuse the response from axlist have a response code of 206 for partial success
+      if (response.statusCode == 200 || response.statusCode == 206) {
+        return response.body;
+      }
+
+      // ── 401 / 400 / 500: check for session-expiry, otherwise
+      // still return the real body wrapped with an error marker
+      // instead of silently discarding it ──────────────────────
+      if (response.statusCode == 401 ||
+          response.statusCode == 400 ||
+          response.statusCode == 500) {
+        bool isSessionInvalid = false;
+        try {
+          final decoded = jsonDecode(response.body);
+          final String message =
+              (decoded['result']?['message'] ?? '').toString().toLowerCase();
+          isSessionInvalid = message.contains('sessionid is not valid');
+        } catch (_) {
+          isSessionInvalid = response.body
+              .toString()
+              .toLowerCase()
+              .contains('sessionid is not valid');
+        }
+
+        if (strictAuth && isSessionInvalid) {
+          LogService.writeLog(
+            message:
+                "$tag SESSION_INVALID api=$apiName statusCode=${response.statusCode}",
+          );
+          try {
+            LandingPageController landingPageController = Get.find();
+            landingPageController.showSignOutDialog_sessionExpired();
+          } catch (_) {}
+          return '__AUTH_FAILED__${response.body}';
+        }
+
+        showErrorSnack(
+          title: "Error! ${response.statusCode}",
+          message: "$apiName: ${response.body}",
+          show_errorSnackbar: show_errorSnackbar,
+        );
+        return '__ERROR_${response.statusCode}__${response.body}';
+      }
+
+      // ── 404 ──────────────────────────────────────────────────
+      if (response.statusCode == 404) {
+        LogService.writeLog(message: "$tag NOT_FOUND api=$apiName");
+        showErrorSnack(
+          title: "Error 404",
+          message: "Invalid Url",
+          show_errorSnackbar: show_errorSnackbar,
+        );
+        return strictAuth
+            ? '__AUTH_FAILED__${response.body}'
+            : '__ERROR_404__${response.body}';
+      }
+
+      // ── any other status code ───────────────────────────────
+      var msg = response.body.toString();
+      if (msg.contains("message")) {
+        try {
+          final jsonResp = jsonDecode(response.body);
+          msg = jsonResp['result']['message'].toString();
+        } catch (_) {}
+      }
+      showErrorSnack(
+        title: "Error! ${response.statusCode}",
+        message: "$apiName: $msg",
+        show_errorSnackbar: show_errorSnackbar,
+      );
+      return '__ERROR_${response.statusCode}__${response.body}';
+    } catch (e, st) {
+      LogService.writeLog(
+        message: "$tag EXCEPTION api=$apiName error=$e\n$st",
+      );
+      showErrorSnack(
+        title: "Error!",
+        message: e.toString(),
+        show_errorSnackbar: show_errorSnackbar,
+      );
+      return '__EXCEPTION__${e.toString()}';
+    }
+  }
+
+  static bool isDsErrorResponse(String response) {
+    return response.isEmpty ||
+        response.startsWith('__ERROR_') ||
+        response.startsWith('__AUTH_FAILED__') ||
+        response.startsWith('__EXCEPTION__') ||
+        response.startsWith('__NO_CONNECTIVITY__');
+  }
   // postQueueToServer(
   //     {String url = '',
   //     var header = '',

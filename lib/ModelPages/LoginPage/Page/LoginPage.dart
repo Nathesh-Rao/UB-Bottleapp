@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:ubbottleapp/Constants/Routes.dart';
 import 'package:ubbottleapp/ModelPages/LoginPage/Controller/LoginController.dart';
 import 'package:ubbottleapp/ModelPages/LoginPage/EssPortal/EssLoginPage.dart';
+import 'package:ubbottleapp/ModelPages/SpalshPage/local_update/screen/local_update_sheet.dart';
+import 'package:ubbottleapp/ModelPages/SpalshPage/local_update/service/version_check_service.dart';
 import 'package:ubbottleapp/Utils/ServerConnections/InternetConnectivity.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -25,7 +27,8 @@ class _LoginPageState extends State<LoginPage> {
   PullToRefreshController pullToRefreshController = PullToRefreshController();
   @override
   Widget build(BuildContext context) {
-    var dropdownWidth = MediaQuery.of(context).size.width * .35;
+    // var dropdownWidth = MediaQuery.of(context).size.width * .35;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkForUpdate());
 
     return Obx(() => PopScope(
           onPopInvoked: (didPop) {
@@ -136,14 +139,21 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget getLoginWidget() {
-
-
     switch (loginController.portalDropdownValue.value.toLowerCase()) {
       case "ess":
         return EssLoginPage();
 
       default:
         return DefaultLoginPageWidget();
+    }
+  }
+
+  Future<void> _checkForUpdate() async {
+    final remote = await VersionCheckService.fetchRemoteVersionInfo();
+    if (remote == null) return;
+    final needsUpdate = await VersionCheckService.isUpdateAvailable(remote);
+    if (needsUpdate && mounted) {
+      await LocalUpdateBottomSheet.show(context, remote);
     }
   }
 }

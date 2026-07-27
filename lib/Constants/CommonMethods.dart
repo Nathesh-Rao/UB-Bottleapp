@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:http/http.dart' as http;
 import 'package:ubbottleapp/Constants/AppStorage.dart';
 import 'package:back_button_interceptor/back_button_interceptor.dart';
 import 'package:crypto/crypto.dart';
@@ -15,6 +16,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:local_auth_android/local_auth_android.dart';
 import 'package:local_auth_darwin/local_auth_darwin.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:ubbottleapp/Constants/Const.dart';
 import 'package:uuid/uuid.dart';
 
 import '../Utils/LogServices/LogService.dart';
@@ -162,6 +164,29 @@ class CommonMethods {
         await openAppSettings(); // Opens settings for manual permission
       }
     }
+  }
+
+  static Future<String> getLogoUrl() async {
+    var base = Const.getFullWebUrl(globalVariableController.PROJECT_NAME.value +
+        "/" +
+        Const.NETWORK_APP_LOGO_FILE_NAME);
+
+    final jpg = Uri.parse("$base.jpg");
+    final png = Uri.parse("$base.png");
+
+    final jpgResponse = await http.head(jpg);
+    log(jpgResponse.statusCode.toString(), name: "getLogoUrl-jpg");
+    if (jpgResponse.statusCode == 200) {
+      return jpg.toString();
+    }
+
+    final pngResponse = await http.head(png);
+    log(pngResponse.statusCode.toString(), name: "getLogoUrl-png");
+    if (pngResponse.statusCode == 200) {
+      return png.toString();
+    }
+
+    return "";
   }
 }
 

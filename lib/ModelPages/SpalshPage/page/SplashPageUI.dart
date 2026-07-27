@@ -111,7 +111,7 @@ class _SplashPageState extends State<SplashPage>
     final androidInfo = await deviceInfo.androidInfo;
 
     final upgrader = Upgrader(
-      // debugDisplayAlways: true,   
+      // debugDisplayAlways: true,
       debugLogging: true,
       storeController: UpgraderStoreController(
         onAndroid: () {

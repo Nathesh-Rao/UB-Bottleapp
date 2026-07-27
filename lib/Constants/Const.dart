@@ -9,14 +9,16 @@ final globalVariableController = Get.find<GlobalVariableController>();
 
 class Const {
   static DateTime DEMO_END_DATE = DateTime(2025, 2, 8);
-  static String APP_RELEASE_ID = "test6267";
-//   static String APP_RELEASE_ID = "_build15";
-  static String APP_RELEASE_DATE = "03062026"; //"_release031025";
+  // static String APP_RELEASE_ID = "test6267";
+  static String APP_RELEASE_ID = "_build16";
+  static String APP_RELEASE_DATE = "14072026"; //"_release031025";
   static String DEVICE_ID = "";
   static String GUID = "";
+  static const String SEED = "1993";
   static String APP_VERSION = "";
   static String FIREBASE_TOKEN = "";
   static const String CLOUD_PROJECT = "axpmobileclient";
+  static const String NETWORK_APP_LOGO_FILE_NAME = "axAppLogo";
   static const String CLOUD_URL = "";
   static final String SEED_V = "1983";
   static String DUMMY_USER = "admin";

@@ -64,7 +64,7 @@ initialize() async {
 }
 
 onMessageListener(RemoteMessage message) {
-  log("message");
+  log(message.data.toString(), name: "onMessageListener");
   if (message.data.containsKey('axm_queueid')) {
     OfflineDbModule.processCachedSaveQueueFCM(message.data);
   } else {

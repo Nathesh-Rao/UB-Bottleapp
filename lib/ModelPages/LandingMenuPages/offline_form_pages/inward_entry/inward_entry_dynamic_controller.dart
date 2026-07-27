@@ -243,6 +243,8 @@ class InwardEntryDynamicController extends GetxController {
     getTextCtrl("bags_sample").addListener(_recheckMiniFab);
     getTextCtrl("loaded_truck").addListener(_calculateNetWeight);
     getTextCtrl("empty_truck").addListener(_calculateNetWeight);
+    // getTextCtrl("received_bags_crates").addListener(_checkForBilledQty);
+    // getTextCtrl("billed_qty_bags_crates").addListener(_checkForBilledQty);
     // getDropdownCtrl("packing").listen((_) {
     //   _onReceivedChanged();
     // });
@@ -250,6 +252,27 @@ class InwardEntryDynamicController extends GetxController {
     ever(getDropdownCtrl("packing"), (_) {
       _onReceivedChanged();
     });
+  }
+
+  void _checkForBilledQty() {
+    const receivedField = "received_bags_crates";
+    const billedField = "billed_qty_bags_crates";
+
+    const message =
+        "Received quantity cannot be greater than the billed quantity.";
+
+    final receivedQty =
+        int.tryParse(getTextCtrl(receivedField).text.trim()) ?? 0;
+
+    final billedQty = int.tryParse(getTextCtrl(billedField).text.trim()) ?? 0;
+
+    if (receivedQty > billedQty) {
+      errors[receivedField] = message;
+      // errors[billedField] = message;
+    } else {
+      errors.remove(receivedField);
+      // errors.remove(billedField);
+    }
   }
 
   _calculateNetWeight() {
@@ -327,6 +350,7 @@ class InwardEntryDynamicController extends GetxController {
     onBagsToSampleChanged(sample.toString());
 
     debugPrint("_onReceivedChanged updated with value => $sample");
+    _checkForBilledQty();
   }
 
   void onBagsToSampleChanged(String value) {
@@ -1385,6 +1409,7 @@ class InwardEntryDynamicController extends GetxController {
 
   Future<bool> validateForm() async {
     errors.clear();
+    _checkForBilledQty();
 
     final List fields = schema["fields"];
 
@@ -1408,13 +1433,12 @@ class InwardEntryDynamicController extends GetxController {
         }
       }
 
-      if (name == 'ub_ge_no') {
-        await validateUbgeNo(
-            textCtrls[name]!, textCtrls[name]?.text ?? '', name);
-        // errors[name] = "duplicate ubge no, please update";
-      }
+      // if (name == 'ub_ge_no') {
+      //   await validateUbgeNo(
+      //       textCtrls[name]!, textCtrls[name]?.text ?? '', name);
+      //   // errors[name] = "duplicate ubge no, please update";
+      // }
     }
-
     return errors.isEmpty;
   }
 
@@ -1817,7 +1841,8 @@ class InwardEntryDynamicController extends GetxController {
     final String username =
         await AppStorage().retrieveValue(AppStorage.USER_NAME);
     var project = globalVariableController.PROJECT_NAME.value;
-
+    var isTraceOn =
+        await AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? false;
     String publicKey = schema["submit_data_publickey"] ?? "KEY_NOT_FOUND";
     return {
       "ARMSessionId": sessionId,
@@ -1825,7 +1850,7 @@ class InwardEntryDynamicController extends GetxController {
       "project": project,
       "submitdata": {
         "username": username,
-        "trace": "false",
+        "trace": isTraceOn ? "true" : "false",
         "keyfield": "",
         "dataarray": {
           "data": {
@@ -1971,13 +1996,15 @@ class InwardEntryDynamicController extends GetxController {
         };
       }
       var project = globalVariableController.PROJECT_NAME.value;
+      var isTraceOn =
+          AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? false;
       final Map<String, dynamic> payload = {
         "ARMSessionId": sessionId,
         "publickey": "InwardAttach",
         "project": project,
         "submitdata": {
           "username": username,
-          "trace": "false",
+          "trace": isTraceOn ? "true" : "false",
           "keyfield": "",
           "dataarray": {
             "data": {
@@ -2172,7 +2199,7 @@ class InwardEntryDynamicController extends GetxController {
           "dc1": {
             "row1": {
               "ub_gen_no": refNo,
-              // "axm_recordid": Const.axm_recordid,
+              "axm_recordid": Const.axm_recordid,
               "category": categoryKey,
               "axpfile_file": fileArray,
               "axpfilepath_file": "",

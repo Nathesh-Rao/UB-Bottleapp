@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:ubbottleapp/Constants/CommonMethods.dart';
 import 'package:ubbottleapp/Constants/MyColors.dart';
 import 'package:ubbottleapp/Constants/Routes.dart';
 import 'package:ubbottleapp/Constants/const.dart';
@@ -55,7 +57,6 @@ class _DefaultLoginPageWidgetState extends State<DefaultLoginPageWidget> {
     //   ),
     // );
 
-    var istablet = Get.width > 600;
     return Container(
       decoration: BoxDecoration(
         image: DecorationImage(
@@ -95,6 +96,7 @@ class _DefaultLoginPageWidgetState extends State<DefaultLoginPageWidget> {
                 child: Column(
                   children: [
                     Container(
+                      clipBehavior: Clip.hardEdge,
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -109,11 +111,46 @@ class _DefaultLoginPageWidgetState extends State<DefaultLoginPageWidget> {
                       ),
                       child: Hero(
                         tag: 'axpertImage',
-                        child: Image.asset(
-                          'assets/images/ub_logo.png',
-                          height: istablet ? 150 : 60,
-                          fit: BoxFit.fill,
-                        ),
+                        child: FutureBuilder(
+                            future: CommonMethods.getLogoUrl(),
+                            builder: (context, asyncSnapshot) {
+                              if (asyncSnapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return Center(
+                                    child: SpinKitFadingCircle(
+                                  color: MyColors.blue2,
+                                  size: 30,
+                                ));
+                              }
+                              return Image.network(
+                                asyncSnapshot.data ?? '',
+                                width: MediaQuery.of(context).size.width * 0.24,
+                                fit: BoxFit.contain,
+                                frameBuilder: (context, child, frame,
+                                    wasSynchronouslyLoaded) {
+                                  if (wasSynchronouslyLoaded || frame != null) {
+                                    return child;
+                                  }
+                                  return SizedBox(
+                                    width: MediaQuery.of(context).size.width *
+                                        0.24,
+                                    child: const Center(
+                                        child: SpinKitFadingCircle(
+                                      color: MyColors.blue2,
+                                      size: 30,
+                                    )),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Image.asset(
+                                    'assets/images/axpert_04.png',
+                                    width: MediaQuery.of(context).size.width *
+                                        0.24,
+                                    fit: BoxFit.fill,
+                                  );
+                                },
+                              );
+                            }),
                       ),
                     ),
                     SizedBox(height: MediaQuery.of(context).size.height * 0.01),
@@ -265,18 +302,38 @@ class _DefaultLoginPageWidgetState extends State<DefaultLoginPageWidget> {
                                         ],
                                       ),
                                     ),
-                                    InkWell(
-                                      onTap: () {
-                                        Get.toNamed(Routes.ForgetPassword);
-                                      },
-                                      child: Text("Forgot Password?",
-                                          style: GoogleFonts.manrope(
-                                            decoration:
-                                                TextDecoration.underline,
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 13,
-                                            color: Colors.blueAccent,
-                                          )),
+                                    // InkWell(
+                                    //   onTap: () {
+                                    //     Get.toNamed(Routes.ForgetPassword);
+                                    //   },
+                                    //   child: Text("Forgot Password?",
+                                    //       style: GoogleFonts.manrope(
+                                    //         decoration:
+                                    //             TextDecoration.underline,
+                                    //         fontWeight: FontWeight.w600,
+                                    //         fontSize: 13,
+                                    //         color: Colors.blueAccent,
+                                    //       )),
+                                    // )
+                                    Obx(
+                                      () => loginController.isPWD_auth.value
+                                          ? InkWell(
+                                              onTap: () {
+                                                Get.toNamed(
+                                                    Routes.ForgetPassword);
+                                              },
+                                              child: Text(
+                                                "Forgot Password?",
+                                                style: GoogleFonts.manrope(
+                                                  decoration:
+                                                      TextDecoration.underline,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 13,
+                                                  color: Colors.blueAccent,
+                                                ),
+                                              ),
+                                            )
+                                          : const SizedBox.shrink(),
                                     )
                                   ],
                                 ),

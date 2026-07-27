@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:ubbottleapp/Constants/CommonMethods.dart';
 import 'package:ubbottleapp/Constants/Const.dart';
 import 'package:ubbottleapp/Utils/ServerConnections/ServerConnections.dart';
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
 import '../../../Constants/GlobalVariableController.dart';
+import 'LoginController.dart';
 
 class ForgetPasswordController extends GetxController {
   final globalVariableController = Get.find<GlobalVariableController>();
@@ -43,6 +44,7 @@ class ForgetPasswordController extends GetxController {
   var ddSelectedValue = "power".obs;
 
   ForgetPasswordController() {
+    userNameController.text = globalVariableController.USER_NAME.value;
     // fetchUserTypeList();
   }
 
@@ -148,7 +150,7 @@ class ForgetPasswordController extends GetxController {
       Map body = {
         "appname": globalVariableController.PROJECT_NAME.value,
         "username": userNameController.text.toString().trim(),
-        "usergroup": "power",
+        //"usergroup": "power",
         // "usergroup": ddSelectedValue.value.toString().toLowerCase(),
         'email': emailController.text.trim().toString()
       };
@@ -170,8 +172,8 @@ class ForgetPasswordController extends GetxController {
               middleText: "  Password is reset and sent to your email  ",
               confirm: ElevatedButton(
                   onPressed: () {
-                    Get.back();
-                    Get.back();
+                    Get.find<LoginController>().userPasswordController.clear();
+                    Get.close(2);
                   },
                   child: Text("OK")));
 
