@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:ubbottleapp/ModelPages/LandingPage/Controller/LandingPageController.dart';
 import 'package:ubbottleapp/ModelPages/LoginPage/Controller/LoginController.dart';
 import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
@@ -22,7 +24,7 @@ class WebViewController extends GetxController {
 
     if (landingPageController.isAxpertConnectEstablished) {
       currentUrl.value = url;
-
+      log(url, name: "WEBVIEW URL");
       await inAppWebViewController.value!
           .loadUrl(
             urlRequest: URLRequest(

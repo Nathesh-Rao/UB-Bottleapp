@@ -17,6 +17,7 @@ class CachedSessionValidationDialog extends GetView<OfflineFormController> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
         final valid = await controller.validateSession();
+        print("CachedSessionValidationDialog session is $valid");
 
         if (Get.isDialogOpen ?? false) {
           Get.back(
@@ -26,6 +27,8 @@ class CachedSessionValidationDialog extends GetView<OfflineFormController> {
           );
         }
       } catch (_) {
+        print("CachedSessionValidationDialog caught an error");
+
         if (Get.isDialogOpen ?? false) {
           Get.back(result: CachedSessionValidationResult.invalid);
         }

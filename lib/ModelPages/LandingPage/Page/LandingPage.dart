@@ -116,6 +116,13 @@ class LandingPage extends StatelessWidget {
                     subtitle: "Backup offline DB for debugging",
                     onTap: offlineFormController.actionExportDatabase,
                   ),
+                  _simpleRow(
+                    icon: Icons.archive_rounded,
+                    color: Colors.deepOrange,
+                    title: "Import Database",
+                    subtitle: "Restore or overwrite local DB file",
+                    onTap: offlineFormController.actionImportDatabase,
+                  ),
                   // _simpleRow(
                   //   icon: Icons.restart_alt_rounded,
                   //   color: Colors.brown,
@@ -127,23 +134,23 @@ class LandingPage extends StatelessWidget {
                   // ),
                   const Divider(),
                   _sectionHeader("Queue"),
-                  Obx(() => _simpleRow(
-                        icon: Icons.upload_file,
-                        color: Colors.deepOrange,
-                        title: "Push Pending Uploads",
-                        subtitle: "Upload queued data to server",
-                        onTap: offlineFormController.actionPushPending,
-                        badge: offlineFormController.pendingCount.value != 0
-                            ? offlineFormController.pendingCount.value
-                                .toString()
-                            : null,
-                      )),
+                  // Obx(() => _simpleRow(
+                  //       icon: Icons.upload_file,
+                  //       color: Colors.deepOrange,
+                  //       title: "Push Pending Uploads",
+                  //       subtitle: "Upload queued data to server",
+                  //       onTap: offlineFormController.actionPushPending,
+                  //       badge: offlineFormController.pendingCount.value != 0
+                  //           ? offlineFormController.pendingCount.value
+                  //               .toString()
+                  //           : null,
+                  //     )),
 
                   Obx(() => _simpleRow(
-                        icon: Icons.file_upload_outlined,
-                        color: Colors.deepOrange,
-                        title: "Push Pending (Cached)",
-                        subtitle: "Upload queued data to server",
+                        icon: Icons.upload,
+                        color: Colors.green,
+                        title: "Push Pending records",
+                        subtitle: "Upload pending records to server",
                         onTap:
                             offlineFormController.actionPushPendingByCachedSave,
                         badge: offlineFormController.pendingCount.value != 0
@@ -151,6 +158,19 @@ class LandingPage extends StatelessWidget {
                                 .toString()
                             : null,
                       )),
+                  Obx(() => _simpleRow(
+                        icon: Icons.refresh_sharp,
+                        color: Colors.deepOrange,
+                        title: "Queue status",
+                        subtitle: "Refresh pending queues from server",
+                        onTap: offlineFormController.actionRefreshQueues,
+                        badge:
+                            offlineFormController.pendingQueuesCount.value != 0
+                                ? offlineFormController.pendingQueuesCount.value
+                                    .toString()
+                                : null,
+                      )),
+
                   Obx(
                     () => globalVariableController.USER_ROLE.value == 'default'
                         ? Column(
@@ -193,14 +213,6 @@ class LandingPage extends StatelessWidget {
                                 onTap: () => Get.to(() => AuditLogPage()),
                               ),
 
-                              _simpleRow(
-                                icon: Icons.archive_rounded,
-                                color: Colors.deepOrange,
-                                title: "Import Database",
-                                subtitle: "Restore or overwrite local DB file",
-                                onTap:
-                                    offlineFormController.actionImportDatabase,
-                              ),
                               const Divider(),
                               Row(
                                 children: [

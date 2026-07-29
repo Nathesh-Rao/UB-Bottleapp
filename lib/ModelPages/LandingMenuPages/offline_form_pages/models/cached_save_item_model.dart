@@ -4,6 +4,14 @@ enum QueueSubmissionStatus {
   pending,
   partial,
   refetch,
+  sending,
+}
+
+class BuildQueueResult {
+  final String message;
+  final Future<void>? uploadTask;
+
+  BuildQueueResult({required this.message, this.uploadTask});
 }
 
 class CachedSaveItemModel {
@@ -14,6 +22,7 @@ class CachedSaveItemModel {
   final int failedItems;
   final bool fcmRecived;
   final String smallStatusMessage;
+
   const CachedSaveItemModel({
     required this.submissionStatus,
     required this.qId,
@@ -44,9 +53,7 @@ class CachedSaveItemModel {
     );
   }
 
-  CachedSaveItemModel updateStatus(
-    QueueSubmissionStatus status,
-  ) =>
+  CachedSaveItemModel updateStatus(QueueSubmissionStatus status) =>
       copyWith(submissionStatus: status);
 
   CachedSaveItemModel markFcmReceived() => copyWith(fcmRecived: true);
@@ -57,11 +64,7 @@ class CachedSaveItemModel {
   CachedSaveItemModel incrementFailure([int by = 1]) =>
       copyWith(failedItems: failedItems + by);
 
-  CachedSaveItemModel updateCounts({
-    int? success,
-    int? failed,
-  }) =>
-      copyWith(
+  CachedSaveItemModel updateCounts({int? success, int? failed}) => copyWith(
         successItems: success,
         failedItems: failed,
       );

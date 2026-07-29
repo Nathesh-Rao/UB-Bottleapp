@@ -81,6 +81,236 @@ class CachedSaveDialogWidget extends GetView<OfflineFormController> {
     );
   }
 
+  Widget _buildFcmStatusBar() {
+    return Obx(() {
+      final int totalExpectedRecords = controller.totalExpectedRecords.value;
+      final int totalExpectedBatches = controller.totalExpectedBatches.value;
+
+      if (controller.cachedSaveQueItems.isEmpty) {
+        return const SizedBox.shrink();
+      }
+
+      final bool hasStartedReceiving = controller.receivedQueueIds.isNotEmpty;
+
+      final int confirmedRecords = controller.cachedSaveQueItems
+          .where((item) => item.value.fcmRecived)
+          .fold(0, (sum, item) => sum + item.value.totalItems);
+
+      final int waitingRecords = totalExpectedRecords - confirmedRecords;
+
+      final int confirmedBatches = controller.cachedSaveQueItems
+          .where((item) => item.value.fcmRecived)
+          .length;
+
+      final double progress = totalExpectedRecords == 0
+          ? 0.0
+          : confirmedRecords / totalExpectedRecords;
+
+      final bool isSyncing = waitingRecords > 0;
+
+      final Color primaryColor =
+          isSyncing ? const Color(0xFF3B82F6) : const Color(0xFF10B981);
+      final Color bgColor =
+          isSyncing ? const Color(0xFFEFF6FF) : const Color(0xFFECFDF5);
+      final Color textColor =
+          isSyncing ? const Color(0xFF1E3A8A) : const Color(0xFF064E3B);
+
+      return AnimatedContainer(
+        duration: const Duration(milliseconds: 500),
+        margin: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: primaryColor.withOpacity(0.15),
+            width: 1.5,
+          ),
+        ),
+        child: AnimatedSize(
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topCenter,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // if (isSyncing)
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: bgColor,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Spin(
+                            infinite: isSyncing,
+                            animate: isSyncing,
+                            child: Icon(
+                              isSyncing
+                                  ? Icons.sync_rounded
+                                  : Icons.cloud_done_rounded,
+                              size: 16,
+                              color: primaryColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isSyncing
+                              ? (hasStartedReceiving
+                                  ? "$confirmedBatches of $totalExpectedBatches batches confirmed"
+                                  : "Awaiting Server Response...")
+                              : "All Data Synced",
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  hasStartedReceiving
+                      ? Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: bgColor,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            "${(progress * 100).toInt()}%",
+                            style: GoogleFonts.poppins(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: textColor,
+                            ),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ],
+              ),
+              if (hasStartedReceiving) ...[
+                const SizedBox(height: 10),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    return Container(
+                      height: 6,
+                      width: constraints.maxWidth,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Stack(
+                        children: [
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 600),
+                            curve: Curves.easeOutCubic,
+                            height: 6,
+                            width: constraints.maxWidth * progress,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              gradient: LinearGradient(
+                                colors: isSyncing
+                                    ? [
+                                        const Color(0xFF60A5FA),
+                                        const Color(0xFF2563EB),
+                                      ]
+                                    : [
+                                        const Color(0xFF34D399),
+                                        const Color(0xFF059669),
+                                      ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    _statusChip(
+                      icon: Icons.upload,
+                      label: "$confirmedRecords",
+                      color: const Color(0xFF059669),
+                      bgColor: const Color(0xFFECFDF5),
+                    ),
+                    const SizedBox(width: 8),
+                    if (waitingRecords > 0)
+                      _statusChip(
+                        icon: Icons.hourglass_empty_rounded,
+                        label: "$waitingRecords Pending",
+                        color: const Color(0xFFD97706),
+                        bgColor: const Color(0xFFFFFBEB),
+                      ),
+                    const Spacer(),
+                    Text(
+                      "$confirmedRecords / $totalExpectedRecords",
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade400,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _statusChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required Color bgColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 10, color: color),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Column _getQueueUploadWidget() {
     return Column(
       children: [
@@ -147,13 +377,17 @@ class CachedSaveDialogWidget extends GetView<OfflineFormController> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 18),
+            _buildFcmStatusBar(),
             Obx(() {
               if (controller.cachedSaveQueItems.isEmpty) {
+                var isDone = !controller.isCachedSaveActive.value;
                 return SizedBox(
-                  height: 200,
                   child: Center(
                     child: Lottie.asset(
-                      "assets/lotties/loading.json",
+                      height: 200,
+                      isDone
+                          ? "assets/lotties/complete.json"
+                          : "assets/lotties/clock.json",
                     ),
                   ),
                 );
@@ -353,10 +587,26 @@ class _InfoTile2 extends StatelessWidget {
                           "${item.failedItems}",
                           Colors.red,
                         ),
-                        _miniChip(
+                        _miniChipWidget(
                           item.fcmRecived
-                              ? Icons.cloud_done
-                              : Icons.cloud_upload_outlined,
+                              ? Icon(
+                                  Icons.cloud_done_rounded,
+                                  size: 12,
+                                  color: item.fcmRecived
+                                      ? Colors.teal
+                                      : Colors.orange,
+                                )
+                              : SizedBox(
+                                  height: 8,
+                                  width: 8,
+                                  child: Center(
+                                      child: CircularProgressIndicator(
+                                    strokeCap: StrokeCap.round,
+                                    strokeWidth: 1.5,
+                                    color: item.fcmRecived
+                                        ? Colors.teal
+                                        : Colors.orange,
+                                  ))),
                           item.fcmRecived ? "FCM" : "Waiting",
                           item.fcmRecived ? Colors.teal : Colors.orange,
                         ),
@@ -408,6 +658,38 @@ class _InfoTile2 extends StatelessWidget {
     );
   }
 
+  Widget _miniChipWidget(
+    Widget icon,
+    String text,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 4,
+      ),
+      decoration: BoxDecoration(
+        color: color.withOpacity(.1),
+        borderRadius: BorderRadius.circular(50),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          icon,
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _statusChip() {
     Color bg;
     Color fg;
@@ -433,8 +715,8 @@ class _InfoTile2 extends StatelessWidget {
         break;
 
       case QueueSubmissionStatus.partial:
-        bg = Colors.blue.withOpacity(.12);
-        fg = Colors.blue;
+        bg = Colors.pinkAccent.withOpacity(.12);
+        fg = Colors.pinkAccent;
         text = "PARTIAL";
         break;
 
@@ -442,6 +724,11 @@ class _InfoTile2 extends StatelessWidget {
         bg = Colors.purple.withOpacity(.12);
         fg = Colors.purple;
         text = "REFETCH";
+        break;
+      case QueueSubmissionStatus.sending:
+        bg = Colors.blue.withOpacity(.12);
+        fg = Colors.blue;
+        text = "SENDING";
         break;
     }
 
@@ -472,242 +759,13 @@ class _InfoTile2 extends StatelessWidget {
       case QueueSubmissionStatus.error:
         return 'assets/images/q-error2.png';
       case QueueSubmissionStatus.pending:
-        return 'assets/images/q-pending2.png';
+        return 'assets/images/q-pending.png';
       case QueueSubmissionStatus.partial:
         return 'assets/images/q-partial2.png';
       case QueueSubmissionStatus.refetch:
         return 'assets/images/q-refetch2.png';
+      case QueueSubmissionStatus.sending:
+        return 'assets/images/q-sending.png';
     }
   }
 }
-
-
-// class _InfoTile2 extends StatelessWidget {
-//   const _InfoTile2({
-//     required this.item,
-//   });
-
-//   final CachedSaveItemModel item;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Container(
-//       margin: const EdgeInsets.only(bottom: 10),
-//       padding: const EdgeInsets.symmetric(
-//         horizontal: 12,
-//         vertical: 10,
-//       ),
-//       decoration: BoxDecoration(
-//         color: Colors.grey.shade50,
-//         borderRadius: BorderRadius.circular(14),
-//         border: Border.all(
-//           color: Colors.grey.shade200,
-//         ),
-//       ),
-//       child: Row(
-//         crossAxisAlignment: CrossAxisAlignment.center,
-//         children: [
-//           /// Status Icon
-//           SizedBox(
-//             width: 36,
-//             child: Center(
-//               child: Image.asset(
-//                 getStatusImage(item.submissionStatus),
-//                 width: 28,
-//                 height: 28,
-//               ),
-//             ),
-//           ),
-
-//           const SizedBox(width: 12),
-
-//           /// Content
-//           Expanded(
-//             child: Column(
-//               crossAxisAlignment: CrossAxisAlignment.start,
-//               children: [
-//                 /// Header
-//                 Row(
-//                   children: [
-//                     Expanded(
-//                       child: Text(
-//                         "ID : ${item.qId}",
-//                         overflow: TextOverflow.ellipsis,
-//                         style: GoogleFonts.inter(
-//                           fontSize: 13,
-//                           fontWeight: FontWeight.w700,
-//                         ),
-//                       ),
-//                     ),
-
-//                     const SizedBox(width: 8),
-
-//                     _statusChip(),
-//                   ],
-//                 ),
-
-//                 const SizedBox(height: 6),
-
-//                 /// Message + Chips
-//                 Row(
-//                   crossAxisAlignment: CrossAxisAlignment.start,
-//                   children: [
-//                     Expanded(
-//                       child: Text(
-//                         item.smallStatusMessage,
-//                         style: GoogleFonts.inter(
-//                           fontSize: 12,
-//                           height: 1.3,
-//                           color: Colors.grey.shade600,
-//                         ),
-//                       ),
-//                     ),
-
-//                     const SizedBox(width: 8),
-
-//                     Flexible(
-//                       child: Wrap(
-//                         alignment: WrapAlignment.end,
-//                         spacing: 5,
-//                         runSpacing: 5,
-//                         children: [
-//                           _miniChip(
-//                             Icons.check_circle_rounded,
-//                             "${item.successItems}",
-//                             Colors.green,
-//                           ),
-//                           _miniChip(
-//                             Icons.cancel_rounded,
-//                             "${item.failedItems}",
-//                             Colors.red,
-//                           ),
-//                           _miniChip(
-//                             item.fcmRecived
-//                                 ? Icons.cloud_done_rounded
-//                                 : Icons.cloud_upload_rounded,
-//                             item.fcmRecived ? "FCM" : "Wait",
-//                             item.fcmRecived
-//                                 ? Colors.teal
-//                                 : Colors.orange,
-//                           ),
-//                         ],
-//                       ),
-//                     ),
-//                   ],
-//                 ),
-//               ],
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-
-//   Widget _miniChip(
-//     IconData icon,
-//     String text,
-//     Color color,
-//   ) {
-//     return Container(
-//       padding: const EdgeInsets.symmetric(
-//         horizontal: 8,
-//         vertical: 4,
-//       ),
-//       decoration: BoxDecoration(
-//         color: color.withOpacity(.1),
-//         borderRadius: BorderRadius.circular(100),
-//       ),
-//       child: Row(
-//         mainAxisSize: MainAxisSize.min,
-//         children: [
-//           Icon(
-//             icon,
-//             size: 12,
-//             color: color,
-//           ),
-//           const SizedBox(width: 4),
-//           Text(
-//             text,
-//             style: GoogleFonts.inter(
-//               fontSize: 10,
-//               fontWeight: FontWeight.w600,
-//               color: color,
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-
-//   Widget _statusChip() {
-//     late final Color bg;
-//     late final Color fg;
-//     late final String text;
-
-//     switch (item.submissionStatus) {
-//       case QueueSubmissionStatus.success:
-//         bg = Colors.green.withOpacity(.1);
-//         fg = Colors.green;
-//         text = "SUCCESS";
-//         break;
-
-//       case QueueSubmissionStatus.error:
-//         bg = Colors.red.withOpacity(.1);
-//         fg = Colors.red;
-//         text = "ERROR";
-//         break;
-
-//       case QueueSubmissionStatus.pending:
-//         bg = Colors.orange.withOpacity(.1);
-//         fg = Colors.orange;
-//         text = "PENDING";
-//         break;
-
-//       case QueueSubmissionStatus.partial:
-//         bg = Colors.blue.withOpacity(.1);
-//         fg = Colors.blue;
-//         text = "PARTIAL";
-//         break;
-
-//       case QueueSubmissionStatus.refetch:
-//         bg = Colors.purple.withOpacity(.1);
-//         fg = Colors.purple;
-//         text = "REFETCH";
-//         break;
-//     }
-
-//     return Container(
-//       padding: const EdgeInsets.symmetric(
-//         horizontal: 9,
-//         vertical: 4,
-//       ),
-//       decoration: BoxDecoration(
-//         color: bg,
-//         borderRadius: BorderRadius.circular(100),
-//       ),
-//       child: Text(
-//         text,
-//         style: GoogleFonts.inter(
-//           fontSize: 10,
-//           fontWeight: FontWeight.w700,
-//           color: fg,
-//         ),
-//       ),
-//     );
-//   }
-
-//   String getStatusImage(QueueSubmissionStatus status) {
-//     switch (status) {
-//       case QueueSubmissionStatus.success:
-//         return 'assets/images/q-success2.png';
-//       case QueueSubmissionStatus.error:
-//         return 'assets/images/q-error2.png';
-//       case QueueSubmissionStatus.pending:
-//         return 'assets/images/q-pending2.png';
-//       case QueueSubmissionStatus.partial:
-//         return 'assets/images/q-partial2.png';
-//       case QueueSubmissionStatus.refetch:
-//         return 'assets/images/q-refetch2.png';
-//     }
-//   }
-// }

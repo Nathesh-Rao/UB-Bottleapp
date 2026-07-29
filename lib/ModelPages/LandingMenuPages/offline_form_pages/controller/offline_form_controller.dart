@@ -12,7 +12,9 @@ import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/of
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_constants.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_module.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/cached_save_item_model.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/queue_resolve_result_model.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/models/sync_progress_model.dart';
+import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/widgets/all_records_done_dialog.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/widgets/cached_refresh_dialog.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/widgets/cached_save_dialog.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/widgets/session_validation__dialog.dart';
@@ -61,6 +63,16 @@ class OfflineFormController extends GetxController {
     try {
       int count = await OfflineDbModule.getPendingCount();
       pendingCount.value = count;
+      await refreshPendingQueuesCount();
+    } catch (e) {
+      print("Error fetching pending count: $e");
+    }
+  }
+
+  Future<void> refreshPendingQueuesCount() async {
+    try {
+      var rows = await OfflineDbModule.getPendigQueuesToRefresh();
+      pendingQueuesCount.value = rows.length;
     } catch (e) {
       print("Error fetching pending count: $e");
     }
@@ -79,6 +91,7 @@ class OfflineFormController extends GetxController {
   Map<String, dynamic>? offlineUser;
   var offlineFormsCount = 0.obs;
   var pendingCount = 0.obs;
+  var pendingQueuesCount = 0.obs;
 
   bool isDashboardBusy = false;
 
@@ -1930,6 +1943,78 @@ class OfflineFormController extends GetxController {
   //   }
   // }
 
+  Future<void> actionRefreshQueues() async {
+    const tag = "[OFFLINE_ACTION_REFRESH_PENDING]";
+    if (!await _isInternetAvailable()) {
+      _showNeedInternetDialog();
+      return;
+    }
+
+    var rows = await OfflineDbModule.getPendigQueuesToRefresh();
+
+    if (rows.length == 0) {
+      await _confirm(
+        title: "No Pending Queues",
+        message:
+            "There is no pending Queues available.\n\nYou can try uploading new Queues to use this feature",
+        okText: "Okay",
+        icon: Icons.indeterminate_check_box_outlined,
+        confirmColor: const Color.fromARGB(255, 235, 103, 37),
+      );
+      return;
+    }
+    final ok = await _confirm(
+      title: "Refresh Pending Queues",
+      message:
+          "This will refresh ${rows.length} pendind queues from the server.\n\nAre you sure you want to continue?",
+      okText: "Refresh Now",
+      icon: Icons.cloud_upload_rounded,
+      confirmColor: const Color(0xFF2563EB),
+    );
+
+    if (!ok) return;
+
+    try {
+      final sessionResult = await Get.dialog<CachedSessionValidationResult>(
+        PopScope(canPop: false, child: const CachedSessionValidationDialog()),
+        barrierDismissible: false,
+      );
+
+      if (sessionResult != CachedSessionValidationResult.valid) {
+        final login = await _confirm(
+          title: "Invalid Session",
+          message:
+              "Your session has expired. Log back in to sync your pending data and access your forms.",
+          okText: "Okay",
+          icon: Icons.indeterminate_check_box_outlined,
+          confirmColor: const Color.fromARGB(255, 235, 103, 37),
+        );
+
+        cachedSaveUpdateMessage.value = "Invalid Session";
+
+        if (login) {
+          Get.offAll(LoginPage());
+        }
+
+        return;
+      }
+
+      final refreshResult = await Get.dialog<CachedRefreshResult>(
+        CachedRefreshDialogWidget(
+          refreshQueueRows: rows,
+        ),
+        barrierDismissible: false,
+      );
+
+      if (refreshResult != CachedRefreshResult.refreshed) {
+        return;
+      }
+    } catch (e) {
+    } finally {
+      refreshPendingCount();
+    }
+  }
+
   Future<void> actionPushPendingByCachedSave() async {
     const tag = "[OFFLINE_ACTION_PUSH_PENDING_BY_CACHED_SAVE]";
 
@@ -1971,7 +2056,7 @@ class OfflineFormController extends GetxController {
       /// STEP 1 : Validate Session
       /// ----------------------------------------------------------
       final sessionResult = await Get.dialog<CachedSessionValidationResult>(
-        const CachedSessionValidationDialog(),
+        PopScope(canPop: false, child: const CachedSessionValidationDialog()),
         barrierDismissible: false,
       );
 
@@ -2011,6 +2096,12 @@ class OfflineFormController extends GetxController {
         );
 
         if (refreshResult != CachedRefreshResult.refreshed) {
+          return;
+        }
+
+        var newPendingCount = await OfflineDbModule.getPendingCount();
+        if (newPendingCount == 0) {
+          await Get.dialog(AllRecordsDoneDialog());
           return;
         }
       }
@@ -2055,12 +2146,15 @@ class OfflineFormController extends GetxController {
 ////////////////////////////////////////////////////////////////////////////
   var isSessionCheckingForCachedSave = false.obs;
   var isPendingQuesRefreshing = false.obs;
+  var pendingQueResolveResults = <QueueResolveResultModel>[].obs;
+  var isPendingQueResolveComplete = false.obs;
   var isCachedSaveActive = false.obs;
   final cachedSaveQueItems = <Rx<CachedSaveItemModel>>[].obs;
   var cachedSaveUpdateMessage = ''.obs;
   final RxSet<String> sentQueueIds = <String>{}.obs;
   final RxSet<String> receivedQueueIds = <String>{}.obs;
-
+  var totalExpectedRecords = 0.obs;
+  var totalExpectedBatches = 0.obs;
   void registerSentQueueId(String queueId) {
     sentQueueIds.add(queueId);
     LogService.writeLog(
@@ -2092,10 +2186,13 @@ class OfflineFormController extends GetxController {
   void resetQueueTracking() {
     sentQueueIds.clear();
     receivedQueueIds.clear();
+    totalExpectedRecords.value = 0;
+    totalExpectedBatches.value = 0;
     LogService.writeLog(message: "[QUEUE_TRACKING] RESET for new run");
   }
 
   static const Map<QueueSubmissionStatus, int> _statusPriority = {
+    QueueSubmissionStatus.sending: 5,
     QueueSubmissionStatus.refetch: 0,
     QueueSubmissionStatus.error: 1,
     QueueSubmissionStatus.partial: 2,

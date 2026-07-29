@@ -2014,7 +2014,7 @@ class InwardEntryDynamicController extends GetxController {
               "dc1": {
                 "row1": {
                   "ub_gen_no": refNo,
-                  "axm_recordid": Const.axm_recordid,
+                  // "axm_recordid": Const.axm_recordid,
                   "category": categoryKey,
                   "axpfile_file": fileMap,
                   "axpfilepath_file": ""
@@ -2199,7 +2199,7 @@ class InwardEntryDynamicController extends GetxController {
           "dc1": {
             "row1": {
               "ub_gen_no": refNo,
-              "axm_recordid": Const.axm_recordid,
+              // "axm_recordid": Const.axm_recordid,
               "category": categoryKey,
               "axpfile_file": fileArray,
               "axpfilepath_file": "",

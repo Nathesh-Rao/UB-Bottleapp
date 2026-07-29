@@ -8,7 +8,8 @@ class LocationService {
   String _rAddress = "Default city, Default state, Default country";
   bool _isLocationServiceEnabled = false;
 
-  Future<Map<dynamic, dynamic>> getAddress({required double lat, required double lon}) async {
+  Future<Map<dynamic, dynamic>> getAddress(
+      {required double lat, required double lon}) async {
     List<Placemark> placemarks = await placemarkFromCoordinates(lat, lon);
 
     if (placemarks.isNotEmpty) {
@@ -17,7 +18,8 @@ class LocationService {
       if (kDebugMode) {
         print(data.toString());
       }
-      _rAddress = "${data.subLocality}, ${data.locality}, ${data.administrativeArea}";
+      _rAddress =
+          "${data.subLocality}, ${data.locality}, ${data.administrativeArea}";
       _rMap.remove("hasError");
       _rMap.remove("eMsg");
       _rMap.addAll({"hasError": false});
@@ -43,7 +45,10 @@ class LocationService {
         _rMap.remove("hasError");
         _rMap.remove("eMsg");
         _rMap.addAll({"hasError": true});
-        _rMap.addAll({"eMsg": "Location should be enabled to save the data.\n Try switching on the location"});
+        _rMap.addAll({
+          "eMsg":
+              "Location should be enabled to save the data.\n Try switching on the location"
+        });
         return Future.value(_rMap);
       }
     }
@@ -55,7 +60,10 @@ class LocationService {
         _rMap.remove("hasError");
         _rMap.remove("eMsg");
         _rMap.addAll({"hasError": true});
-        _rMap.addAll({"eMsg": "Location permission be provided for the app to save the data \n Try switching on the location"});
+        _rMap.addAll({
+          "eMsg":
+              "Location permission be provided for the app to save the data \n Try switching on the location"
+        });
         return Future.value(_rMap);
       }
     }
@@ -65,7 +73,10 @@ class LocationService {
       _rMap.remove("eMsg");
       _rMap.addAll({"hasError": false});
       _rMap.addAll({
-        "data": {"latitude": value.latitude ?? 11.1085, "longitude": value.longitude ?? 77.3411}
+        "data": {
+          "latitude": value.latitude ?? 11.1085,
+          "longitude": value.longitude ?? 77.3411
+        }
       });
       return Future.value(_rMap);
     }).onError((error, stackTrace) {
