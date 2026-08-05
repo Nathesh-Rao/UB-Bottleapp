@@ -9,7 +9,7 @@ import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
 const String _tag = '[OFFLINE_CONFIG]';
 
 const int kDefaultSyncInterval = 15;
-const int kDefaultCachedBatchSize = 100;
+const int kDefaultCachedBatchSize = 30;
 
 class OfflineConfigService {
   OfflineConfigService._();

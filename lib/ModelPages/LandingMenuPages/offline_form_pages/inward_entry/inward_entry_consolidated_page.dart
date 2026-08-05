@@ -219,7 +219,12 @@ class InwardEntryConsolidatedPage
                       : () async {
                           log("submitpageforque called button1",
                               name: "submitpageforque");
+                          var ok = await _confirm(
+                              title: "Ready to Submit?",
+                              message:
+                                  "Are you sure you want to submit this form? Once submitted, you won't be able to make any changes. Please review all your information before continuing.");
 
+                          if (!ok) return;
                           // controller.uploadForm();
                           controller.isSubmitButtonClicked.value = true;
                           // await controller.submit();
@@ -240,6 +245,153 @@ class InwardEntryConsolidatedPage
         ),
       ),
     );
+  }
+
+  Future<bool> _confirm({
+    required String title,
+    required String message,
+    String subtitle = '',
+    String okText = "Yes",
+    String cancelText = "Cancel",
+    IconData icon = Icons.help_outline_rounded,
+    Color confirmColor = const Color(0xFF2563EB),
+    TextAlign? messageTextAlign,
+    Color? highLightColor,
+    Color? subtitleColor,
+  }) async {
+    bool result = false;
+
+    Widget _parseText(String text, TextStyle baseStyle, {TextAlign? align}) {
+      if (!text.contains("**")) {
+        return Text(text,
+            textAlign: align ?? TextAlign.center, style: baseStyle);
+      }
+
+      final parts = text.split("**");
+      return Text.rich(
+        TextSpan(
+          children: parts.map((part) {
+            final isBold = parts.indexOf(part) % 2 != 0;
+            return TextSpan(
+              text: part,
+              style: isBold
+                  ? baseStyle.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: highLightColor ?? Colors.grey[600])
+                  : baseStyle,
+            );
+          }).toList(),
+        ),
+        textAlign: align ?? TextAlign.center,
+      );
+    }
+
+    await Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        elevation: 0,
+        backgroundColor: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: confirmColor.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 30, color: confirmColor),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 10),
+              if (subtitle.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _parseText(
+                    subtitle,
+                    GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: subtitleColor ?? Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              _parseText(
+                message,
+                align: messageTextAlign,
+                GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () {
+                        result = false;
+                        Get.back();
+                      },
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        foregroundColor: Colors.grey[700],
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: Colors.grey.shade300),
+                        ),
+                      ),
+                      child: Text(
+                        cancelText,
+                        style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        result = true;
+                        Get.back();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: confirmColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        okText,
+                        style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+      barrierDismissible: false,
+    );
+
+    return result;
   }
 
   BoxDecoration _cardDecoration({bool isError = false}) {
@@ -673,19 +825,22 @@ class InwardEntryConsolidatedPage
                         : 50, // Fixed height for thumbnails in grid
                     child: Row(
                       children: [
-                        Container(
-                          height: isTablet ? 100 : null,
-                          width: isTablet ? 100 : null,
-                          padding: EdgeInsets.all(1),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            color: MyColors.baseBlue.withAlpha(50),
+                        if (images.length < 3)
+                          Container(
+                            height: isTablet ? 100 : null,
+                            width: isTablet ? 100 : null,
+                            padding: EdgeInsets.all(1),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              color: MyColors.baseBlue.withAlpha(50),
+                            ),
+                            child: IconButton(
+                                onPressed: () => _pickImages(key),
+                                icon: const Icon(
+                                    CupertinoIcons.add_circled_solid,
+                                    color: MyColors.baseBlue,
+                                    size: 16)),
                           ),
-                          child: IconButton(
-                              onPressed: () => _pickImages(key),
-                              icon: const Icon(CupertinoIcons.add_circled_solid,
-                                  color: MyColors.baseBlue, size: 16)),
-                        ),
                         Flexible(
                           child: ListView(
                             scrollDirection: Axis.horizontal,

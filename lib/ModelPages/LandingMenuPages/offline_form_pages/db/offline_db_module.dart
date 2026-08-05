@@ -2269,14 +2269,14 @@ class OfflineDbModule {
   }
 
   static Future<dynamic> _convertAction(dynamic value) async {
-    try {
-      final byteData = await rootBundle.load('assets/images/3mb.jpg');
-      final bytes = byteData.buffer.asUint8List();
-      return base64Encode(bytes);
-    } catch (e) {
-      log("Failed to load dummy asset: $e", name: "_convertAction");
-      return "";
-    }
+    // try {
+    //   final byteData = await rootBundle.load('assets/images/3mb.jpg');
+    //   final bytes = byteData.buffer.asUint8List();
+    //   return base64Encode(bytes);
+    // } catch (e) {
+    //   log("Failed to load dummy asset: $e", name: "_convertAction");
+    //   return "";
+    // }
     // return "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
     if (value is String && value.startsWith('/')) {
       final file = File(value);
@@ -2693,7 +2693,7 @@ class OfflineDbModule {
       '''
     SELECT COUNT(*) as cnt 
     FROM ${OfflineDBConstants.TABLE_PENDING_REQUESTS} 
-    WHERE ${OfflineDBConstants.COL_STATUS} IN (${OfflineDBConstants.RECORD_STATUS_PENDING}, ${OfflineDBConstants.RECORD_STATUS_ERROR}, ${OfflineDBConstants.RECORD_STATUS_QUEUED})
+    WHERE ${OfflineDBConstants.COL_STATUS} IN (${OfflineDBConstants.RECORD_STATUS_PENDING}, ${OfflineDBConstants.RECORD_STATUS_ERROR})
     AND ${OfflineDBConstants.COL_USERNAME} = ?
     AND ${OfflineDBConstants.COL_PROJECT_NAME} = ?
     ''',
@@ -4050,7 +4050,8 @@ class OfflineDbModule {
     const String tag = "[START_CACHED_SAVE]";
     controller.isCachedSaveActive.value = true;
     controller.resetQueueTracking();
-    final cachedSaveBatchSize = 30;
+    // final cachedSaveBatchSize = 30;
+    final cachedSaveBatchSize = OfflineConfigService.getCachedBatchSize();
 
     LogService.writeLog(
         message: "$tag START cachedSaveBatchSize => $cachedSaveBatchSize");
@@ -4073,7 +4074,6 @@ class OfflineDbModule {
     if (batches.isEmpty) {
       controller.cachedSaveUpdateMessage.value =
           "Nothing to push — queue is empty.";
-      LogService.writeLog(message: "$tag Nothing to push — queue is empty.");
       controller.isCachedSaveActive.value = false;
       return;
     }
@@ -4082,176 +4082,462 @@ class OfflineDbModule {
         batches.values.fold(0, (sum, ids) => sum + ids.length);
     controller.totalExpectedBatches.value = batches.length;
 
-    LogService.writeLog(
-      message: "$tag Locked totals — "
-          "totalExpectedRecords=${controller.totalExpectedRecords.value} | "
-          "totalExpectedBatches=${controller.totalExpectedBatches.value}",
-    );
+    List<QueuedPayloadData> builtPayloads = [];
 
     int batchNumber = 0;
-    int totalPushed = 0;
-
-    List<Future<void>> pendingUploads = [];
-
     for (final entry in batches.entries) {
       batchNumber++;
       final ids = entry.value;
 
-      LogService.writeLog(
-        message:
-            "$tag Starting batch #$batchNumber/${batches.length} | ids: $ids",
-      );
       controller.cachedSaveUpdateMessage.value =
-          "Batch $batchNumber/${batches.length} — ${ids.length} record(s)...";
+          "Building Payload $batchNumber/${batches.length} — ${ids.length} record(s)...";
 
-      final result = await buildAndPushCachedSaveQueue(
-        isInternetAvailable: true,
-        controller: controller,
+      final QueuedPayloadData? payloadData = await _buildPayloadOnly(
         ids: ids,
-        cachedSaveBatchSize: cachedSaveBatchSize,
+        controller: controller,
+        username: username,
+        projectName: projectName,
       );
 
-      final String resultMessage = result.message;
-      final Future<void>? uploadTask = result.uploadTask;
-
-      controller.cachedSaveUpdateMessage.value =
-          "Batch #$batchNumber result: $resultMessage";
-      LogService.writeLog(
-          message: "$tag Batch #$batchNumber result: $resultMessage");
-
-      if (resultMessage.contains("failed") || resultMessage.contains("empty")) {
-        LogService.writeLog(message: "$tag Stopping loop: $resultMessage");
-        break;
+      if (payloadData == null) {
+        LogService.writeLog(
+            message: "$tag Stopping build loop: failed to build payload.");
+        break; // Stop building if one fails
       }
 
-      if (uploadTask != null) {
-        pendingUploads.add(uploadTask);
-      }
-
-      totalPushed += ids.length;
+      builtPayloads.add(payloadData);
     }
 
-    if (pendingUploads.isNotEmpty) {
-      controller.cachedSaveUpdateMessage.value =
-          "Waiting for ${pendingUploads.length} batch upload(s) to finish...";
-      LogService.writeLog(
-          message:
-              "$tag Waiting for ${pendingUploads.length} background tasks to complete...");
-
-      await Future.wait(pendingUploads);
-    }
-
-    LogService.writeLog(
-        message: "$tag Pushing audit logs — single shot, no batching.");
-    controller.cachedSaveUpdateMessage.value = "Pushing audit logs...";
-    final String auditResult = await pushAllAuditLogsToQueue(
-      isInternetAvailable: true,
-    );
-    LogService.writeLog(message: "$tag Audit log push result: $auditResult");
-
-    controller.cachedSaveUpdateMessage.value =
-        "Uploaded $totalPushed record${totalPushed == 1 ? "" : "s"} in $batchNumber batch${batchNumber == 1 ? "" : "es"}. "
-        "You can close this dialog or stay here to view the server confirmation updates.";
-
-    controller.isCachedSaveActive.value = false;
-    LogService.writeLog(message: "$tag DONE — totalPushed=$totalPushed");
-  }
-
-  static Future<void> startCachedSave1(
-      {required OfflineFormController controller}) async {
-    const String tag = "[START_CACHED_SAVE]";
-    controller.isCachedSaveActive.value = true;
-    controller.resetQueueTracking();
-    final cachedSaveBatchSize = 30;
-    //TODO make queue call async
-    // final cachedSaveBatchSize = OfflineConfigService.getCachedBatchSize();
-    // final cachedSaveBatchSize = 20;
-    LogService.writeLog(
-        message: "$tag START cachedSaveBatchSize => $cachedSaveBatchSize");
-
-    // return;
-    final scope = await _getLastOfflineUserScope();
-    if (scope == null) {
-      LogService.writeLog(message: "$tag No user scope found — aborting.");
-      controller.isCachedSaveActive.value = false;
-      return;
-    }
-    final String username = scope['username']!;
-    final String projectName = scope['projectName']!;
-
-    // ── Build the full batch map ONCE, up front ──────────────
-    // Pulls every PENDING + ERROR row id in one query, chunks into
-    // fixed batches. Nothing after this point re-derives "remaining"
-    // from a live status count — batch membership is locked in.
-    final Map<int, List<int>> batches = await _buildBatchMap(
-      username: username,
-      projectName: projectName,
-      batchSize: cachedSaveBatchSize,
-    );
-
-    if (batches.isEmpty) {
-      controller.cachedSaveUpdateMessage.value =
-          "Nothing to push — queue is empty.";
-      LogService.writeLog(message: "$tag Nothing to push — queue is empty.");
-      controller.isCachedSaveActive.value = false;
-      return;
-    }
-    controller.totalExpectedRecords.value =
-        batches.values.fold(0, (sum, ids) => sum + ids.length);
-    controller.totalExpectedBatches.value = batches.length;
-    LogService.writeLog(
-      message: "$tag Locked totals — "
-          "totalExpectedRecords=${controller.totalExpectedRecords.value} | "
-          "totalExpectedBatches=${controller.totalExpectedBatches.value}",
-    );
-    int batchNumber = 0;
+    // ==========================================
     int totalPushed = 0;
+    int uploadCount = 0;
 
-    for (final entry in batches.entries) {
-      batchNumber++;
-      final ids = entry.value;
-
-      LogService.writeLog(
-        message:
-            "$tag Starting batch #$batchNumber/${batches.length} | ids: $ids",
-      );
+    for (final payload in builtPayloads) {
+      uploadCount++;
       controller.cachedSaveUpdateMessage.value =
-          "Batch $batchNumber/${batches.length} — ${ids.length} record(s)...";
+          "Uploading batch $uploadCount/${builtPayloads.length} to server...";
 
-      final String result = await buildAndPushCachedSaveQueue2(
-        isInternetAvailable: true,
+      final bool success = await _pushPayloadToServer(
+        payload: payload,
         controller: controller,
-        ids: ids,
-        cachedSaveBatchSize: cachedSaveBatchSize,
+        username: username,
+        projectName: projectName,
       );
 
-      controller.cachedSaveUpdateMessage.value =
-          "Batch #$batchNumber result: $result";
-      LogService.writeLog(message: "$tag Batch #$batchNumber result: $result");
-
-      if (result.contains("failed") || result.contains("empty")) {
-        LogService.writeLog(message: "$tag Stopping loop: $result");
+      if (!success) {
+        LogService.writeLog(
+            message: "$tag Stopping upload loop: Server upload failed.");
         break;
       }
 
-      totalPushed += ids.length;
+      totalPushed += payload.axmRecIds.length;
     }
-    LogService.writeLog(
-        message: "$tag Pushing audit logs — single shot, no batching.");
+
+    for (var payload in builtPayloads) {
+      if (await payload.file.exists()) {
+        try {
+          await payload.file.delete();
+        } catch (_) {}
+      }
+    }
+
+    LogService.writeLog(message: "$tag Pushing audit logs — single shot.");
     controller.cachedSaveUpdateMessage.value = "Pushing audit logs...";
-    final String auditResult = await pushAllAuditLogsToQueue(
-      isInternetAvailable: true,
-      // controller: controller,
-    );
-    LogService.writeLog(message: "$tag Audit log push result: $auditResult");
+    await pushAllAuditLogsToQueue(isInternetAvailable: true);
 
     controller.cachedSaveUpdateMessage.value =
-        "Uploaded $totalPushed record${totalPushed == 0 ? "" : "s"} in $batchNumber batch${batchNumber == 0 ? "" : "es"}. "
-        "You can close this dialog or stay here to view the server confirmation updates.";
-
+        "Uploaded $totalPushed record(s). You can close this dialog.";
     controller.isCachedSaveActive.value = false;
-    LogService.writeLog(message: "$tag DONE — totalPushed=$totalPushed");
   }
+
+  static Future<QueuedPayloadData?> _buildPayloadOnly({
+    required List<int> ids,
+    required OfflineFormController controller,
+    required String username,
+    required String projectName,
+  }) async {
+    final String sessionId =
+        await AppStorage().retrieveValue(AppStorage.SESSIONID) ?? "";
+    final String authToken =
+        await AppStorage().retrieveValue(AppStorage.TOKEN) ?? "";
+    final bool isTraceOn =
+        await AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? false;
+
+    if (sessionId.isEmpty) return null;
+
+    final String sql = List.filled(ids.length, '?').join(',');
+    final List<Map<String, dynamic>> rows = await _database.query(
+      OfflineDBConstants.TABLE_PENDING_REQUESTS,
+      columns: [OfflineDBConstants.COL_ID],
+      where: '${OfflineDBConstants.COL_ID} IN ($sql)',
+      whereArgs: ids,
+    );
+
+    if (rows.isEmpty) return null;
+
+    final String queueId = createAxmQueueId();
+    final List<int> axmRecIds = [];
+    File? payloadFile;
+
+    try {
+      payloadFile = await _buildQueuePayloadFile(
+        queueId: queueId,
+        sessionId: sessionId,
+        authToken: authToken,
+        projectName: projectName,
+        username: username,
+        isTraceOn: isTraceOn,
+        rows: rows,
+        axmRecIds: axmRecIds,
+        onProgress: (msg) => controller.cachedSaveUpdateMessage.value = msg,
+      );
+
+      if (payloadFile == null || axmRecIds.isEmpty) return null;
+
+      controller.addQueue(CachedSaveItemModel(
+        submissionStatus: QueueSubmissionStatus.created,
+        qId: queueId,
+        totalItems: axmRecIds.length,
+        successItems: 0,
+        failedItems: 0,
+        fcmRecived: false,
+        smallStatusMessage: "Waiting to upload...",
+      ));
+
+      return QueuedPayloadData(
+        file: payloadFile,
+        queueId: queueId,
+        axmRecIds: axmRecIds,
+      );
+    } catch (e) {
+      LogService.writeLog(message: "$_cachedSaveTag Build exception: $e");
+      return null;
+    }
+  }
+
+  static Future<bool> _pushPayloadToServer({
+    required QueuedPayloadData payload,
+    required OfflineFormController controller,
+    required String username,
+    required String projectName,
+  }) async {
+    try {
+      controller.updateQueueItem(
+          payload.queueId,
+          (model) => model.copyWith(
+                submissionStatus: QueueSubmissionStatus.sending,
+                smallStatusMessage: "Uploading...",
+              ));
+
+      final String requestBody = await payload.file.readAsString();
+      final ServerConnections serverConnections = ServerConnections();
+      final String url =
+          Const.getFullARMUrl(ServerConnections.ARM_PUSH_TO_QUEUE);
+
+      String serverResponse = "";
+      bool pushSuccess = false;
+
+      try {
+        final dynamic responseStr = await serverConnections.postToServer(
+          url: url,
+          body: requestBody,
+          isBearer: true,
+        );
+        serverResponse = responseStr?.toString() ?? "";
+
+        if (serverResponse.isNotEmpty) {
+          final decoded = jsonDecode(serverResponse);
+          if (decoded is Map<String, dynamic> &&
+              decoded['result'] != null &&
+              decoded['result']['success'] == true) {
+            pushSuccess = true;
+          }
+        }
+      } catch (e) {
+        serverResponse = e.toString();
+        LogService.writeLog(message: "$_cachedSaveTag POST exception: $e");
+      }
+
+      if (pushSuccess) {
+        await _saveCachedSaveQueueRecord(
+          queueId: payload.queueId,
+          username: username,
+          projectName: projectName,
+          axmRecIds: payload.axmRecIds,
+          sourceTable: OfflineDBConstants.TABLE_PENDING_REQUESTS,
+          payloadsCount: payload.axmRecIds.length,
+          queueResponse: serverResponse,
+        );
+
+        await _batchUpdateStatus(
+            payload.axmRecIds, OfflineDBConstants.RECORD_STATUS_QUEUED);
+        await logAudit(
+            action: _cachedSaveTag,
+            remarks: "Queue ${payload.queueId} pushed.");
+
+        controller.updateQueueItem(
+            payload.queueId,
+            (model) => model.copyWith(
+                  submissionStatus: QueueSubmissionStatus.pending,
+                  smallStatusMessage: "waiting for FCM",
+                ));
+
+        return true; // Success!
+      } else {
+        await logAudit(
+          action: _cachedSaveTag,
+          isError: true,
+          response: serverResponse,
+          remarks: "Queue ${payload.queueId} FAILED.",
+        );
+
+        controller.updateQueueItem(
+            payload.queueId,
+            (model) => model.copyWith(
+                  submissionStatus: QueueSubmissionStatus.error,
+                  smallStatusMessage: "API Upload Failed",
+                ));
+
+        return false;
+      }
+    } catch (e) {
+      LogService.writeLog(message: "$_cachedSaveTag UPLOAD EXCEPTION: $e");
+      controller.updateQueueItem(
+          payload.queueId,
+          (model) => model.copyWith(
+                submissionStatus: QueueSubmissionStatus.error,
+                smallStatusMessage: "Exception during upload",
+              ));
+      return false;
+    } finally {
+      try {
+        if (await payload.file.exists()) {
+          await payload.file.delete();
+          LogService.writeLog(
+              message:
+                  "$_cachedSaveTag Deleted temp file for ${payload.queueId}");
+        }
+      } catch (e) {
+        LogService.writeLog(
+            message:
+                "$_cachedSaveTag Failed to delete file ${payload.queueId}: $e");
+      }
+    }
+  }
+//-------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------
+  // static Future<void> startCachedSaveAsync(
+  //     {required OfflineFormController controller}) async {
+  //   const String tag = "[START_CACHED_SAVE]";
+  //   controller.isCachedSaveActive.value = true;
+  //   controller.resetQueueTracking();
+  //   final cachedSaveBatchSize = 30;
+
+  //   LogService.writeLog(
+  //       message: "$tag START cachedSaveBatchSize => $cachedSaveBatchSize");
+
+  //   final scope = await _getLastOfflineUserScope();
+  //   if (scope == null) {
+  //     LogService.writeLog(message: "$tag No user scope found — aborting.");
+  //     controller.isCachedSaveActive.value = false;
+  //     return;
+  //   }
+  //   final String username = scope['username']!;
+  //   final String projectName = scope['projectName']!;
+
+  //   final Map<int, List<int>> batches = await _buildBatchMap(
+  //     username: username,
+  //     projectName: projectName,
+  //     batchSize: cachedSaveBatchSize,
+  //   );
+
+  //   if (batches.isEmpty) {
+  //     controller.cachedSaveUpdateMessage.value =
+  //         "Nothing to push — queue is empty.";
+  //     LogService.writeLog(message: "$tag Nothing to push — queue is empty.");
+  //     controller.isCachedSaveActive.value = false;
+  //     return;
+  //   }
+
+  //   controller.totalExpectedRecords.value =
+  //       batches.values.fold(0, (sum, ids) => sum + ids.length);
+  //   controller.totalExpectedBatches.value = batches.length;
+
+  //   LogService.writeLog(
+  //     message: "$tag Locked totals — "
+  //         "totalExpectedRecords=${controller.totalExpectedRecords.value} | "
+  //         "totalExpectedBatches=${controller.totalExpectedBatches.value}",
+  //   );
+
+  //   int batchNumber = 0;
+  //   int totalPushed = 0;
+
+  //   List<Future<void>> pendingUploads = [];
+
+  //   for (final entry in batches.entries) {
+  //     batchNumber++;
+  //     final ids = entry.value;
+
+  //     LogService.writeLog(
+  //       message:
+  //           "$tag Starting batch #$batchNumber/${batches.length} | ids: $ids",
+  //     );
+  //     controller.cachedSaveUpdateMessage.value =
+  //         "Batch $batchNumber/${batches.length} — ${ids.length} record(s)...";
+
+  //     final result = await buildAndPushCachedSaveQueue(
+  //       isInternetAvailable: true,
+  //       controller: controller,
+  //       ids: ids,
+  //       cachedSaveBatchSize: cachedSaveBatchSize,
+  //     );
+
+  //     final String resultMessage = result.message;
+  //     final Future<void>? uploadTask = result.uploadTask;
+
+  //     controller.cachedSaveUpdateMessage.value =
+  //         "Batch #$batchNumber result: $resultMessage";
+  //     LogService.writeLog(
+  //         message: "$tag Batch #$batchNumber result: $resultMessage");
+
+  //     if (resultMessage.contains("failed") || resultMessage.contains("empty")) {
+  //       LogService.writeLog(message: "$tag Stopping loop: $resultMessage");
+  //       break;
+  //     }
+
+  //     if (uploadTask != null) {
+  //       pendingUploads.add(uploadTask);
+  //     }
+
+  //     totalPushed += ids.length;
+  //   }
+
+  //   if (pendingUploads.isNotEmpty) {
+  //     controller.cachedSaveUpdateMessage.value =
+  //         "Waiting for ${pendingUploads.length} batch upload(s) to finish...";
+  //     LogService.writeLog(
+  //         message:
+  //             "$tag Waiting for ${pendingUploads.length} background tasks to complete...");
+
+  //     await Future.wait(pendingUploads);
+  //   }
+
+  //   LogService.writeLog(
+  //       message: "$tag Pushing audit logs — single shot, no batching.");
+  //   controller.cachedSaveUpdateMessage.value = "Pushing audit logs...";
+  //   final String auditResult = await pushAllAuditLogsToQueue(
+  //     isInternetAvailable: true,
+  //   );
+  //   LogService.writeLog(message: "$tag Audit log push result: $auditResult");
+
+  //   controller.cachedSaveUpdateMessage.value =
+  //       "Uploaded $totalPushed record${totalPushed == 1 ? "" : "s"} in $batchNumber batch${batchNumber == 1 ? "" : "es"}. "
+  //       "You can close this dialog or stay here to view the server confirmation updates.";
+
+  //   controller.isCachedSaveActive.value = false;
+  //   LogService.writeLog(message: "$tag DONE — totalPushed=$totalPushed");
+  // }
+
+  // static Future<void> startCachedSave1(
+  //     {required OfflineFormController controller}) async {
+  //   const String tag = "[START_CACHED_SAVE]";
+  //   controller.isCachedSaveActive.value = true;
+  //   controller.resetQueueTracking();
+  //   final cachedSaveBatchSize = 30;
+  //   // make queue call async
+  //   // final cachedSaveBatchSize = OfflineConfigService.getCachedBatchSize();
+  //   // final cachedSaveBatchSize = 20;
+  //   LogService.writeLog(
+  //       message: "$tag START cachedSaveBatchSize => $cachedSaveBatchSize");
+
+  //   // return;
+  //   final scope = await _getLastOfflineUserScope();
+  //   if (scope == null) {
+  //     LogService.writeLog(message: "$tag No user scope found — aborting.");
+  //     controller.isCachedSaveActive.value = false;
+  //     return;
+  //   }
+  //   final String username = scope['username']!;
+  //   final String projectName = scope['projectName']!;
+
+  //   // ── Build the full batch map ONCE, up front ──────────────
+  //   // Pulls every PENDING + ERROR row id in one query, chunks into
+  //   // fixed batches. Nothing after this point re-derives "remaining"
+  //   // from a live status count — batch membership is locked in.
+  //   final Map<int, List<int>> batches = await _buildBatchMap(
+  //     username: username,
+  //     projectName: projectName,
+  //     batchSize: cachedSaveBatchSize,
+  //   );
+
+  //   if (batches.isEmpty) {
+  //     controller.cachedSaveUpdateMessage.value =
+  //         "Nothing to push — queue is empty.";
+  //     LogService.writeLog(message: "$tag Nothing to push — queue is empty.");
+  //     controller.isCachedSaveActive.value = false;
+  //     return;
+  //   }
+  //   controller.totalExpectedRecords.value =
+  //       batches.values.fold(0, (sum, ids) => sum + ids.length);
+  //   controller.totalExpectedBatches.value = batches.length;
+  //   LogService.writeLog(
+  //     message: "$tag Locked totals — "
+  //         "totalExpectedRecords=${controller.totalExpectedRecords.value} | "
+  //         "totalExpectedBatches=${controller.totalExpectedBatches.value}",
+  //   );
+  //   int batchNumber = 0;
+  //   int totalPushed = 0;
+
+  //   for (final entry in batches.entries) {
+  //     batchNumber++;
+  //     final ids = entry.value;
+
+  //     LogService.writeLog(
+  //       message:
+  //           "$tag Starting batch #$batchNumber/${batches.length} | ids: $ids",
+  //     );
+  //     controller.cachedSaveUpdateMessage.value =
+  //         "Batch $batchNumber/${batches.length} — ${ids.length} record(s)...";
+
+  //     final String result = await buildAndPushCachedSaveQueue2(
+  //       isInternetAvailable: true,
+  //       controller: controller,
+  //       ids: ids,
+  //       cachedSaveBatchSize: cachedSaveBatchSize,
+  //     );
+
+  //     controller.cachedSaveUpdateMessage.value =
+  //         "Batch #$batchNumber result: $result";
+  //     LogService.writeLog(message: "$tag Batch #$batchNumber result: $result");
+
+  //     if (result.contains("failed") || result.contains("empty")) {
+  //       LogService.writeLog(message: "$tag Stopping loop: $result");
+  //       break;
+  //     }
+
+  //     totalPushed += ids.length;
+  //   }
+  //   LogService.writeLog(
+  //       message: "$tag Pushing audit logs — single shot, no batching.");
+  //   controller.cachedSaveUpdateMessage.value = "Pushing audit logs...";
+  //   final String auditResult = await pushAllAuditLogsToQueue(
+  //     isInternetAvailable: true,
+  //     // controller: controller,
+  //   );
+  //   LogService.writeLog(message: "$tag Audit log push result: $auditResult");
+
+  //   controller.cachedSaveUpdateMessage.value =
+  //       "Uploaded $totalPushed record${totalPushed == 0 ? "" : "s"} in $batchNumber batch${batchNumber == 0 ? "" : "es"}. "
+  //       "You can close this dialog or stay here to view the server confirmation updates.";
+
+  //   controller.isCachedSaveActive.value = false;
+  //   LogService.writeLog(message: "$tag DONE — totalPushed=$totalPushed");
+  // }
 
   /// Pulls ALL PENDING + ERROR ids in ONE query, chunks into fixed
   /// batches up front. No requerying by status during the loop —
@@ -4267,8 +4553,7 @@ class OfflineDbModule {
       where: '''
       ${OfflineDBConstants.COL_STATUS} IN (
         ${OfflineDBConstants.RECORD_STATUS_PENDING},
-        ${OfflineDBConstants.RECORD_STATUS_ERROR},
-        ${OfflineDBConstants.RECORD_STATUS_QUEUED}
+        ${OfflineDBConstants.RECORD_STATUS_ERROR}
       )
       AND ${OfflineDBConstants.COL_USERNAME} = ?
       AND ${OfflineDBConstants.COL_PROJECT_NAME} = ?
@@ -4276,7 +4561,7 @@ class OfflineDbModule {
       whereArgs: [username, projectName],
       orderBy: OfflineDBConstants.COL_CREATED_AT,
     );
-
+//TODO oush to the audit logs after deleting the 24hr old qids that coming as empty
     final ids = rows.map((r) => r[OfflineDBConstants.COL_ID] as int).toList();
 
     final Map<int, List<int>> batches = {};
@@ -4654,12 +4939,19 @@ class OfflineDbModule {
 
       // Return not-found results for every queue so the UI still shows them
       for (final String queueId in queueIds) {
-        results.add(QueueResolveResultModel(
-          queueId: queueId,
-          finalStatus: null,
-          successCount: 0,
-          failedCount: 0,
-        ));
+        // results.add(QueueResolveResultModel(
+        //   queueId: queueId,
+        //   finalStatus: null,
+        //   successCount: 0,
+        //   failedCount: 0,
+        // ));
+        final String sourceTable = sourceTableByQueueId[queueId] ??
+            OfflineDBConstants.TABLE_PENDING_REQUESTS;
+        final QueueResolveResultModel expiredResult =
+            await _handleUnresolvableQueue(
+                queueId: queueId, sourceTable: sourceTable, tag: tag);
+
+        results.add(expiredResult);
       }
       return results;
     }
@@ -4682,18 +4974,38 @@ class OfflineDbModule {
           OfflineDBConstants.TABLE_PENDING_REQUESTS;
 
       if (row == null) {
-        controller.cachedSaveUpdateMessage.value =
-            "queue_id=$queueId — no server response, will retry next time.";
+        // controller.cachedSaveUpdateMessage.value =
+        //     "queue_id=$queueId — no server response, will retry next time.";
+        // LogService.writeLog(
+        //   message: "$tag queue_id=$queueId — no matching row, "
+        //       "will retry next time.",
+        // );
+        // results.add(QueueResolveResultModel(
+        //   queueId: queueId,
+        //   finalStatus: null,
+        //   successCount: 0,
+        //   failedCount: 0,
+        // ));
+        // continue;
         LogService.writeLog(
-          message: "$tag queue_id=$queueId — no matching row, "
-              "will retry next time.",
+          message: "$tag queue_id=$queueId — no server row. "
+              "Checking age to decide retry vs reset.",
         );
-        results.add(QueueResolveResultModel(
-          queueId: queueId,
-          finalStatus: null,
-          successCount: 0,
-          failedCount: 0,
-        ));
+        controller.cachedSaveUpdateMessage.value =
+            "queue_id=$queueId — checking if expired...";
+        final String sourceTable = sourceTableByQueueId[queueId] ??
+            OfflineDBConstants.TABLE_PENDING_REQUESTS;
+        final QueueResolveResultModel expiredResult =
+            await _handleUnresolvableQueue(
+                queueId: queueId, sourceTable: sourceTable, tag: tag);
+
+        results.add(expiredResult);
+
+        controller.cachedSaveUpdateMessage.value = expiredResult.isNotFound
+            ? "queue_id=$queueId — under 24h, will retry next time."
+            : "queue_id=$queueId — expired after 24h, records reset for re-push.";
+
+        controller.refreshPendingCount();
         continue;
       }
 
@@ -4741,6 +5053,161 @@ class OfflineDbModule {
     );
 
     return results;
+  }
+
+  static Future<QueueResolveResultModel> _handleUnresolvableQueue({
+    required String queueId,
+    required String tag,
+    required String sourceTable,
+  }) async {
+    const String localTag = "[HANDLE_UNRESOLVABLE_QUEUE]";
+
+    try {
+      final List<Map<String, dynamic>> queueRows = await _database.query(
+        OfflineDBConstants.TABLE_CACHED_SAVE_QUEUE,
+        columns: [
+          OfflineDBConstants.COL_CREATED_AT,
+          OfflineDBConstants.COL_AXM_RECIDS,
+        ],
+        where: '${OfflineDBConstants.COL_QUEUE_ID} = ?',
+        whereArgs: [queueId],
+      );
+
+      if (queueRows.isEmpty) {
+        LogService.writeLog(
+          message: "$tag $localTag queue_id=$queueId — "
+              "no row in cached_save_queue, nothing to do.",
+        );
+        return QueueResolveResultModel(
+          queueId: queueId,
+          finalStatus: null,
+          successCount: 0,
+          failedCount: 0,
+        );
+      }
+
+      final String createdAtStr =
+          queueRows.first[OfflineDBConstants.COL_CREATED_AT] as String? ?? '';
+      final String axmRecIdsStr =
+          queueRows.first[OfflineDBConstants.COL_AXM_RECIDS] as String? ?? '[]';
+
+      DateTime? createdAt;
+      try {
+        createdAt = DateTime.parse(createdAtStr);
+      } catch (e) {
+        LogService.writeLog(
+          message: "$tag $localTag queue_id=$queueId — "
+              "could not parse created_at=\"$createdAtStr\": $e. "
+              "Treating as recent — skipping reset.",
+        );
+        return QueueResolveResultModel(
+          queueId: queueId,
+          finalStatus: null,
+          successCount: 0,
+          failedCount: 0,
+        );
+      }
+
+      final Duration age = DateTime.now().difference(createdAt);
+      final bool isExpired = age.inHours >= 24;
+      final Duration timeRemaining = const Duration(hours: 24) - age;
+      final int remainingHours = timeRemaining.inHours;
+      final int remainingMinutes = timeRemaining.inMinutes.remainder(60);
+      LogService.writeLog(
+        message: "$tag $localTag queue_id=$queueId — "
+            "created_at=$createdAtStr age=${age.inHours}h${age.inMinutes.remainder(60)}m "
+            "isExpired=$isExpired",
+      );
+
+      if (!isExpired) {
+        LogService.writeLog(
+          message: "$tag $localTag queue_id=$queueId — "
+              "under 24h, leaving untouched for next retry. "
+              "Expires in ${remainingHours}h ${remainingMinutes}m.",
+        );
+        return QueueResolveResultModel(
+            queueId: queueId,
+            finalStatus: null,
+            successCount: 0,
+            failedCount: 0,
+            statusMessage:
+                "Expires in ${remainingHours}h ${remainingMinutes}m");
+      }
+
+      List<int> axmRecIds = [];
+      try {
+        axmRecIds = (jsonDecode(axmRecIdsStr) as List)
+            .map((e) => int.tryParse(e.toString()) ?? -1)
+            .where((id) => id != -1)
+            .toList();
+      } catch (e) {
+        LogService.writeLog(
+          message: "$tag $localTag queue_id=$queueId — "
+              "could not parse axm_recids=\"$axmRecIdsStr\": $e",
+        );
+      }
+
+      LogService.writeLog(
+        message: "$tag $localTag queue_id=$queueId — EXPIRED. "
+            "Resetting ${axmRecIds.length} pending_requests rows to "
+            "RECORD_STATUS_PENDING and deleting queue row. "
+            "axm_recids=$axmRecIds",
+      );
+
+      if (axmRecIds.isNotEmpty) {
+        final String placeholders =
+            List.filled(axmRecIds.length, '?').join(',');
+        final int resetCount = await _database.update(
+          sourceTable,
+          {
+            OfflineDBConstants.COL_STATUS:
+                OfflineDBConstants.RECORD_STATUS_PENDING,
+            OfflineDBConstants.COL_RESPONSE: '',
+          },
+          where: '${OfflineDBConstants.COL_ID} IN ($placeholders)',
+          whereArgs: axmRecIds,
+        );
+        LogService.writeLog(
+          message: "$tag $localTag queue_id=$queueId — "
+              "reset $resetCount pending_requests rows to RECORD_STATUS_PENDING.",
+        );
+      }
+
+      final int deleted = await _database.delete(
+        OfflineDBConstants.TABLE_CACHED_SAVE_QUEUE,
+        where: '${OfflineDBConstants.COL_QUEUE_ID} = ?',
+        whereArgs: [queueId],
+      );
+      LogService.writeLog(
+        message: "$tag $localTag queue_id=$queueId — "
+            "deleted $deleted cached_save_queue row(s).",
+      );
+
+      await logAudit(
+        action: tag,
+        isError: true,
+        remarks: "queue_id=$queueId expired (age=${age.inHours}h). "
+            "Reset ${axmRecIds.length} pending_requests rows to PENDING "
+            "and deleted queue row for re-push.",
+      );
+
+      return QueueResolveResultModel(
+          queueId: queueId,
+          finalStatus: OfflineDBConstants.QUEUE_STATUS_ERROR,
+          successCount: 0,
+          failedCount: axmRecIds.length,
+          statusMessage: "expired (age=${age.inHours}h).");
+    } catch (e, st) {
+      LogService.writeLog(
+        message: "$tag $localTag EXCEPTION queue_id=$queueId: $e\n$st",
+      );
+      return QueueResolveResultModel(
+        queueId: queueId,
+        finalStatus: null,
+        successCount: 0,
+        failedCount: 0,
+      );
+    }
   }
 
 /////////////////////////////////////////////////
@@ -5685,388 +6152,388 @@ class OfflineDbModule {
 ///////////////////////////NEW_FILE_WRITE_OPTION////////////////////////
 ///////////////////////////////////////////////////////////////////////
 
-  static Future<BuildQueueResult> buildAndPushCachedSaveQueue({
-    required bool isInternetAvailable,
-    required List<int> ids,
-    required OfflineFormController controller,
-    required int cachedSaveBatchSize,
-  }) async {
-    if (!isInternetAvailable)
-      return BuildQueueResult(
-        message: "No internet connection",
-      );
-    if (ids.isEmpty)
-      return BuildQueueResult(
-        message: "Queue is empty",
-      );
+  // static Future<BuildQueueResult> buildAndPushCachedSaveQueue({
+  //   required bool isInternetAvailable,
+  //   required List<int> ids,
+  //   required OfflineFormController controller,
+  //   required int cachedSaveBatchSize,
+  // }) async {
+  //   if (!isInternetAvailable)
+  //     return BuildQueueResult(
+  //       message: "No internet connection",
+  //     );
+  //   if (ids.isEmpty)
+  //     return BuildQueueResult(
+  //       message: "Queue is empty",
+  //     );
 
-    final scope = await _getLastOfflineUserScope();
-    if (scope == null)
-      return BuildQueueResult(
-        message: "No user session found",
-      );
+  //   final scope = await _getLastOfflineUserScope();
+  //   if (scope == null)
+  //     return BuildQueueResult(
+  //       message: "No user session found",
+  //     );
 
-    final String username = scope['username']!;
-    final String projectName = scope['projectName']!;
-    final String sessionId =
-        await AppStorage().retrieveValue(AppStorage.SESSIONID) ?? "";
-    final String authToken =
-        await AppStorage().retrieveValue(AppStorage.TOKEN) ?? "";
-    final bool isTraceOn =
-        await AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? false;
+  //   final String username = scope['username']!;
+  //   final String projectName = scope['projectName']!;
+  //   final String sessionId =
+  //       await AppStorage().retrieveValue(AppStorage.SESSIONID) ?? "";
+  //   final String authToken =
+  //       await AppStorage().retrieveValue(AppStorage.TOKEN) ?? "";
+  //   final bool isTraceOn =
+  //       await AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? false;
 
-    if (sessionId.isEmpty)
-      return BuildQueueResult(message: "No active session");
+  //   if (sessionId.isEmpty)
+  //     return BuildQueueResult(message: "No active session");
 
-    final String sql = List.filled(ids.length, '?').join(',');
-    final List<Map<String, dynamic>> rows = await _database.query(
-      OfflineDBConstants.TABLE_PENDING_REQUESTS,
-      columns: [OfflineDBConstants.COL_ID],
-      where: '${OfflineDBConstants.COL_ID} IN ($sql)',
-      whereArgs: ids,
-    );
+  //   final String sql = List.filled(ids.length, '?').join(',');
+  //   final List<Map<String, dynamic>> rows = await _database.query(
+  //     OfflineDBConstants.TABLE_PENDING_REQUESTS,
+  //     columns: [OfflineDBConstants.COL_ID],
+  //     where: '${OfflineDBConstants.COL_ID} IN ($sql)',
+  //     whereArgs: ids,
+  //   );
 
-    if (rows.isEmpty) {
-      controller.cachedSaveUpdateMessage.value = "Queue is empty";
-      return BuildQueueResult(message: "Queue is empty");
-    }
+  //   if (rows.isEmpty) {
+  //     controller.cachedSaveUpdateMessage.value = "Queue is empty";
+  //     return BuildQueueResult(message: "Queue is empty");
+  //   }
 
-    final String queueId = createAxmQueueId();
-    final List<int> axmRecIds = [];
-    File? payloadFile;
+  //   final String queueId = createAxmQueueId();
+  //   final List<int> axmRecIds = [];
+  //   File? payloadFile;
 
-    try {
-      controller.cachedSaveUpdateMessage.value =
-          "Building payload (writing to disk)...";
+  //   try {
+  //     controller.cachedSaveUpdateMessage.value =
+  //         "Building payload (writing to disk)...";
 
-      payloadFile = await _buildQueuePayloadFile(
-        queueId: queueId,
-        sessionId: sessionId,
-        authToken: authToken,
-        projectName: projectName,
-        username: username,
-        isTraceOn: isTraceOn,
-        rows: rows,
-        axmRecIds: axmRecIds,
-        onProgress: (msg) => controller.cachedSaveUpdateMessage.value = msg,
-      );
+  //     payloadFile = await _buildQueuePayloadFile(
+  //       queueId: queueId,
+  //       sessionId: sessionId,
+  //       authToken: authToken,
+  //       projectName: projectName,
+  //       username: username,
+  //       isTraceOn: isTraceOn,
+  //       rows: rows,
+  //       axmRecIds: axmRecIds,
+  //       onProgress: (msg) => controller.cachedSaveUpdateMessage.value = msg,
+  //     );
 
-      if (payloadFile == null || axmRecIds.isEmpty) {
-        return BuildQueueResult(message: "failed: No valid payloads found");
-      }
+  //     if (payloadFile == null || axmRecIds.isEmpty) {
+  //       return BuildQueueResult(message: "failed: No valid payloads found");
+  //     }
 
-      final int sizeBytes = await payloadFile.length();
-      final double sizeMB = sizeBytes / (1024 * 1024);
+  //     final int sizeBytes = await payloadFile.length();
+  //     final double sizeMB = sizeBytes / (1024 * 1024);
 
-      LogService.writeLog(
-        message: "$_cachedSaveTag [PAYLOAD BUILT] queue_id=$queueId | "
-            "records=${axmRecIds.length} | size=${sizeMB.toStringAsFixed(2)}MB",
-      );
+  //     LogService.writeLog(
+  //       message: "$_cachedSaveTag [PAYLOAD BUILT] queue_id=$queueId | "
+  //           "records=${axmRecIds.length} | size=${sizeMB.toStringAsFixed(2)}MB",
+  //     );
 
-      controller.addQueue(CachedSaveItemModel(
-        submissionStatus: QueueSubmissionStatus.sending,
-        qId: queueId,
-        totalItems: axmRecIds.length,
-        successItems: 0,
-        failedItems: 0,
-        fcmRecived: false,
-        smallStatusMessage: "Uploading to server...",
-      ));
+  //     controller.addQueue(CachedSaveItemModel(
+  //       submissionStatus: QueueSubmissionStatus.sending,
+  //       qId: queueId,
+  //       totalItems: axmRecIds.length,
+  //       successItems: 0,
+  //       failedItems: 0,
+  //       fcmRecived: false,
+  //       smallStatusMessage: "Uploading to server...",
+  //     ));
 
-      final Future<void> uploadTask = _processUploadInBackground(
-        payloadFile: payloadFile,
-        queueId: queueId,
-        axmRecIds: axmRecIds,
-        controller: controller,
-        username: username,
-        projectName: projectName,
-      );
+  //     final Future<void> uploadTask = _processUploadInBackground(
+  //       payloadFile: payloadFile,
+  //       queueId: queueId,
+  //       axmRecIds: axmRecIds,
+  //       controller: controller,
+  //       username: username,
+  //       projectName: projectName,
+  //     );
 
-      return BuildQueueResult(
-          message: "Batch built and queued (queue_id=$queueId)",
-          uploadTask: uploadTask);
-    } catch (e, st) {
-      LogService.writeLog(
-          message: "$_cachedSaveTag EXCEPTION in Builder: $e\n$st");
-      try {
-        await payloadFile?.delete();
-      } catch (_) {}
+  //     return BuildQueueResult(
+  //         message: "Batch built and queued (queue_id=$queueId)",
+  //         uploadTask: uploadTask);
+  //   } catch (e, st) {
+  //     LogService.writeLog(
+  //         message: "$_cachedSaveTag EXCEPTION in Builder: $e\n$st");
+  //     try {
+  //       await payloadFile?.delete();
+  //     } catch (_) {}
 
-      return BuildQueueResult(
-        message: "failed: Queue build exception: $e",
-      );
-    }
-  }
+  //     return BuildQueueResult(
+  //       message: "failed: Queue build exception: $e",
+  //     );
+  //   }
+  // }
 
-  static Future<void> _processUploadInBackground({
-    required File payloadFile,
-    required String queueId,
-    required List<int> axmRecIds,
-    required OfflineFormController controller,
-    required String username,
-    required String projectName,
-  }) async {
-    try {
-      final String requestBody = await payloadFile.readAsString();
-      final ServerConnections serverConnections = ServerConnections();
-      final String url =
-          Const.getFullARMUrl(ServerConnections.ARM_PUSH_TO_QUEUE);
+  // static Future<void> _processUploadInBackground({
+  //   required File payloadFile,
+  //   required String queueId,
+  //   required List<int> axmRecIds,
+  //   required OfflineFormController controller,
+  //   required String username,
+  //   required String projectName,
+  // }) async {
+  //   try {
+  //     final String requestBody = await payloadFile.readAsString();
+  //     final ServerConnections serverConnections = ServerConnections();
+  //     final String url =
+  //         Const.getFullARMUrl(ServerConnections.ARM_PUSH_TO_QUEUE);
 
-      String serverResponse = "";
-      bool pushSuccess = false;
+  //     String serverResponse = "";
+  //     bool pushSuccess = false;
 
-      try {
-        final dynamic responseStr = await serverConnections.postToServer(
-          url: url,
-          body: requestBody,
-          isBearer: true,
-        );
-        serverResponse = responseStr?.toString() ?? "";
+  //     try {
+  //       final dynamic responseStr = await serverConnections.postToServer(
+  //         url: url,
+  //         body: requestBody,
+  //         isBearer: true,
+  //       );
+  //       serverResponse = responseStr?.toString() ?? "";
 
-        LogService.writeLog(
-            message: "$_cachedSaveTag SERVER RESPONSE: $serverResponse");
+  //       LogService.writeLog(
+  //           message: "$_cachedSaveTag SERVER RESPONSE: $serverResponse");
 
-        if (serverResponse.isNotEmpty) {
-          final decoded = jsonDecode(serverResponse);
-          if (decoded is Map<String, dynamic> &&
-              decoded['result'] != null &&
-              decoded['result']['success'] == true) {
-            pushSuccess = true;
-          }
-        }
-      } catch (e) {
-        serverResponse = e.toString();
-        LogService.writeLog(message: "$_cachedSaveTag POST exception: $e");
-      }
+  //       if (serverResponse.isNotEmpty) {
+  //         final decoded = jsonDecode(serverResponse);
+  //         if (decoded is Map<String, dynamic> &&
+  //             decoded['result'] != null &&
+  //             decoded['result']['success'] == true) {
+  //           pushSuccess = true;
+  //         }
+  //       }
+  //     } catch (e) {
+  //       serverResponse = e.toString();
+  //       LogService.writeLog(message: "$_cachedSaveTag POST exception: $e");
+  //     }
 
-      if (pushSuccess) {
-        await _saveCachedSaveQueueRecord(
-          queueId: queueId,
-          username: username,
-          projectName: projectName,
-          axmRecIds: axmRecIds,
-          sourceTable: OfflineDBConstants.TABLE_PENDING_REQUESTS,
-          payloadsCount: axmRecIds.length,
-          queueResponse: serverResponse,
-        );
+  //     if (pushSuccess) {
+  //       await _saveCachedSaveQueueRecord(
+  //         queueId: queueId,
+  //         username: username,
+  //         projectName: projectName,
+  //         axmRecIds: axmRecIds,
+  //         sourceTable: OfflineDBConstants.TABLE_PENDING_REQUESTS,
+  //         payloadsCount: axmRecIds.length,
+  //         queueResponse: serverResponse,
+  //       );
 
-        await _batchUpdateStatus(
-            axmRecIds, OfflineDBConstants.RECORD_STATUS_QUEUED);
+  //       await _batchUpdateStatus(
+  //           axmRecIds, OfflineDBConstants.RECORD_STATUS_QUEUED);
 
-        await logAudit(
-          action: _cachedSaveTag,
-          remarks: "Queue $queueId pushed. axm_recids=$axmRecIds",
-        );
+  //       await logAudit(
+  //         action: _cachedSaveTag,
+  //         remarks: "Queue $queueId pushed. axm_recids=$axmRecIds",
+  //       );
 
-        controller.updateQueueItem(
-            queueId,
-            (model) => model.copyWith(
-                  submissionStatus: QueueSubmissionStatus.pending,
-                  smallStatusMessage: "waiting for FCM",
-                ));
-      } else {
-        await logAudit(
-          action: _cachedSaveTag,
-          isError: true,
-          response: serverResponse,
-          remarks: "Queue $queueId FAILED. Records remain PENDING.",
-        );
+  //       controller.updateQueueItem(
+  //           queueId,
+  //           (model) => model.copyWith(
+  //                 submissionStatus: QueueSubmissionStatus.pending,
+  //                 smallStatusMessage: "waiting for FCM",
+  //               ));
+  //     } else {
+  //       await logAudit(
+  //         action: _cachedSaveTag,
+  //         isError: true,
+  //         response: serverResponse,
+  //         remarks: "Queue $queueId FAILED. Records remain PENDING.",
+  //       );
 
-        controller.updateQueueItem(
-            queueId,
-            (model) => model.copyWith(
-                  submissionStatus: QueueSubmissionStatus.error,
-                  smallStatusMessage: "API Upload Failed",
-                ));
-      }
-    } catch (e, st) {
-      LogService.writeLog(
-          message: "$_cachedSaveTag BACKGROUND UPLOAD EXCEPTION: $e\n$st");
+  //       controller.updateQueueItem(
+  //           queueId,
+  //           (model) => model.copyWith(
+  //                 submissionStatus: QueueSubmissionStatus.error,
+  //                 smallStatusMessage: "API Upload Failed",
+  //               ));
+  //     }
+  //   } catch (e, st) {
+  //     LogService.writeLog(
+  //         message: "$_cachedSaveTag BACKGROUND UPLOAD EXCEPTION: $e\n$st");
 
-      controller.updateQueueItem(
-          queueId,
-          (model) => model.copyWith(
-                submissionStatus: QueueSubmissionStatus.error,
-                smallStatusMessage: "Exception during upload",
-              ));
-    } finally {
-      try {
-        if (await payloadFile.exists()) {
-          await payloadFile.delete();
-          LogService.writeLog(
-            message: "$_cachedSaveTag [CLEANUP] Deleted temp file for $queueId",
-          );
-        }
-      } catch (e) {
-        LogService.writeLog(
-          message:
-              "$_cachedSaveTag [CLEANUP ERROR] Failed to delete file for $queueId: $e",
-        );
-      }
-    }
-  }
+  //     controller.updateQueueItem(
+  //         queueId,
+  //         (model) => model.copyWith(
+  //               submissionStatus: QueueSubmissionStatus.error,
+  //               smallStatusMessage: "Exception during upload",
+  //             ));
+  //   } finally {
+  //     try {
+  //       if (await payloadFile.exists()) {
+  //         await payloadFile.delete();
+  //         LogService.writeLog(
+  //           message: "$_cachedSaveTag [CLEANUP] Deleted temp file for $queueId",
+  //         );
+  //       }
+  //     } catch (e) {
+  //       LogService.writeLog(
+  //         message:
+  //             "$_cachedSaveTag [CLEANUP ERROR] Failed to delete file for $queueId: $e",
+  //       );
+  //     }
+  //   }
+  // }
 
-  static Future<String> buildAndPushCachedSaveQueue2({
-    required bool isInternetAvailable,
-    required List<int> ids,
-    required OfflineFormController controller,
-    required int cachedSaveBatchSize,
-  }) async {
-    if (!isInternetAvailable) return "No internet connection";
-    if (ids.isEmpty) return "Queue is empty";
+  // static Future<String> buildAndPushCachedSaveQueue2({
+  //   required bool isInternetAvailable,
+  //   required List<int> ids,
+  //   required OfflineFormController controller,
+  //   required int cachedSaveBatchSize,
+  // }) async {
+  //   if (!isInternetAvailable) return "No internet connection";
+  //   if (ids.isEmpty) return "Queue is empty";
 
-    final scope = await _getLastOfflineUserScope();
-    if (scope == null) return "No user session found";
+  //   final scope = await _getLastOfflineUserScope();
+  //   if (scope == null) return "No user session found";
 
-    final String username = scope['username']!;
-    final String projectName = scope['projectName']!;
-    final String sessionId =
-        await AppStorage().retrieveValue(AppStorage.SESSIONID) ?? "";
-    final String authToken =
-        await AppStorage().retrieveValue(AppStorage.TOKEN) ?? "";
-    final bool isTraceOn =
-        await AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? false;
+  //   final String username = scope['username']!;
+  //   final String projectName = scope['projectName']!;
+  //   final String sessionId =
+  //       await AppStorage().retrieveValue(AppStorage.SESSIONID) ?? "";
+  //   final String authToken =
+  //       await AppStorage().retrieveValue(AppStorage.TOKEN) ?? "";
+  //   final bool isTraceOn =
+  //       await AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? false;
 
-    if (sessionId.isEmpty) return "No active session";
+  //   if (sessionId.isEmpty) return "No active session";
 
-    final String sql = List.filled(ids.length, '?').join(',');
-    final List<Map<String, dynamic>> rows = await _database.query(
-      OfflineDBConstants.TABLE_PENDING_REQUESTS,
-      columns: [OfflineDBConstants.COL_ID],
-      where: '${OfflineDBConstants.COL_ID} IN ($sql)',
-      whereArgs: ids,
-    );
+  //   final String sql = List.filled(ids.length, '?').join(',');
+  //   final List<Map<String, dynamic>> rows = await _database.query(
+  //     OfflineDBConstants.TABLE_PENDING_REQUESTS,
+  //     columns: [OfflineDBConstants.COL_ID],
+  //     where: '${OfflineDBConstants.COL_ID} IN ($sql)',
+  //     whereArgs: ids,
+  //   );
 
-    if (rows.isEmpty) {
-      controller.cachedSaveUpdateMessage.value = "Queue is empty";
-      return "Queue is empty";
-    }
+  //   if (rows.isEmpty) {
+  //     controller.cachedSaveUpdateMessage.value = "Queue is empty";
+  //     return "Queue is empty";
+  //   }
 
-    final String queueId = createAxmQueueId();
-    final List<int> axmRecIds = [];
-    File? payloadFile;
+  //   final String queueId = createAxmQueueId();
+  //   final List<int> axmRecIds = [];
+  //   File? payloadFile;
 
-    try {
-      controller.cachedSaveUpdateMessage.value =
-          "Building payload (writing to disk)...";
+  //   try {
+  //     controller.cachedSaveUpdateMessage.value =
+  //         "Building payload (writing to disk)...";
 
-      payloadFile = await _buildQueuePayloadFile(
-        queueId: queueId,
-        sessionId: sessionId,
-        authToken: authToken,
-        projectName: projectName,
-        username: username,
-        isTraceOn: isTraceOn,
-        rows: rows,
-        axmRecIds: axmRecIds,
-        onProgress: (msg) => controller.cachedSaveUpdateMessage.value = msg,
-      );
+  //     payloadFile = await _buildQueuePayloadFile(
+  //       queueId: queueId,
+  //       sessionId: sessionId,
+  //       authToken: authToken,
+  //       projectName: projectName,
+  //       username: username,
+  //       isTraceOn: isTraceOn,
+  //       rows: rows,
+  //       axmRecIds: axmRecIds,
+  //       onProgress: (msg) => controller.cachedSaveUpdateMessage.value = msg,
+  //     );
 
-      if (payloadFile == null || axmRecIds.isEmpty) {
-        return "No valid payloads found";
-      }
+  //     if (payloadFile == null || axmRecIds.isEmpty) {
+  //       return "No valid payloads found";
+  //     }
 
-      final int sizeBytes = await payloadFile.length();
-      final double sizeMB = sizeBytes / (1024 * 1024);
+  //     final int sizeBytes = await payloadFile.length();
+  //     final double sizeMB = sizeBytes / (1024 * 1024);
 
-      LogService.writeLog(
-        message: "$_cachedSaveTag [PAYLOAD SIZE] queue_id=$queueId | "
-            "records=${axmRecIds.length} | size=${sizeMB.toStringAsFixed(2)}MB",
-      );
+  //     LogService.writeLog(
+  //       message: "$_cachedSaveTag [PAYLOAD SIZE] queue_id=$queueId | "
+  //           "records=${axmRecIds.length} | size=${sizeMB.toStringAsFixed(2)}MB",
+  //     );
 
-      controller.cachedSaveUpdateMessage.value =
-          "Pushing $queueId (${axmRecIds.length} records, "
-          "${sizeMB.toStringAsFixed(1)}MB)...";
+  //     controller.cachedSaveUpdateMessage.value =
+  //         "Pushing $queueId (${axmRecIds.length} records, "
+  //         "${sizeMB.toStringAsFixed(1)}MB)...";
 
-      final String requestBody = await payloadFile.readAsString();
+  //     final String requestBody = await payloadFile.readAsString();
 
-      final ServerConnections serverConnections = ServerConnections();
-      final String url =
-          Const.getFullARMUrl(ServerConnections.ARM_PUSH_TO_QUEUE);
+  //     final ServerConnections serverConnections = ServerConnections();
+  //     final String url =
+  //         Const.getFullARMUrl(ServerConnections.ARM_PUSH_TO_QUEUE);
 
-      String serverResponse = "";
-      bool pushSuccess = false;
+  //     String serverResponse = "";
+  //     bool pushSuccess = false;
 
-      try {
-        final dynamic responseStr = await serverConnections.postToServer(
-          url: url,
-          body: requestBody,
-          isBearer: true,
-        );
-        serverResponse = responseStr?.toString() ?? "";
-        log(serverResponse, name: _cachedSaveTag);
+  //     try {
+  //       final dynamic responseStr = await serverConnections.postToServer(
+  //         url: url,
+  //         body: requestBody,
+  //         isBearer: true,
+  //       );
+  //       serverResponse = responseStr?.toString() ?? "";
+  //       log(serverResponse, name: _cachedSaveTag);
 
-        if (serverResponse.isNotEmpty) {
-          final decoded = jsonDecode(serverResponse);
-          if (decoded is Map<String, dynamic> &&
-              decoded['result'] != null &&
-              decoded['result']['success'] == true) {
-            pushSuccess = true;
-          }
-        }
-      } catch (e) {
-        serverResponse = e.toString();
-        LogService.writeLog(message: "$_cachedSaveTag POST exception: $e");
-      }
+  //       if (serverResponse.isNotEmpty) {
+  //         final decoded = jsonDecode(serverResponse);
+  //         if (decoded is Map<String, dynamic> &&
+  //             decoded['result'] != null &&
+  //             decoded['result']['success'] == true) {
+  //           pushSuccess = true;
+  //         }
+  //       }
+  //     } catch (e) {
+  //       serverResponse = e.toString();
+  //       LogService.writeLog(message: "$_cachedSaveTag POST exception: $e");
+  //     }
 
-      // 4. Handle Success / Failure
-      if (pushSuccess) {
-        await _saveCachedSaveQueueRecord(
-          queueId: queueId,
-          username: username,
-          projectName: projectName,
-          axmRecIds: axmRecIds,
-          sourceTable: OfflineDBConstants.TABLE_PENDING_REQUESTS,
-          payloadsCount: axmRecIds.length,
-          queueResponse: serverResponse,
-        );
+  //     // 4. Handle Success / Failure
+  //     if (pushSuccess) {
+  //       await _saveCachedSaveQueueRecord(
+  //         queueId: queueId,
+  //         username: username,
+  //         projectName: projectName,
+  //         axmRecIds: axmRecIds,
+  //         sourceTable: OfflineDBConstants.TABLE_PENDING_REQUESTS,
+  //         payloadsCount: axmRecIds.length,
+  //         queueResponse: serverResponse,
+  //       );
 
-        controller.addQueue(CachedSaveItemModel(
-          submissionStatus: QueueSubmissionStatus.pending,
-          qId: queueId,
-          totalItems: axmRecIds.length,
-          successItems: 0,
-          failedItems: 0,
-          fcmRecived: false,
-          smallStatusMessage: "waiting for FCM",
-        ));
+  //       controller.addQueue(CachedSaveItemModel(
+  //         submissionStatus: QueueSubmissionStatus.pending,
+  //         qId: queueId,
+  //         totalItems: axmRecIds.length,
+  //         successItems: 0,
+  //         failedItems: 0,
+  //         fcmRecived: false,
+  //         smallStatusMessage: "waiting for FCM",
+  //       ));
 
-        await _batchUpdateStatus(
-            axmRecIds, OfflineDBConstants.RECORD_STATUS_QUEUED);
+  //       await _batchUpdateStatus(
+  //           axmRecIds, OfflineDBConstants.RECORD_STATUS_QUEUED);
 
-        await logAudit(
-          action: _cachedSaveTag,
-          remarks: "Queue $queueId pushed. axm_recids=$axmRecIds",
-        );
+  //       await logAudit(
+  //         action: _cachedSaveTag,
+  //         remarks: "Queue $queueId pushed. axm_recids=$axmRecIds",
+  //       );
 
-        controller.cachedSaveUpdateMessage.value =
-            "Queue pushed: ${axmRecIds.length} records (queue_id=$queueId)";
-        return "Queue pushed: ${axmRecIds.length} records (queue_id=$queueId)";
-      }
+  //       controller.cachedSaveUpdateMessage.value =
+  //           "Queue pushed: ${axmRecIds.length} records (queue_id=$queueId)";
+  //       return "Queue pushed: ${axmRecIds.length} records (queue_id=$queueId)";
+  //     }
 
-      await logAudit(
-        action: _cachedSaveTag,
-        isError: true,
-        response: serverResponse,
-        remarks: "Queue $queueId FAILED. Records remain PENDING.",
-      );
+  //     await logAudit(
+  //       action: _cachedSaveTag,
+  //       isError: true,
+  //       response: serverResponse,
+  //       remarks: "Queue $queueId FAILED. Records remain PENDING.",
+  //     );
 
-      controller.cachedSaveUpdateMessage.value =
-          "Queue $queueId FAILED. Records remain PENDING.";
-      return "Queue push failed. Records remain pending.";
-    } catch (e, st) {
-      LogService.writeLog(message: "$_cachedSaveTag EXCEPTION: $e\n$st");
-      return "Queue push failed: $e";
-    } finally {
-      // Always delete the temp file regardless of success/failure
-      try {
-        await payloadFile?.delete();
-        LogService.writeLog(
-          message: "$_cachedSaveTag [CLEANUP] Deleted temp file for $queueId",
-        );
-      } catch (_) {}
-    }
-  }
+  //     controller.cachedSaveUpdateMessage.value =
+  //         "Queue $queueId FAILED. Records remain PENDING.";
+  //     return "Queue push failed. Records remain pending.";
+  //   } catch (e, st) {
+  //     LogService.writeLog(message: "$_cachedSaveTag EXCEPTION: $e\n$st");
+  //     return "Queue push failed: $e";
+  //   } finally {
+  //     // Always delete the temp file regardless of success/failure
+  //     try {
+  //       await payloadFile?.delete();
+  //       LogService.writeLog(
+  //         message: "$_cachedSaveTag [CLEANUP] Deleted temp file for $queueId",
+  //       );
+  //     } catch (_) {}
+  //   }
+  // }
 
 //-----------------------------------------------------------------------------
 
@@ -6218,41 +6685,44 @@ class OfflineDbModule {
       final String token = match.group(0)!;
       final String? filePath = tokenToFileMap[token];
 
-      // if (filePath != null) {
-      //   final File imgFile = File(filePath);
-      //   if (await imgFile.exists()) {
-      //     final String b64 = await fileToBase64Correct(imgFile);
-      //     writeInner(b64);
-      //     imgCount++;
-      //     LogService.writeLog(
-      //       message: "$tag [ID:$id] Image $imgCount — "
-      //           "${(b64.length / 1024).toStringAsFixed(1)}KB base64",
-      //     );
-      //   } else {
-      //     writeInner("");
-      //     imgErrors++;
-      //     LogService.writeLog(
-      //         message: "$tag [ID:$id] Missing image: $filePath");
-      //   }
-      // } else {
-      //   writeInner("");
-      // }
-
-      try {
-        final byteData = await rootBundle.load('assets/images/3mb.jpg');
-        final bytes = byteData.buffer.asUint8List();
-        var base64 = base64Encode(bytes);
-        writeInner(base64);
-        imgCount++;
-        LogService.writeLog(
-          message: "$tag [ID:$id] Image $imgCount — "
-              "${(base64.length / 1024).toStringAsFixed(1)}KB base64",
-        );
-      } catch (e) {
+      if (filePath != null) {
+        final File imgFile = File(filePath);
+        if (await imgFile.exists()) {
+          final String b64 = await fileToBase64Correct(imgFile);
+          // remove from prod
+          // final String b64 =
+          //     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+          writeInner(b64);
+          imgCount++;
+          LogService.writeLog(
+            message: "$tag [ID:$id] Image $imgCount — "
+                "${(b64.length / 1024).toStringAsFixed(1)}KB base64",
+          );
+        } else {
+          writeInner("");
+          imgErrors++;
+          LogService.writeLog(
+              message: "$tag [ID:$id] Missing image: $filePath");
+        }
+      } else {
         writeInner("");
-        imgErrors++;
-        LogService.writeLog(message: "$tag [ID:$id] Missing image: $filePath");
       }
+
+      // try {
+      //   final byteData = await rootBundle.load('assets/images/1mb.jpg');
+      //   final bytes = byteData.buffer.asUint8List();
+      //   var base64 = base64Encode(bytes);
+      //   writeInner(base64);
+      //   imgCount++;
+      //   LogService.writeLog(
+      //     message: "$tag [ID:$id] Image $imgCount — "
+      //         "${(base64.length / 1024).toStringAsFixed(1)}KB base64",
+      //   );
+      // } catch (e) {
+      //   writeInner("");
+      //   imgErrors++;
+      //   LogService.writeLog(message: "$tag [ID:$id] Missing image: $filePath");
+      // }
       currentIndex = match.end;
 
       await Future<void>.delayed(Duration.zero);
@@ -6322,265 +6792,265 @@ class OfflineDbModule {
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 
-  static Future<String> buildAndPushCachedSaveQueue1({
-    required bool isInternetAvailable,
-    required List<int> ids,
-    required OfflineFormController controller,
-    required int cachedSaveBatchSize,
-  }) async {
-    if (!isInternetAvailable) return "No internet connection";
-    if (ids.isEmpty) return "Queue is empty";
+  // static Future<String> buildAndPushCachedSaveQueue1({
+  //   required bool isInternetAvailable,
+  //   required List<int> ids,
+  //   required OfflineFormController controller,
+  //   required int cachedSaveBatchSize,
+  // }) async {
+  //   if (!isInternetAvailable) return "No internet connection";
+  //   if (ids.isEmpty) return "Queue is empty";
 
-    final scope = await _getLastOfflineUserScope();
-    if (scope == null) return "No user session found";
+  //   final scope = await _getLastOfflineUserScope();
+  //   if (scope == null) return "No user session found";
 
-    final String username = scope['username']!;
-    final String projectName = scope['projectName']!;
-    final String sessionId =
-        await AppStorage().retrieveValue(AppStorage.SESSIONID) ?? "";
-    final String authToken =
-        await AppStorage().retrieveValue(AppStorage.TOKEN) ?? "";
-    var isTraceOn =
-        await AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? false;
+  //   final String username = scope['username']!;
+  //   final String projectName = scope['projectName']!;
+  //   final String sessionId =
+  //       await AppStorage().retrieveValue(AppStorage.SESSIONID) ?? "";
+  //   final String authToken =
+  //       await AppStorage().retrieveValue(AppStorage.TOKEN) ?? "";
+  //   var isTraceOn =
+  //       await AppStorage().retrieveValue(AppStorage.isLogEnabled) ?? false;
 
-    if (sessionId.isEmpty) return "No active session";
+  //   if (sessionId.isEmpty) return "No active session";
 
-    // ── Fetch exactly the rows in this batch's id list ────────
-    final placeholders = List.filled(ids.length, '?').join(',');
-    final List<Map<String, dynamic>> rows = await _database.query(
-      OfflineDBConstants.TABLE_PENDING_REQUESTS,
-      columns: [OfflineDBConstants.COL_ID],
-      where: '${OfflineDBConstants.COL_ID} IN ($placeholders)',
-      whereArgs: ids,
-    );
+  //   // ── Fetch exactly the rows in this batch's id list ────────
+  //   final placeholders = List.filled(ids.length, '?').join(',');
+  //   final List<Map<String, dynamic>> rows = await _database.query(
+  //     OfflineDBConstants.TABLE_PENDING_REQUESTS,
+  //     columns: [OfflineDBConstants.COL_ID],
+  //     where: '${OfflineDBConstants.COL_ID} IN ($placeholders)',
+  //     whereArgs: ids,
+  //   );
 
-    // if (rows.isEmpty) return "Queue is empty";
+  //   // if (rows.isEmpty) return "Queue is empty";
 
-    if (rows.isEmpty) {
-      // progress?.complete();
-      controller.cachedSaveUpdateMessage.value = "Queue is empty";
-      return "Queue is empty";
-    }
-    // controller.cachedSaveUpdateMessage.value = "Building queue batch...";
+  //   if (rows.isEmpty) {
+  //     // progress?.complete();
+  //     controller.cachedSaveUpdateMessage.value = "Queue is empty";
+  //     return "Queue is empty";
+  //   }
+  //   // controller.cachedSaveUpdateMessage.value = "Building queue batch...";
 
-    // progress?.init(total: rows.length, msg: "Building queue batch...");
+  //   // progress?.init(total: rows.length, msg: "Building queue batch...");
 
-    // ── 2. Read payloads and apply Layer-1 stringify for inwac ─
-    final List<int> axmRecIds = [];
-    final List<Map<String, dynamic>> dataItems = [];
+  //   // ── 2. Read payloads and apply Layer-1 stringify for inwac ─
+  //   final List<int> axmRecIds = [];
+  //   final List<Map<String, dynamic>> dataItems = [];
 
-    for (final row in rows) {
-      final int id = row[OfflineDBConstants.COL_ID] as int;
+  //   for (final row in rows) {
+  //     final int id = row[OfflineDBConstants.COL_ID] as int;
 
-      final String? bodyStr = await _readLargeString(
-        table: OfflineDBConstants.TABLE_PENDING_REQUESTS,
-        column: OfflineDBConstants.COL_REQUEST_JSON,
-        where: '${OfflineDBConstants.COL_ID} = ?',
-        whereArgs: [id],
-      );
+  //     final String? bodyStr = await _readLargeString(
+  //       table: OfflineDBConstants.TABLE_PENDING_REQUESTS,
+  //       column: OfflineDBConstants.COL_REQUEST_JSON,
+  //       where: '${OfflineDBConstants.COL_ID} = ?',
+  //       whereArgs: [id],
+  //     );
 
-      if (bodyStr == null || bodyStr.isEmpty) continue;
+  //     if (bodyStr == null || bodyStr.isEmpty) continue;
 
-      // Deep-decode so we can mutate freely without touching stored data
-      Map<String, dynamic> payload = jsonDecode(bodyStr);
+  //     // Deep-decode so we can mutate freely without touching stored data
+  //     Map<String, dynamic> payload = jsonDecode(bodyStr);
 
-      // ── Layer 1: stringify axpfile_file for inwac payloads ──
-      // SQLite stored axpfile_file as a raw List (decoded from JSON).
-      // The C# backend needs it as an already-stringified JSON string
-      // inside the outer payload so it can deserialize List<AxAttachments>
-      // in a second pass.
-      // _tempFixTatMfgDate(payload);
-      // payload['dc1']['row1']['ub_ge_no'] = "AXM_TEST_700_$id";
-      if (payload['transid'] == 'inwac') {
-        payload = await _convertPayloadPathsToBase64(payload);
-        try {
-          final dynamic rawFileField =
-              payload['submitdata']?['dc1']?['row1']?['axpfile_file'];
+  //     // ── Layer 1: stringify axpfile_file for inwac payloads ──
+  //     // SQLite stored axpfile_file as a raw List (decoded from JSON).
+  //     // The C# backend needs it as an already-stringified JSON string
+  //     // inside the outer payload so it can deserialize List<AxAttachments>
+  //     // in a second pass.
+  //     // _tempFixTatMfgDate(payload);
+  //     // payload['dc1']['row1']['ub_ge_no'] = "AXM_TEST_700_$id";
+  //     if (payload['transid'] == 'inwac') {
+  //       payload = await _convertPayloadPathsToBase64(payload);
+  //       try {
+  //         final dynamic rawFileField =
+  //             payload['submitdata']?['dc1']?['row1']?['axpfile_file'];
 
-          if (rawFileField is List) {
-            payload['submitdata']['dc1']['row1']['axpfile_file'] =
-                jsonEncode(rawFileField);
-          }
-          // if (payload['submitdata']['dc1']['row1'].contains('axm_recordid')) {
-          //   payload['submitdata']['dc1']['row1'].remove('axm_recordid');
-          // }
-        } catch (e) {
-          LogService.writeLog(
-            message: "$_cachedSaveTag [ID:$id] axpfile_file Layer-1 "
-                "stringify failed: $e",
-          );
-        }
-        //TODO remove on production
-        try {
-          final row1 = payload['submitdata']?['dc1']?['row1'];
-          if (row1 is Map && row1.containsKey('axm_recordid')) {
-            row1.remove('axm_recordid');
-            LogService.writeLog(
-              message:
-                  "$_cachedSaveTag [ID:$id] axm_recordid removed successfully.",
-            );
-          }
-        } catch (e) {
-          LogService.writeLog(
-            message: "$_cachedSaveTag [ID:$id] axm_recordid removal failed: $e",
-          );
-        }
-      }
+  //         if (rawFileField is List) {
+  //           payload['submitdata']['dc1']['row1']['axpfile_file'] =
+  //               jsonEncode(rawFileField);
+  //         }
+  //         // if (payload['submitdata']['dc1']['row1'].contains('axm_recordid')) {
+  //         //   payload['submitdata']['dc1']['row1'].remove('axm_recordid');
+  //         // }
+  //       } catch (e) {
+  //         LogService.writeLog(
+  //           message: "$_cachedSaveTag [ID:$id] axpfile_file Layer-1 "
+  //               "stringify failed: $e",
+  //         );
+  //       }
+  //       //TODO remove on production
+  //       try {
+  //         final row1 = payload['submitdata']?['dc1']?['row1'];
+  //         if (row1 is Map && row1.containsKey('axm_recordid')) {
+  //           row1.remove('axm_recordid');
+  //           LogService.writeLog(
+  //             message:
+  //                 "$_cachedSaveTag [ID:$id] axm_recordid removed successfully.",
+  //           );
+  //         }
+  //       } catch (e) {
+  //         LogService.writeLog(
+  //           message: "$_cachedSaveTag [ID:$id] axm_recordid removal failed: $e",
+  //         );
+  //       }
+  //     }
 
-      axmRecIds.add(id);
-      dataItems.add(payload);
-    }
+  //     axmRecIds.add(id);
+  //     dataItems.add(payload);
+  //   }
 
-    if (dataItems.isEmpty) return "No valid payloads found";
+  //   if (dataItems.isEmpty) return "No valid payloads found";
 
-    var queueId = createAxmQueueId();
+  //   var queueId = createAxmQueueId();
 
-    final Map<String, dynamic> parameters = {
-      "ARMSessionId": sessionId,
-      "ARMToken": authToken,
-      "isaxput": "true",
-      "mobile": "true",
-      "axm_queueid": queueId,
-      "project": projectName,
-      "username": username,
-      "trace": isTraceOn,
-      "validateonly": false,
-      "axclient_dateformat": "",
-      "millisecsintimestamp": true,
-      "data": dataItems,
-    };
+  //   final Map<String, dynamic> parameters = {
+  //     "ARMSessionId": sessionId,
+  //     "ARMToken": authToken,
+  //     "isaxput": "true",
+  //     "mobile": "true",
+  //     "axm_queueid": queueId,
+  //     "project": projectName,
+  //     "username": username,
+  //     "trace": isTraceOn,
+  //     "validateonly": false,
+  //     "axclient_dateformat": "",
+  //     "millisecsintimestamp": true,
+  //     "data": dataItems,
+  //   };
 
-    final Map<String, dynamic> queuePayload = {
-      "queuename": "CachedSaveQueue",
-      "queuedata": jsonEncode({
-        "_parameters": [parameters],
-      }),
-      "trace": isTraceOn,
-    };
+  //   final Map<String, dynamic> queuePayload = {
+  //     "queuename": "CachedSaveQueue",
+  //     "queuedata": jsonEncode({
+  //       "_parameters": [parameters],
+  //     }),
+  //     "trace": isTraceOn,
+  //   };
 
-    // ── Payload size + file dump ──────────────────────────────
-    // final String finalBodyStr = jsonEncode(queuePayload);
-    // final int payloadSizeBytes = finalBodyStr.length;
-    // final double payloadSizeKB = payloadSizeBytes / 1024;
-    // final double payloadSizeMB = payloadSizeKB / 1024;
+  //   // ── Payload size + file dump ──────────────────────────────
+  //   // final String finalBodyStr = jsonEncode(queuePayload);
+  //   // final int payloadSizeBytes = finalBodyStr.length;
+  //   // final double payloadSizeKB = payloadSizeBytes / 1024;
+  //   // final double payloadSizeMB = payloadSizeKB / 1024;
 
-    final jsonString = jsonEncode(queuePayload);
-    final bytes = utf8.encode(jsonString);
-    final sizeInBytes = bytes.length;
-    final sizeInMB = sizeInBytes / (1024 * 1024);
-    print('Payload size: ${sizeInMB.toStringAsFixed(2)} MB');
+  //   final jsonString = jsonEncode(queuePayload);
+  //   final bytes = utf8.encode(jsonString);
+  //   final sizeInBytes = bytes.length;
+  //   final sizeInMB = sizeInBytes / (1024 * 1024);
+  //   print('Payload size: ${sizeInMB.toStringAsFixed(2)} MB');
 
-    LogService.writeLog(
-      message: "$_cachedSaveTag [PAYLOAD SIZE] "
-          "queue_id=$queueId | "
-          "records=${dataItems.length} | "
-          'Payload size: ${sizeInMB.toStringAsFixed(2)} MB',
-    );
+  //   LogService.writeLog(
+  //     message: "$_cachedSaveTag [PAYLOAD SIZE] "
+  //         "queue_id=$queueId | "
+  //         "records=${dataItems.length} | "
+  //         'Payload size: ${sizeInMB.toStringAsFixed(2)} MB',
+  //   );
 
-    // await _logQueuePayloadToFile(
-    //   queueId: queueId,
-    //   dataItems: dataItems,
-    //   bodyStr: finalBodyStr,
-    //   sizeBytes: payloadSizeBytes,
-    //   sizeKB: payloadSizeKB,
-    //   sizeMB: payloadSizeMB,
-    // );
-    LogService.writeLog(
-      message: "$_cachedSaveTag queue_id=$queueId "
-          "items=${dataItems.length}",
-    );
-    controller.cachedSaveUpdateMessage.value =
-        "Pushing $queueId (${dataItems.length} records)...";
+  //   // await _logQueuePayloadToFile(
+  //   //   queueId: queueId,
+  //   //   dataItems: dataItems,
+  //   //   bodyStr: finalBodyStr,
+  //   //   sizeBytes: payloadSizeBytes,
+  //   //   sizeKB: payloadSizeKB,
+  //   //   sizeMB: payloadSizeMB,
+  //   // );
+  //   LogService.writeLog(
+  //     message: "$_cachedSaveTag queue_id=$queueId "
+  //         "items=${dataItems.length}",
+  //   );
+  //   controller.cachedSaveUpdateMessage.value =
+  //       "Pushing $queueId (${dataItems.length} records)...";
 
-    // progress
-    //     ?.updateMessage("Pushing $queueId (${dataItems.length} records)...");
+  //   // progress
+  //   //     ?.updateMessage("Pushing $queueId (${dataItems.length} records)...");
 
-    bool pushSuccess = false;
-    String serverResponse = "";
+  //   bool pushSuccess = false;
+  //   String serverResponse = "";
 
-    try {
-      final ServerConnections serverConnections = ServerConnections();
-      final String url =
-          Const.getFullARMUrl(ServerConnections.ARM_PUSH_TO_QUEUE);
-      LogService.printLongString("API_POST_BODY: ${jsonEncode(queuePayload)}");
-      final dynamic responseStr = await serverConnections.postToServer(
-        url: url,
-        body: jsonEncode(queuePayload),
-        isBearer: true,
-      );
-      serverResponse = responseStr?.toString() ?? "";
-      log(serverResponse, name: _cachedSaveTag);
+  //   try {
+  //     final ServerConnections serverConnections = ServerConnections();
+  //     final String url =
+  //         Const.getFullARMUrl(ServerConnections.ARM_PUSH_TO_QUEUE);
+  //     LogService.printLongString("API_POST_BODY: ${jsonEncode(queuePayload)}");
+  //     final dynamic responseStr = await serverConnections.postToServer(
+  //       url: url,
+  //       body: jsonEncode(queuePayload),
+  //       isBearer: true,
+  //     );
+  //     serverResponse = responseStr?.toString() ?? "";
+  //     log(serverResponse, name: _cachedSaveTag);
 
-      if (serverResponse.isNotEmpty) {
-        final decoded = jsonDecode(serverResponse);
+  //     if (serverResponse.isNotEmpty) {
+  //       final decoded = jsonDecode(serverResponse);
 
-        if (decoded is Map<String, dynamic> &&
-            decoded['result'] != null &&
-            decoded['result']['success'] == true) {
-          pushSuccess = true;
-        }
-      }
-    } catch (e) {
-      serverResponse = e.toString();
-      LogService.writeLog(message: "$_cachedSaveTag POST exception: $e");
-    }
+  //       if (decoded is Map<String, dynamic> &&
+  //           decoded['result'] != null &&
+  //           decoded['result']['success'] == true) {
+  //         pushSuccess = true;
+  //       }
+  //     }
+  //   } catch (e) {
+  //     serverResponse = e.toString();
+  //     LogService.writeLog(message: "$_cachedSaveTag POST exception: $e");
+  //   }
 
-    // ── 6. On success ─────────────────────────────────────────
-    if (pushSuccess) {
-      log("q-success writing as pending");
-      await _saveCachedSaveQueueRecord(
-        queueId: queueId,
-        username: username,
-        projectName: projectName,
-        axmRecIds: axmRecIds,
-        sourceTable: OfflineDBConstants.TABLE_PENDING_REQUESTS,
-        payloadsCount: dataItems.length,
-        queueResponse: serverResponse,
-      );
-      // controller.cachedSaveQueItems.add();
-      controller.addQueue(CachedSaveItemModel(
-          submissionStatus: QueueSubmissionStatus.pending,
-          qId: queueId,
-          totalItems: axmRecIds.length,
-          successItems: 0,
-          failedItems: 0,
-          fcmRecived: false,
-          smallStatusMessage: "waiting for FCM"));
+  //   // ── 6. On success ─────────────────────────────────────────
+  //   if (pushSuccess) {
+  //     log("q-success writing as pending");
+  //     await _saveCachedSaveQueueRecord(
+  //       queueId: queueId,
+  //       username: username,
+  //       projectName: projectName,
+  //       axmRecIds: axmRecIds,
+  //       sourceTable: OfflineDBConstants.TABLE_PENDING_REQUESTS,
+  //       payloadsCount: dataItems.length,
+  //       queueResponse: serverResponse,
+  //     );
+  //     // controller.cachedSaveQueItems.add();
+  //     controller.addQueue(CachedSaveItemModel(
+  //         submissionStatus: QueueSubmissionStatus.pending,
+  //         qId: queueId,
+  //         totalItems: axmRecIds.length,
+  //         successItems: 0,
+  //         failedItems: 0,
+  //         fcmRecived: false,
+  //         smallStatusMessage: "waiting for FCM"));
 
-      await _batchUpdateStatus(
-          axmRecIds, OfflineDBConstants.RECORD_STATUS_QUEUED);
+  //     await _batchUpdateStatus(
+  //         axmRecIds, OfflineDBConstants.RECORD_STATUS_QUEUED);
 
-      await logAudit(
-        action: _cachedSaveTag,
-        remarks: "Queue $queueId pushed. axm_recids=$axmRecIds",
-      );
+  //     await logAudit(
+  //       action: _cachedSaveTag,
+  //       remarks: "Queue $queueId pushed. axm_recids=$axmRecIds",
+  //     );
 
-      // progress?.complete();
-      controller.cachedSaveUpdateMessage.value =
-          "Queue pushed: ${dataItems.length} records (queue_id=$queueId)";
+  //     // progress?.complete();
+  //     controller.cachedSaveUpdateMessage.value =
+  //         "Queue pushed: ${dataItems.length} records (queue_id=$queueId)";
 
-      return "Queue pushed: ${dataItems.length} records (queue_id=$queueId)";
-    }
-    log("q-failed writing as pending");
+  //     return "Queue pushed: ${dataItems.length} records (queue_id=$queueId)";
+  //   }
+  //   log("q-failed writing as pending");
 
-    // ── 7. On failure — rows stay PENDING for retry ───────────
-    await logAudit(
-      action: _cachedSaveTag,
-      isError: true,
-      response: serverResponse,
-      remarks: "Queue $queueId FAILED. Records remain PENDING.",
-    );
+  //   // ── 7. On failure — rows stay PENDING for retry ───────────
+  //   await logAudit(
+  //     action: _cachedSaveTag,
+  //     isError: true,
+  //     response: serverResponse,
+  //     remarks: "Queue $queueId FAILED. Records remain PENDING.",
+  //   );
 
-    // progress?.completeWithError(
-    //   errorMsg: "Queue push failed. Records remain pending.",
-    //   statuscode: "500",
-    // );
+  //   // progress?.completeWithError(
+  //   //   errorMsg: "Queue push failed. Records remain pending.",
+  //   //   statuscode: "500",
+  //   // );
 
-    controller.cachedSaveUpdateMessage.value =
-        "Queue $queueId FAILED. Records remain PENDING.";
+  //   controller.cachedSaveUpdateMessage.value =
+  //       "Queue $queueId FAILED. Records remain PENDING.";
 
-    return "Queue push failed. Records remain pending.";
-  }
+  //   return "Queue push failed. Records remain pending.";
+  // }
 
   static Future<String> pushAllAuditLogsToQueue({
     required bool isInternetAvailable,
@@ -6749,7 +7219,7 @@ class OfflineDbModule {
       // controller.registerSentQueueId(queueId);
 
       await _batchUpdateAuditLogStatus(
-          auditIds, OfflineDBConstants.RECORD_STATUS_QUEUED);
+          auditIds, OfflineDBConstants.RECORD_STATUS_SUCCESS);
 
       await logAudit(
         action: tag,
@@ -6773,13 +7243,16 @@ class OfflineDbModule {
     return "Audit queue push failed. Records remain pending.";
   }
 
-  static Future<int> _batchUpdateAuditLogStatus(
-      List<int> ids, int status) async {
+  static Future<int> _batchUpdateAuditLogStatus(List<int> ids, int status,
+      {bool isSynced = true}) async {
     if (ids.isEmpty) return 0;
     final String placeholders = List.filled(ids.length, '?').join(',');
     return await _database.update(
       OfflineDBConstants.TABLE_AUDIT_LOGS,
-      {OfflineDBConstants.COL_STATUS: status},
+      {
+        OfflineDBConstants.COL_STATUS: status,
+        OfflineDBConstants.COL_IS_SYNCED: isSynced ? 1 : 0
+      },
       where: '${OfflineDBConstants.COL_ID} IN ($placeholders)',
       whereArgs: ids,
     );
@@ -6787,9 +7260,9 @@ class OfflineDbModule {
 
   static String createAxmQueueId() {
     final String epoch = DateTime.now().millisecondsSinceEpoch.toString();
-    var username = globalVariableController.USER_NAME.value;
-    var uNameLength = username.length;
-    var epochLength = epoch.length;
+    // var username = globalVariableController.USER_NAME.value;
+    // var uNameLength = username.length;
+    // var epochLength = epoch.length;
 
     // if ((uNameLength + epochLength + 1) > 30) {
     //   var diff = 30 - epochLength - 1;
@@ -6797,8 +7270,8 @@ class OfflineDbModule {
     //   return newUName + "_" + epoch;
     // }
     // return username + "_" + epoch;
-
-    return epoch;
+    final String randomNum = Random().nextInt(100).toString().padLeft(2, '0');
+    return epoch + randomNum;
   }
 
   static void _tempFixTatMfgDate(Map<String, dynamic> payload) {
@@ -6981,7 +7454,6 @@ class OfflineDbModule {
   }) async {
     const String tag = "[FCM_CACHED_SAVE_UPDATE]";
 
-    // ── look up which table this queue's items came from ──────
     final List<Map<String, dynamic>> queueRows = await _database.query(
       OfflineDBConstants.TABLE_CACHED_SAVE_QUEUE,
       columns: [OfflineDBConstants.COL_SOURCE_TABLE],
@@ -7044,8 +7516,6 @@ class OfflineDbModule {
 
   /// Mirrors _handleQueuePartialOrError / _handleQueueFullSuccess but
   /// updates audit_logs.status + is_synced instead of pending_requests.
-  //TODO remove the ds call for audit logs
-
   static Future<void> _handleAuditLogQueueFcmUpdate({
     required String queueId,
     required String status,
@@ -7053,108 +7523,144 @@ class OfflineDbModule {
   }) async {
     const String tag = "[AUDIT_LOG_FCM_UPDATE]";
 
-    final String sessionId =
-        await AppStorage().retrieveValue(AppStorage.SESSIONID) ?? "";
-    final Map<String, dynamic>? details =
-        await _getActiveMessageData(queueId: queueId, sessionId: sessionId);
+    LogService.writeLog(message: "$tag START queue_id=$queueId status=$status");
 
-    if (details == null) {
-      LogService.writeLog(
-          message:
-              "$tag queue_id=$queueId — no active message data, leaving audit rows untouched.");
-      await _database.update(
-        OfflineDBConstants.TABLE_CACHED_SAVE_QUEUE,
-        {
-          OfflineDBConstants.COL_STATUS: status == 'error'
-              ? OfflineDBConstants.QUEUE_STATUS_ERROR
-              : OfflineDBConstants.QUEUE_STATUS_PARTIAL,
-          OfflineDBConstants.COL_FCM_RESPONSE: rawFcmPayload ?? '',
-          OfflineDBConstants.COL_UPDATED_AT: DateTime.now().toIso8601String(),
-        },
-        where: '${OfflineDBConstants.COL_QUEUE_ID} = ?',
-        whereArgs: [queueId],
-      );
-      return;
+    // Map the string status to your DB constants
+    int finalQueueStatus;
+    if (status == 'success') {
+      finalQueueStatus = OfflineDBConstants.QUEUE_STATUS_SUCCESS;
+    } else if (status == 'error') {
+      finalQueueStatus = OfflineDBConstants.QUEUE_STATUS_ERROR;
+    } else {
+      finalQueueStatus = OfflineDBConstants.QUEUE_STATUS_PARTIAL;
     }
-
-    final Map<String, dynamic>? innerData =
-        _extractInnerDataFromRow(details, queueId);
-    if (innerData == null) {
-      LogService.writeLog(
-          message: "$tag queue_id=$queueId — could not extract inner data.");
-      return;
-    }
-
-    final List<Map<String, dynamic>> successItems =
-        _parseTransactionList(innerData['success_transactions']);
-    final List<Map<String, dynamic>> failedItems =
-        _parseTransactionList(innerData['failed_transactions']);
-
-    final List<int> successIds = [];
-    final List<int> failedIds = [];
-
-    for (final item in successItems) {
-      final int? id = int.tryParse(item['axm_recid']?.toString() ?? '');
-      if (id == null) continue;
-      successIds.add(id);
-    }
-    for (final item in failedItems) {
-      final int? id = int.tryParse(item['axm_recid']?.toString() ?? '');
-      if (id == null) continue;
-      failedIds.add(id);
-    }
-
-    if (successIds.isNotEmpty) {
-      await _database.update(
-        OfflineDBConstants.TABLE_AUDIT_LOGS,
-        {
-          OfflineDBConstants.COL_STATUS:
-              OfflineDBConstants.RECORD_STATUS_SUCCESS,
-          OfflineDBConstants.COL_IS_SYNCED: 1,
-        },
-        where:
-            '${OfflineDBConstants.COL_ID} IN (${List.filled(successIds.length, '?').join(',')})',
-        whereArgs: successIds,
-      );
-      LogService.writeLog(
-          message:
-              "$tag queue_id=$queueId marked ${successIds.length} audit rows SUCCESS+synced.");
-    }
-
-    if (failedIds.isNotEmpty) {
-      await _database.update(
-        OfflineDBConstants.TABLE_AUDIT_LOGS,
-        {OfflineDBConstants.COL_STATUS: OfflineDBConstants.RECORD_STATUS_ERROR},
-        where:
-            '${OfflineDBConstants.COL_ID} IN (${List.filled(failedIds.length, '?').join(',')})',
-        whereArgs: failedIds,
-      );
-      LogService.writeLog(
-          message:
-              "$tag queue_id=$queueId marked ${failedIds.length} audit rows ERROR.");
-    }
-
-    final int finalQueueStatus = failedIds.isEmpty
-        ? OfflineDBConstants.QUEUE_STATUS_SUCCESS
-        : successIds.isEmpty
-            ? OfflineDBConstants.QUEUE_STATUS_ERROR
-            : OfflineDBConstants.QUEUE_STATUS_PARTIAL;
 
     await _database.update(
       OfflineDBConstants.TABLE_CACHED_SAVE_QUEUE,
       {
         OfflineDBConstants.COL_STATUS: finalQueueStatus,
-        OfflineDBConstants.COL_FCM_RESPONSE: jsonEncode(details),
+        OfflineDBConstants.COL_FCM_RESPONSE: rawFcmPayload ?? '',
         OfflineDBConstants.COL_UPDATED_AT: DateTime.now().toIso8601String(),
       },
       where: '${OfflineDBConstants.COL_QUEUE_ID} = ?',
       whereArgs: [queueId],
     );
 
+    /// im not updating any audit log rec ids here beacuse we just simply pushing teh audit logs and while pushing the audit log itself
+    ///we are updating teh audit log status to be synced and success
     LogService.writeLog(
         message:
-            "$tag DONE queue_id=$queueId finalQueueStatus=$finalQueueStatus");
+            "$tag DONE queue_id=$queueId updated cached_save_queue to status=$finalQueueStatus");
   }
+  // static Future<void> _handleAuditLogQueueFcmUpdate({
+  //   required String queueId,
+  //   required String status,
+  //   String? rawFcmPayload,
+  // }) async {
+  //   const String tag = "[AUDIT_LOG_FCM_UPDATE]";
+
+  //   final String sessionId =
+  //       await AppStorage().retrieveValue(AppStorage.SESSIONID) ?? "";
+  //   final Map<String, dynamic>? details =
+  //       await _getActiveMessageData(queueId: queueId, sessionId: sessionId);
+
+  //   if (details == null) {
+  //     LogService.writeLog(
+  //         message:
+  //             "$tag queue_id=$queueId — no active message data, leaving audit rows untouched.");
+  //     await _database.update(
+  //       OfflineDBConstants.TABLE_CACHED_SAVE_QUEUE,
+  //       {
+  //         OfflineDBConstants.COL_STATUS: status == 'error'
+  //             ? OfflineDBConstants.QUEUE_STATUS_ERROR
+  //             : OfflineDBConstants.QUEUE_STATUS_PARTIAL,
+  //         OfflineDBConstants.COL_FCM_RESPONSE: rawFcmPayload ?? '',
+  //         OfflineDBConstants.COL_UPDATED_AT: DateTime.now().toIso8601String(),
+  //       },
+  //       where: '${OfflineDBConstants.COL_QUEUE_ID} = ?',
+  //       whereArgs: [queueId],
+  //     );
+  //     return;
+  //   }
+
+  //   final Map<String, dynamic>? innerData =
+  //       _extractInnerDataFromRow(details, queueId);
+  //   if (innerData == null) {
+  //     LogService.writeLog(
+  //         message: "$tag queue_id=$queueId — could not extract inner data.");
+  //     return;
+  //   }
+
+  //   final List<Map<String, dynamic>> successItems =
+  //       _parseTransactionList(innerData['success_transactions']);
+  //   final List<Map<String, dynamic>> failedItems =
+  //       _parseTransactionList(innerData['failed_transactions']);
+
+  //   final List<int> successIds = [];
+  //   final List<int> failedIds = [];
+
+  //   for (final item in successItems) {
+  //     final int? id = int.tryParse(item['axm_recid']?.toString() ?? '');
+  //     if (id == null) continue;
+  //     successIds.add(id);
+  //   }
+  //   for (final item in failedItems) {
+  //     final int? id = int.tryParse(item['axm_recid']?.toString() ?? '');
+  //     if (id == null) continue;
+  //     failedIds.add(id);
+  //   }
+
+  //   if (successIds.isNotEmpty) {
+  //     await _database.update(
+  //       OfflineDBConstants.TABLE_AUDIT_LOGS,
+  //       {
+  //         OfflineDBConstants.COL_STATUS:
+  //             OfflineDBConstants.RECORD_STATUS_SUCCESS,
+  //         OfflineDBConstants.COL_IS_SYNCED: 1,
+  //       },
+  //       where:
+  //           '${OfflineDBConstants.COL_ID} IN (${List.filled(successIds.length, '?').join(',')})',
+  //       whereArgs: successIds,
+  //     );
+  //     LogService.writeLog(
+  //         message:
+  //             "$tag queue_id=$queueId marked ${successIds.length} audit rows SUCCESS+synced.");
+  //   }
+
+  //   if (failedIds.isNotEmpty) {
+  //     await _database.update(
+  //       OfflineDBConstants.TABLE_AUDIT_LOGS,
+  //       {OfflineDBConstants.COL_STATUS: OfflineDBConstants.RECORD_STATUS_ERROR},
+  //       where:
+  //           '${OfflineDBConstants.COL_ID} IN (${List.filled(failedIds.length, '?').join(',')})',
+  //       whereArgs: failedIds,
+  //     );
+  //     LogService.writeLog(
+  //         message:
+  //             "$tag queue_id=$queueId marked ${failedIds.length} audit rows ERROR.");
+  //   }
+
+  //   final int finalQueueStatus = failedIds.isEmpty
+  //       ? OfflineDBConstants.QUEUE_STATUS_SUCCESS
+  //       : successIds.isEmpty
+  //           ? OfflineDBConstants.QUEUE_STATUS_ERROR
+  //           : OfflineDBConstants.QUEUE_STATUS_PARTIAL;
+
+  //   await _database.update(
+  //     OfflineDBConstants.TABLE_CACHED_SAVE_QUEUE,
+  //     {
+  //       OfflineDBConstants.COL_STATUS: finalQueueStatus,
+  //       OfflineDBConstants.COL_FCM_RESPONSE: jsonEncode(details),
+  //       OfflineDBConstants.COL_UPDATED_AT: DateTime.now().toIso8601String(),
+  //     },
+  //     where: '${OfflineDBConstants.COL_QUEUE_ID} = ?',
+  //     whereArgs: [queueId],
+  //   );
+
+  //   LogService.writeLog(
+  //       message:
+  //           "$tag DONE queue_id=$queueId finalQueueStatus=$finalQueueStatus");
+  // }
 
   static Future<void> _handleQueueFullSuccess({
     required String queueId,

@@ -204,14 +204,14 @@ class LandingPage extends StatelessWidget {
                                 subtitle: "Delete all pending submissions",
                                 onTap: offlineFormController.actionClearPending,
                               ),
-                              _simpleRow(
-                                icon: Icons.history_edu_rounded,
-                                color: Colors.blueGrey,
-                                title: "View Audit Logs",
-                                subtitle:
-                                    "Track user actions and system events",
-                                onTap: () => Get.to(() => AuditLogPage()),
-                              ),
+                              // _simpleRow(
+                              //   icon: Icons.history_edu_rounded,
+                              //   color: Colors.blueGrey,
+                              //   title: "View Audit Logs",
+                              //   subtitle:
+                              //       "Track user actions and system events",
+                              //   onTap: () => Get.to(() => AuditLogPage()),
+                              // ),
 
                               const Divider(),
                               Row(

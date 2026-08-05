@@ -6,12 +6,14 @@ class QueueResolveResultModel {
   final int? finalStatus;
   final int successCount;
   final int failedCount;
+  final String statusMessage;
 
   const QueueResolveResultModel({
     required this.queueId,
     this.finalStatus,
     required this.successCount,
     required this.failedCount,
+    this.statusMessage = '',
   });
 
   bool get isSuccess => finalStatus == OfflineDBConstants.QUEUE_STATUS_SUCCESS;

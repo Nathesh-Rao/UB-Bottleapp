@@ -588,27 +588,41 @@ class _InfoTile2 extends StatelessWidget {
                           Colors.red,
                         ),
                         _miniChipWidget(
-                          item.fcmRecived
+                          item.submissionStatus == QueueSubmissionStatus.error
                               ? Icon(
-                                  Icons.cloud_done_rounded,
+                                  Icons.error_outline,
                                   size: 12,
-                                  color: item.fcmRecived
-                                      ? Colors.teal
-                                      : Colors.orange,
+                                  color: Colors.red,
                                 )
-                              : SizedBox(
-                                  height: 8,
-                                  width: 8,
-                                  child: Center(
-                                      child: CircularProgressIndicator(
-                                    strokeCap: StrokeCap.round,
-                                    strokeWidth: 1.5,
-                                    color: item.fcmRecived
-                                        ? Colors.teal
-                                        : Colors.orange,
-                                  ))),
-                          item.fcmRecived ? "FCM" : "Waiting",
-                          item.fcmRecived ? Colors.teal : Colors.orange,
+                              : item.fcmRecived
+                                  ? Icon(
+                                      Icons.cloud_done_rounded,
+                                      size: 12,
+                                      color: item.fcmRecived
+                                          ? Colors.teal
+                                          : Colors.orange,
+                                    )
+                                  : SizedBox(
+                                      height: 8,
+                                      width: 8,
+                                      child: Center(
+                                          child: CircularProgressIndicator(
+                                        strokeCap: StrokeCap.round,
+                                        strokeWidth: 1.5,
+                                        color: item.fcmRecived
+                                            ? Colors.teal
+                                            : Colors.orange,
+                                      ))),
+                          item.submissionStatus == QueueSubmissionStatus.error
+                              ? "ERROR"
+                              : item.fcmRecived
+                                  ? "FCM"
+                                  : "Waiting",
+                          item.submissionStatus == QueueSubmissionStatus.error
+                              ? Colors.red
+                              : item.fcmRecived
+                                  ? Colors.teal
+                                  : Colors.orange,
                         ),
                       ],
                     ),
@@ -730,6 +744,11 @@ class _InfoTile2 extends StatelessWidget {
         fg = Colors.blue;
         text = "SENDING";
         break;
+      case QueueSubmissionStatus.created:
+        bg = MyColors.AXMDark.withOpacity(.12);
+        fg = MyColors.AXMDark;
+        text = "CREATED";
+        break;
     }
 
     return Container(
@@ -766,6 +785,8 @@ class _InfoTile2 extends StatelessWidget {
         return 'assets/images/q-refetch2.png';
       case QueueSubmissionStatus.sending:
         return 'assets/images/q-sending.png';
+      case QueueSubmissionStatus.created:
+        return 'assets/images/q-created.png';
     }
   }
 }

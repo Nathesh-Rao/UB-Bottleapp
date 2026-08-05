@@ -1969,10 +1969,13 @@ class InwardEntryDynamicController extends GetxController {
         );
       }
     } catch (e) {
-      isLoading.value = false;
-      submitStatus.value = "";
+      // isLoading.value = false;
+      // submitStatus.value = "";
       print("SUBMIT ERROR: $e");
       Get.snackbar("Error", "Unexpected error: $e");
+    } finally {
+      isLoading.value = false;
+      submitStatus.value = "";
     }
   }
 
@@ -2295,8 +2298,6 @@ class InwardEntryDynamicController extends GetxController {
         duration: const Duration(seconds: 3),
       );
     } catch (e) {
-      isLoading.value = false;
-      submitStatus.value = "";
       debugPrint("SUBMIT_FOR_QUE ERROR: $e");
       Get.snackbar(
         "Error",
@@ -2306,6 +2307,8 @@ class InwardEntryDynamicController extends GetxController {
       );
     } finally {
       isSubmitButtonClicked.value = false;
+      isLoading.value = false;
+      submitStatus.value = "";
     }
   }
 }

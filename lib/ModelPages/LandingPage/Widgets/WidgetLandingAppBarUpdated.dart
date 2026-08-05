@@ -117,6 +117,6 @@ class WidgetLandingAppBarUpdated extends StatelessWidget
   }
 
   @override
-  // TODO: implement preferredSize
+  // : implement preferredSize
   Size get preferredSize => new Size.fromHeight(AppBar().preferredSize.height);
 }

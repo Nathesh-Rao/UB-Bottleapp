@@ -1,3 +1,5 @@
+import 'dart:io';
+
 enum QueueSubmissionStatus {
   success,
   error,
@@ -5,6 +7,19 @@ enum QueueSubmissionStatus {
   partial,
   refetch,
   sending,
+  created,
+}
+
+class QueuedPayloadData {
+  final File file;
+  final String queueId;
+  final List<int> axmRecIds;
+
+  QueuedPayloadData({
+    required this.file,
+    required this.queueId,
+    required this.axmRecIds,
+  });
 }
 
 class BuildQueueResult {

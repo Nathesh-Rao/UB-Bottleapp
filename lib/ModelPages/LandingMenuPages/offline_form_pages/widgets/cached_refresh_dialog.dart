@@ -448,6 +448,18 @@ class CachedRefreshDialogWidget extends GetView<OfflineFormController> {
                               ),
                   ),
 
+                  SizedBox(
+                    height: 10,
+                  ),
+                  if (isRefreshing || isDone)
+                    Obx(
+                      () => _infoBox(
+                        icon: Icons.info_outline_rounded,
+                        message: controller.cachedSaveUpdateMessage.value,
+                        color: const Color(0xffF59E0B),
+                      ),
+                    ),
+
                   const SizedBox(height: 18),
 
                   // ── Action button ────────────────────────────────
@@ -600,7 +612,9 @@ class CachedRefreshDialogWidget extends GetView<OfflineFormController> {
                   ),
                 if (result.isNotFound)
                   Text(
-                    "No server response found",
+                    result.statusMessage.isEmpty
+                        ? "No server response found"
+                        : result.statusMessage,
                     style: GoogleFonts.inter(
                       fontSize: 11,
                       color: Colors.grey.shade500,
@@ -654,12 +668,26 @@ class CachedRefreshDialogWidget extends GetView<OfflineFormController> {
 
     final bool allGood = errorCount == 0 && partialCount == 0;
 
-    return _infoBox(
-      icon: allGood
-          ? Icons.check_circle_outline_rounded
-          : Icons.warning_amber_rounded,
-      message: summary.isEmpty ? "All queues processed." : summary.toString(),
-      color: allGood ? const Color(0xff16A34A) : const Color(0xffF59E0B),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _infoBox(
+          icon: allGood
+              ? Icons.check_circle_outline_rounded
+              : Icons.warning_amber_rounded,
+          message:
+              summary.isEmpty ? "All queues processed." : summary.toString(),
+          color: allGood ? const Color(0xff16A34A) : const Color(0xffF59E0B),
+        ),
+        // _infoBox(
+        //   icon: allGood
+        //       ? Icons.check_circle_outline_rounded
+        //       : Icons.warning_amber_rounded,
+        //   message:
+        //       summary.isEmpty ? "All queues processed." : summary.toString(),
+        //   color: allGood ? const Color(0xff16A34A) : const Color(0xffF59E0B),
+        // ),
+      ],
     );
   }
 

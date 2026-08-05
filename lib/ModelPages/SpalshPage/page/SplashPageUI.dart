@@ -155,12 +155,18 @@ class _SplashPageState extends State<SplashPage>
   }
 
   setupDefaultProject() async {
+    // ProjectModel ubProject = ProjectModel(
+    //     DateTime.now().toString(),
+    //     "genie",
+    //     "https://app.ublnet.in/genie",
+    //     "https://app.ublnet.in/arm114",
+    //     "Bottle Sampling");
     ProjectModel ubProject = ProjectModel(
         DateTime.now().toString(),
         "genie",
-        "https://app.ublnet.in/genie",
-        "https://app.ublnet.in/arm114",
-        "Bottle Sampling");
+        "https://ublwebdev.ublnet.in/axpert114",
+        "https://ublwebdev.ublnet.in/ARM_API",
+        "genie");
     List<ProjectModel> projects = [ubProject];
 
     String? storedData = appStorage.retrieveValue("projects");
@@ -183,7 +189,7 @@ class _SplashPageState extends State<SplashPage>
 
   @override
   void dispose() {
-    // TODO: implement dispose
+    // : implement dispose
     // SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: SystemUiOverlay.values);
     // SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
     super.dispose();

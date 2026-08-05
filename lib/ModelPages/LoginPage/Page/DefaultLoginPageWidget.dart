@@ -109,48 +109,57 @@ class _DefaultLoginPageWidgetState extends State<DefaultLoginPageWidget> {
                           ),
                         ],
                       ),
+                      // child: Hero(
+                      //   tag: 'axpertImage',
+                      //   child: FutureBuilder(
+                      //       future: CommonMethods.getLogoUrl(),
+                      //       builder: (context, asyncSnapshot) {
+                      //         if (asyncSnapshot.connectionState ==
+                      //             ConnectionState.waiting) {
+                      //           return Center(
+                      //               child: SpinKitFadingCircle(
+                      //             color: MyColors.blue2,
+                      //             size: 30,
+                      //           ));
+                      //         }
+                      //         return Image.network(
+                      //           asyncSnapshot.data ?? '',
+                      //           width: MediaQuery.of(context).size.width * 0.24,
+                      //           fit: BoxFit.contain,
+                      //           frameBuilder: (context, child, frame,
+                      //               wasSynchronouslyLoaded) {
+                      //             if (wasSynchronouslyLoaded || frame != null) {
+                      //               return child;
+                      //             }
+                      //             return SizedBox(
+                      //               width: MediaQuery.of(context).size.width *
+                      //                   0.24,
+                      //               child: const Center(
+                      //                   child: SpinKitFadingCircle(
+                      //                 color: MyColors.blue2,
+                      //                 size: 30,
+                      //               )),
+                      //             );
+                      //           },
+                      //           errorBuilder: (context, error, stackTrace) {
+                      //             return Image.asset(
+                      //               'assets/images/axpert_04.png',
+                      //               width: MediaQuery.of(context).size.width *
+                      //                   0.24,
+                      //               fit: BoxFit.fill,
+                      //             );
+                      //           },
+                      //         );
+                      //       }),
+                      // ),
+
                       child: Hero(
                         tag: 'axpertImage',
-                        child: FutureBuilder(
-                            future: CommonMethods.getLogoUrl(),
-                            builder: (context, asyncSnapshot) {
-                              if (asyncSnapshot.connectionState ==
-                                  ConnectionState.waiting) {
-                                return Center(
-                                    child: SpinKitFadingCircle(
-                                  color: MyColors.blue2,
-                                  size: 30,
-                                ));
-                              }
-                              return Image.network(
-                                asyncSnapshot.data ?? '',
-                                width: MediaQuery.of(context).size.width * 0.24,
-                                fit: BoxFit.contain,
-                                frameBuilder: (context, child, frame,
-                                    wasSynchronouslyLoaded) {
-                                  if (wasSynchronouslyLoaded || frame != null) {
-                                    return child;
-                                  }
-                                  return SizedBox(
-                                    width: MediaQuery.of(context).size.width *
-                                        0.24,
-                                    child: const Center(
-                                        child: SpinKitFadingCircle(
-                                      color: MyColors.blue2,
-                                      size: 30,
-                                    )),
-                                  );
-                                },
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Image.asset(
-                                    'assets/images/axpert_04.png',
-                                    width: MediaQuery.of(context).size.width *
-                                        0.24,
-                                    fit: BoxFit.fill,
-                                  );
-                                },
-                              );
-                            }),
+                        child: Image.asset(
+                          "assets/images/ub_logo.png",
+                          width: MediaQuery.of(context).size.width * 0.24,
+                          fit: BoxFit.fill,
+                        ),
                       ),
                     ),
                     SizedBox(height: MediaQuery.of(context).size.height * 0.01),

@@ -9,10 +9,6 @@ import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
 
 class VersionCheckService {
   static const String _tag = "[VERSION_CHECK]";
-//TODO check for internetavailability
-//TODO check
-  // static const String versionInfoUrl =
-  //     'https://raw.githubusercontent.com/amrith4agile/offline_sample_pages/refs/heads/main/appVersionInfo.json';
 
   static Future<AppVersionInfo?> fetchRemoteVersionInfo() async {
     try {

@@ -948,7 +948,8 @@ class LoginController extends GetxController {
         : userNameController.text.toString().trim();
     var body = {
       "appname": globalVariableController.PROJECT_NAME.value,
-      "UserName": userNameController.text.toString().trim(),
+      "UserName": _username,
+      // "UserName": userNameController.text.toString().trim(),
     };
 
     var response =

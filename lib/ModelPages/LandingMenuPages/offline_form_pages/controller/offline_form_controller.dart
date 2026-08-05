@@ -2192,12 +2192,13 @@ class OfflineFormController extends GetxController {
   }
 
   static const Map<QueueSubmissionStatus, int> _statusPriority = {
-    QueueSubmissionStatus.sending: 5,
     QueueSubmissionStatus.refetch: 0,
     QueueSubmissionStatus.error: 1,
     QueueSubmissionStatus.partial: 2,
     QueueSubmissionStatus.success: 3,
     QueueSubmissionStatus.pending: 4,
+    QueueSubmissionStatus.sending: 5,
+    QueueSubmissionStatus.created: 6,
   };
   void _sortQueueItems() {
     cachedSaveQueItems.sort((a, b) {
