@@ -134,22 +134,36 @@ class LandingPageController extends GetxController with WidgetsBindingObserver {
 
     try {
       final isOnline = Get.find<InternetConnectivity>().isConnected.value;
+//EDGE CASE , ON FRSH INSTALL NO FORMS WILL BE THERE
+      // final isOnline = true;
 
       LogService.writeLog(
         message:
             "$tag[START] Post-login offline sync started. isOnline=$isOnline",
       );
-      isDataSourcefetchingOnStart.value = true;
-      await OfflineDbModule.handlePostLogin(
-        // username: await appStorage.retrieveValue(AppStorage.USER_NAME) ?? "",
-        // projectName: globalVariableController.PROJECT_NAME.value,
-        isInternetAvailable: isOnline,
-      ).then((_) {
+      if (isOnline) {
+        isDataSourcefetchingOnStart.value = true;
+        await OfflineDbModule.handlePostLogin(
+          // username: await appStorage.retrieveValue(AppStorage.USER_NAME) ?? "",
+          // projectName: globalVariableController.PROJECT_NAME.value,
+          isInternetAvailable: isOnline,
+        ).then((_) {
+          isDataSourcefetchingOnStart.value = false;
+          totalDsCountOnStart.value = 0;
+          completedDsCountOnStart.value = 0;
+        });
+      } else {
+        globalVariableController.OFFLINE_FORMS_COUNT.value =
+            await OfflineDbModule.getOfflinePagesCount();
         isDataSourcefetchingOnStart.value = false;
         totalDsCountOnStart.value = 0;
         completedDsCountOnStart.value = 0;
-      });
+      }
 
+      LogService.writeLog(
+        message:
+            "$tag page count : ${globalVariableController.OFFLINE_FORMS_COUNT.value}",
+      );
       // await OfflineBackgroundSyncService.instance.start();
       LogService.writeLog(
         message: "$tag[SUCCESS] Post-login offline sync finished",

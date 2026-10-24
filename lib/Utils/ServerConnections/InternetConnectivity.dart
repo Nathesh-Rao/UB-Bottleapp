@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:ubbottleapp/Constants/MyColors.dart';
 import 'package:ubbottleapp/Utils/LogServices/LogService.dart';
@@ -10,7 +11,7 @@ import 'package:google_fonts/google_fonts.dart';
 class InternetConnectivity extends GetxController {
   var isConnected = false.obs;
   static InternetConnectivity to = Get.find();
-  bool _lastConnectionState = true; // assume online initially
+  bool _lastConnectionState = false;
 
   InternetConnectivity() {
     connectivity_listen();
@@ -25,6 +26,7 @@ class InternetConnectivity extends GetxController {
 
     final nowOnline = result.contains(ConnectivityResult.mobile) ||
         result.contains(ConnectivityResult.wifi);
+    log("checkConnectivity : check : nowOnline: :$nowOnline");
 
     _handleStateChange(nowOnline);
 

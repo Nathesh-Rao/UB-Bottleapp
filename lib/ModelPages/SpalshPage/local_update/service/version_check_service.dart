@@ -14,7 +14,7 @@ class VersionCheckService {
     try {
       final response = await http
           .get(Uri.parse(OfflineDBConstants.VERSION_INFO_URL()))
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);

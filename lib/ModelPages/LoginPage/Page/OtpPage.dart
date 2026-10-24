@@ -259,7 +259,7 @@ class _OtpPageState extends State<OtpPage> {
                         builder: (context, snapshot) {
                           if (snapshot.hasData) {
                             return Text(
-                              "Version:${snapshot.data}${Const.APP_RELEASE_DATE}",
+                              "Version:${snapshot.data}",
                               style: GoogleFonts.poppins(
                                   textStyle: TextStyle(
                                       color: MyColors.buzzilyblack,

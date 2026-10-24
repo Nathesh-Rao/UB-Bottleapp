@@ -43,8 +43,7 @@ class LogService {
     // String packageName = packageInfo.packageName;
     var version = packageInfo.version;
     // String buildNumber = packageInfo.buildNumber;
-    var versionInfo =
-        version + "." + Const.APP_RELEASE_ID + "_" + Const.APP_RELEASE_DATE;
+    var versionInfo = version + "." + Const.APP_RELEASE_ID;
     return versionInfo;
   }
 

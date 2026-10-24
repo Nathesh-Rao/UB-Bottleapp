@@ -1,18 +1,17 @@
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:animate_do/animate_do.dart';
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:ubbottleapp/Constants/CommonMethods.dart';
 import 'package:ubbottleapp/Constants/GlobalVariableController.dart';
 import 'package:ubbottleapp/Constants/MyColors.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/auto_sync/offline_background_sync_service.dart';
 import 'package:ubbottleapp/ModelPages/LandingMenuPages/offline_form_pages/db/offline_db_module.dart';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_switch/flutter_switch.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:open_file/open_file.dart';
 import '../../../Constants/Const.dart';
 import '../../LandingMenuPages/MenuHomePagePage/Controllers/MenuHomePageController.dart';
 import '../../LandingPage/Controller/LandingPageController.dart';
@@ -26,6 +25,7 @@ class SettingsPage extends StatelessWidget {
   final LandingPageController landingPageController = Get.find();
   final MenuHomePageController menuHomePageController = Get.find();
   final GlobalVariableController _globalVariableController = Get.find();
+  var isAutosyncLoading = false;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -191,227 +191,141 @@ class SettingsPage extends StatelessWidget {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 10),
                         child: SingleChildScrollView(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(height: 20),
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Image.asset(
-                                    'assets/images/ub_logo.png',
-                                    // 'assets/images/buzzily-logo.png',
-                                    height: 70,
-                                    // width: MediaQuery.of(context).size.width * 0.38,
-                                    // fit: BoxFit.fill,
-                                  ),
-                                  SizedBox(
-                                    width: 10,
-                                  ),
-                                  Text(
-                                    "United\nBreweries\nlimited".toUpperCase(),
-                                    style: GoogleFonts.poppins(
-                                      color: Colors.black54,
-                                    ),
-                                    textAlign: TextAlign.start,
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: 18),
-                              ListTile(
-                                onTap: () {
-                                  settingsPageController.onChangeNotifyStatus();
-                                },
-                                leading:
-                                    Icon(Icons.notifications_active_outlined),
-                                title: Text(
-                                  "Notification",
-                                  style: GoogleFonts.poppins(
-                                      textStyle: TextStyle(fontSize: 18)),
+                            child: Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 20),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Image.asset(
+                                  'assets/images/ub_logo.png',
+                                  height: 70,
                                 ),
-                                trailing: Obx(() => SizedBox(
-                                      width: 60,
-                                      child: FlutterSwitch(
-                                        height: 30,
-                                        value: settingsPageController
-                                            .notificationOnOffValue.value,
-                                        showOnOff: true,
-                                        activeColor: MyColors.blue2,
-                                        onToggle: (bool values) {
-                                          settingsPageController
-                                              .onChangeNotifyStatus();
-                                        },
-                                      ),
-                                    )),
-                              ),
-                              Divider(),
-                              ListTile(
-                                onTap: () async {
-                                  await settingsPageController.showtraceDlg();
-                                },
-                                leading: Icon(Icons.description_outlined),
-                                title: Text(
-                                  "Trace",
+                                const SizedBox(width: 10),
+                                Text(
+                                  "United\nBreweries\nlimited".toUpperCase(),
                                   style: GoogleFonts.poppins(
-                                      textStyle: TextStyle(fontSize: 18)),
-                                ),
-                                trailing: Obx(() => SizedBox(
-                                      width: 60,
-                                      child: FlutterSwitch(
-                                        height: 30,
-                                        value: settingsPageController
-                                            .logOnOffValue.value,
-                                        showOnOff: true,
-                                        activeColor: MyColors.blue2,
-                                        onToggle: (bool values) {
-                                          settingsPageController
-                                              .onChangeLogStatus();
-                                          // log(Const.LOG_FILE_PATH);
-                                        },
-                                      ),
-                                    )),
-                              ),
-                              Divider(),
-                              // ListTile(
-                              //   onTap: () async {},
-                              //   leading: Icon(Icons.description_outlined),
-                              //   title: Text(
-                              //     "Auto Sync",
-                              //     style: GoogleFonts.poppins(
-                              //         textStyle: TextStyle(fontSize: 18)),
-                              //   ),
-                              //   trailing: FlutterSwitch(
-                              //     height: 30,
-                              //     value: false,
-                              //     showOnOff: true,
-                              //     activeColor: MyColors.blue2,
-                              //     onToggle: (bool values) {},
-                              //   ),
-                              // ),
-
-                              // ListTile(
-                              //     leading: Icon(Icons.sync),
-                              //     title: Text(
-                              //       "Auto Sync Records",
-                              //       style: GoogleFonts.poppins(
-                              //           textStyle: TextStyle(fontSize: 18)),
-                              //     ),
-                              //     trailing: Obx(() {
-                              //       return SizedBox(
-                              //         width: 60,
-                              //         child: FlutterSwitch(
-                              //           height: 30,
-                              //           value: _globalVariableController
-                              //               .autoSyncEnabled.value,
-                              //           showOnOff: true,
-                              //           activeColor: MyColors.blue2,
-                              //           onToggle: (bool value) async {
-                              //             // await OfflineDbModule
-                              //             //     .toggleAutoSync();
-                              //             // setStateC(() {});
-
-                              //             final bool newValue =
-                              //                 !_globalVariableController
-                              //                     .autoSyncEnabled.value;
-                              //             final bool applied =
-                              //                 await OfflineBackgroundSyncService
-                              //                     .instance
-                              //                     .setAutoSync(
-                              //                         enabled: newValue);
-                              //             if (applied) {
-                              //               // Update GlobalVariableController to reflect the change in UI
-                              //               _globalVariableController
-                              //                   .autoSyncEnabled
-                              //                   .value = newValue;
-                              //             }
-                              //           },
-                              //         ),
-                              //       );
-                              //     })),
-
-                              // Divider(),
-                              ListTile(
-                                  leading: Icon(Icons.sync_alt),
-                                  title: Text(
-                                    "Auto Sync Masters",
-                                    style: GoogleFonts.poppins(
-                                        textStyle: TextStyle(fontSize: 18)),
+                                    color: Colors.black54,
+                                    fontWeight: FontWeight.w600,
                                   ),
-                                  trailing: Obx(() {
-                                    return SizedBox(
-                                      width: 60,
-                                      child: FlutterSwitch(
-                                        height: 30,
-                                        value: _globalVariableController
-                                            .autoSyncMasterEnabled.value,
-                                        showOnOff: true,
-                                        activeColor: MyColors.blue2,
-                                        onToggle: (bool value) async {
-                                          // await OfflineDbModule
-                                          //     .toggleAutoSync();
-                                          // setStateC(() {});
-
-                                          await OfflineDbModule
-                                              .toggleAutoSyncMaster();
-
-                                          // if (applied) {
-                                          //   // Update GlobalVariableController to reflect the change in UI
-                                          //   _globalVariableController
-                                          //       .autoSyncEnabled
-                                          //       .value = newValue;
-                                          // }
-                                        },
-                                      ),
-                                    );
-                                  })),
-
-                              Divider(),
-
-                              ListTile(
-                                onTap: () {
-                                  // DemoUtils.showDemoBarrier();
-                                  landingPageController.showManageWindow(
-                                      initialIndex: 1);
-                                },
-                                leading: Icon(Icons.lock_outline),
-                                title: Text(
-                                  "Reset Password",
-                                  style: GoogleFonts.poppins(
-                                      textStyle: TextStyle(fontSize: 18)),
+                                  textAlign: TextAlign.start,
                                 ),
-                              ),
-                              Divider(),
-                              ListTile(
-                                onTap: () async {
-                                  if (!OfflineBackgroundSyncService.instance
-                                      .canProceedWithAction()) return;
-                                  await OfflineBackgroundSyncService.instance
-                                      .stop();
-                                  await landingPageController.signOut();
-                                },
-                                leading: Icon(Icons.power_settings_new),
-                                title: Text(
-                                  "Sign out",
-                                  style: GoogleFonts.poppins(
-                                      textStyle: TextStyle(fontSize: 18)),
-                                ),
-                              ),
-                              Divider(),
+                              ],
+                            ),
+                            const SizedBox(height: 30),
 
-                              // TextButton(
-                              //     onPressed: () {
-                              //       Aes().encryptString(ExecuteApi.API_PrivateKey_DashBoard);
-                              //       Aes().decryptString("G7H+G66Z+peBK7zJ3Rq1SA==", ExecuteApi.API_PrivateKey_DashBoard);
-                              //       // Aes().encryptString(ExecuteApi.API_PrivateKey_DashBoard);
-                              //     },
-                              //     child: Text("Encrypt")),
-                            ],
-                          ),
-                        ),
+                            // 1. Notification
+                            _buildCustomTile(
+                              title: "Notification",
+                              iconOn: Icons.notifications_active_rounded,
+                              iconOff: Icons.notifications_off_outlined,
+                              iconColor: MyColors.blue1,
+                              switchValue:
+                                  settingsPageController.notificationOnOffValue,
+                              onToggle: (val) =>
+                                  settingsPageController.onChangeNotifyStatus(),
+                            ),
+
+                            // 2. Trace
+                            _buildCustomTile(
+                              title: "Trace",
+                              iconOn: Icons.description_rounded,
+                              iconOff: Icons.description_outlined,
+                              iconColor: Colors.green,
+                              switchValue: settingsPageController.logOnOffValue,
+                              onToggle: (val) =>
+                                  settingsPageController.onChangeLogStatus(),
+                            ),
+
+                            // 3. Auto Sync Records (With animate_do Spin)
+                            StatefulBuilder(builder: (c, setSt) {
+                              return _buildCustomTile(
+                                title: "Auto Sync Records",
+                                iconOn: Icons.sync_rounded,
+                                iconOff: Icons.sync_disabled_rounded,
+                                iconColor: Colors.teal,
+                                isLoading:
+                                    isAutosyncLoading, // Triggers the Spin animation
+                                switchValue:
+                                    _globalVariableController.autoSyncEnabled,
+                                onToggle: (val) async {
+                                  setSt(() =>
+                                      isAutosyncLoading = !isAutosyncLoading);
+
+                                  final bool newValue =
+                                      !_globalVariableController
+                                          .autoSyncEnabled.value;
+                                  final bool applied =
+                                      await OfflineBackgroundSyncService
+                                          .instance
+                                          .setAutoSync(enabled: newValue);
+                                  setSt(() => isAutosyncLoading = false);
+                                  if (applied) {
+                                    _globalVariableController
+                                        .autoSyncEnabled.value = newValue;
+                                  }
+                                },
+                              );
+                            }),
+
+                            // 4. Auto Sync Masters
+                            _buildCustomTile(
+                              title: "Auto Sync Masters",
+                              iconOn: Icons.cloud_sync_rounded,
+                              iconOff: Icons.cloud_off_rounded,
+                              iconColor: MyColors.blue10,
+                              switchValue: _globalVariableController
+                                  .autoSyncMasterEnabled,
+                              onToggle: (val) async {
+                                await OfflineDbModule.toggleAutoSyncMaster();
+                              },
+                            ),
+
+                            const Padding(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 8),
+                              child: Divider(color: Colors.black12, height: 1),
+                            ),
+
+                            // 5. Reset Password (Action Tile)
+                            _buildCustomTile(
+                              title: "Reset Password",
+                              iconOn: Icons.lock_reset_rounded,
+                              iconColor: Colors.indigo,
+                              onTap: () {
+                                landingPageController.showManageWindow(
+                                    initialIndex: 1);
+                              },
+                            ),
+
+                            // 6. Sign out (Action Tile)
+                            _buildCustomTile(
+                              title: "Sign out",
+                              iconOn: Icons.power_settings_new_rounded,
+                              iconColor: Colors.redAccent,
+                              onTap: () async {
+                                if (!OfflineBackgroundSyncService.instance
+                                    .canProceedWithAction()) return;
+                                await OfflineBackgroundSyncService.instance
+                                    .stop();
+                                await landingPageController.signOut();
+                              },
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+                        )),
                       ),
                     ),
                   ),
+                  // TextButton(
+                  //     onPressed: () {
+                  //       Aes().encryptString(ExecuteApi.API_PrivateKey_DashBoard);
+                  //       Aes().decryptString("G7H+G66Z+peBK7zJ3Rq1SA==", ExecuteApi.API_PrivateKey_DashBoard);
+                  //       // Aes().encryptString(ExecuteApi.API_PrivateKey_DashBoard);
+                  //     },
+                  //     child: Text("Encrypt")),
                   Container(
                     padding: EdgeInsets.only(left: 5, right: 5),
                     height: 40,
@@ -426,7 +340,15 @@ class SettingsPage extends StatelessWidget {
                         ),
                         Text(" © ${DateTime.now().year} Powered by Axpert"),
                         Spacer(),
-                        Text("Version: " + Const.APP_VERSION)
+                        Text(
+                          "v${Const.APP_VERSION}_${Const.APP_RELEASE_DATE}",
+                          style: GoogleFonts.poppins(
+                              textStyle: TextStyle(
+                                  color: MyColors.buzzilyblack,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: MediaQuery.of(context).size.height *
+                                      0.012)),
+                        )
                       ],
                     ),
                   ),
@@ -437,5 +359,90 @@ class SettingsPage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildCustomTile({
+    required String title,
+    required IconData iconOn,
+    IconData? iconOff,
+    required Color iconColor,
+    RxBool? switchValue,
+    Function(bool)? onToggle,
+    VoidCallback? onTap,
+    bool isLoading = false,
+  }) {
+    Widget buildTile(bool isOn) {
+      final IconData currentIcon = isOn ? iconOn : (iconOff ?? iconOn);
+
+      return ListTile(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 4,
+        ),
+        onTap:
+            onTap ?? (switchValue != null ? () => onToggle?.call(!isOn) : null),
+        leading: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            // color: isOn
+            //     ? iconColor.withValues(alpha: 0.15)
+            //     : Colors.grey.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Spin(
+            animate: isLoading,
+            infinite: isLoading,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (child, animation) {
+                return ScaleTransition(
+                  scale: animation,
+                  child: FadeTransition(
+                    opacity: animation,
+                    child: child,
+                  ),
+                );
+              },
+              child: Icon(
+                currentIcon,
+                key: ValueKey<IconData>(currentIcon),
+                color: isOn ? iconColor : Colors.grey.shade500,
+                size: 24,
+              ),
+            ),
+          ),
+        ),
+        title: Text(
+          title,
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+        ),
+        trailing: switchValue != null
+            ? CupertinoSwitch(
+                value: isOn,
+                onChanged: onToggle,
+                // activeThumbColor: iconColor,
+                thumbColor: iconColor,
+                inactiveThumbColor: MyColors.AXMGray,
+                activeTrackColor: iconColor.withValues(alpha: 0.2),
+              )
+            : const Icon(
+                Icons.chevron_right_rounded,
+                color: Colors.black26,
+              ),
+      );
+    }
+
+    // Only create Obx when this tile actually depends on an RxBool.
+    if (switchValue != null) {
+      return Obx(() => buildTile(switchValue.value));
+    }
+
+    // Normal action tile — no Obx required.
+    return buildTile(true);
   }
 }

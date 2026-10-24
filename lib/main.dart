@@ -56,6 +56,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   LogService.writeOnConsole(message: "Main method started.......");
   // await CommonMethods.requestLocationPermission();
+  Get.put(InternetConnectivity(), permanent: true);
   await GetStorage.init();
   await FlutterDownloader.initialize(debug: true);
   await Firebase.initializeApp();
@@ -184,9 +185,6 @@ Future<void> fetchData() async {
 class MyApp extends StatelessWidget {
   MyApp({super.key});
 
-  final InternetConnectivity internetConnectivity =
-      Get.put(InternetConnectivity());
-
   @override
   Widget build(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -195,6 +193,7 @@ class MyApp extends StatelessWidget {
     });
 
     return GetMaterialApp(
+      
       debugShowCheckedModeBanner: false,
       title: 'Axpert Flutter',
       darkTheme: Const.THEMEDATA,

@@ -788,8 +788,8 @@ class LoginController extends GetxController {
             await processSignInDataResponse(json["result"]);
 
             if (AppStorage().retrieveValue(AppStorage.AUTO_SYNC) == null) {
-              globalVariableController.autoSyncEnabled.value = false;
-              await AppStorage().storeValue(AppStorage.AUTO_SYNC, false);
+              globalVariableController.autoSyncEnabled.value = true;
+              await AppStorage().storeValue(AppStorage.AUTO_SYNC, true);
             } else {
               globalVariableController.autoSyncEnabled.value =
                   await AppStorage().retrieveValue(AppStorage.AUTO_SYNC);
@@ -865,80 +865,79 @@ class LoginController extends GetxController {
     }
   }
 
-  callSignInAPI1() async {
-    if (isOfflineLogin.value) {
-      await callSignInOffline();
-    } else if (validateForm()) {
-      var _username = _isAuthFromBiometric
-          ? retrieveLastLoginData()["username"]
-          : userNameController.text.toString().trim();
-      var _password = _isAuthFromBiometric
-          ? retrieveLastLoginData()["password"]
-          : generateMd5(Const.SEED +
-              generateMd5(userPasswordController.text.toString().trim()));
-      var signInBody = {
-        "appname": globalVariableController.PROJECT_NAME.value,
-        "username": _username,
-        "Seed": Const.SEED,
-        "password": _password,
-        "Language": "English",
-        "SessionId": getGUID(), //GUID
-        "Globalvars": false
-      };
+  // callSignInAPI1() async {
+  //   if (isOfflineLogin.value) {
+  //     await callSignInOffline();
+  //   } else if (validateForm()) {
+  //     var _username = _isAuthFromBiometric
+  //         ? retrieveLastLoginData()["username"]
+  //         : userNameController.text.toString().trim();
+  //     var _password = _isAuthFromBiometric
+  //         ? retrieveLastLoginData()["password"]
+  //         : generateMd5(Const.SEED +
+  //             generateMd5(userPasswordController.text.toString().trim()));
+  //     var signInBody = {
+  //       "appname": globalVariableController.PROJECT_NAME.value,
+  //       "username": _username,
+  //       "Seed": Const.SEED,
+  //       "password": _password,
+  //       "Language": "English",
+  //       "SessionId": getGUID(), //GUID
+  //       "Globalvars": false
+  //     };
 
-      signInBody.addIf(isDuplicate_session, "ClearPreviousSession", true);
+  //     signInBody.addIf(isDuplicate_session, "ClearPreviousSession", true);
 
-      // signInBody.addIf(isPWD_auth.value, "password", generateMd5(userPasswordController.text.toString().trim()));
-      signInBody.addIf(isOTP_auth.value, "OtpAuth", "T");
-      FocusManager.instance.primaryFocus?.unfocus();
-      LoadingScreen.show();
-      var _url = Const.getFullARMUrl(ServerConnections.API_SIGNIN);
+  //     // signInBody.addIf(isPWD_auth.value, "password", generateMd5(userPasswordController.text.toString().trim()));
+  //     signInBody.addIf(isOTP_auth.value, "OtpAuth", "T");
+  //     FocusManager.instance.primaryFocus?.unfocus();
+  //     LoadingScreen.show();
+  //     var _url = Const.getFullARMUrl(ServerConnections.API_SIGNIN);
 
-      var response = await serverConnections.postToServer(
-          url: _url, body: jsonEncode(signInBody));
-      // LogService.writeLog(message: "[-] LoginController => loginButtonClicked() => LoginResponse : $response");
+  //     var response = await serverConnections.postToServer(
+  //         url: _url, body: jsonEncode(signInBody));
 
-      if (response != "") {
-        final json = jsonDecode(response);
-        final result = json["result"];
+  //     if (response != "") {
+  //       final json = jsonDecode(response);
+  //       final result = json["result"];
 
-        final bool isSuccess =
-            result["success"].toString().toLowerCase() == "true";
+  //       final bool isSuccess =
+  //           result["success"].toString().toLowerCase() == "true";
 
-        if (isSuccess) {
-          storeLastLoginData(signInBody);
+  //       if (isSuccess) {
+  //         storeLastLoginData(signInBody);
 
-          if (result["message"] == "Login Successful.") {
-            await processSignInDataResponse(json["result"]);
-          } else if (result.containsKey("OTPLoginKey")) {
-            // OTPPage
-            otpMsg.value = result["message"].toString();
-            otpLoginKey.value = result["OTPLoginKey"].toString();
-            print("Otpmsg: ${otpMsg.value} \nOtpkey: ${otpLoginKey.value}");
-            Get.toNamed(Routes.OtpPage);
-          }
-        } else {
-          if (result.containsKey("duplicate_session") &&
-              result["duplicate_session"] == true) {
-            isDuplicate_session = true;
-            showDialog_duplicateSession(result["message"].toString());
-          } else if (result.containsKey("change_password") &&
-              result["change_password"] == true) {
-            showDialog_changePassword();
-          } else {
-            if (Get.isDialogOpen ?? false) {
-              Get.back(); // closes the dialog
-            }
-            Get.snackbar("Error ", json["result"]["message"],
-                snackPosition: SnackPosition.BOTTOM,
-                backgroundColor: Colors.redAccent,
-                colorText: Colors.white);
-          }
-        }
-      }
-      LoadingScreen.dismiss();
-    }
-  }
+  //         if (result["message"] == "Login Successful.") {
+  //           await processSignInDataResponse(json["result"]);
+  //         } else if (result.containsKey("OTPLoginKey")) {
+  //           // OTPPage
+  //           otpMsg.value = result["message"].toString();
+  //           otpLoginKey.value = result["OTPLoginKey"].toString();
+  //           print("Otpmsg: ${otpMsg.value} \nOtpkey: ${otpLoginKey.value}");
+  //           Get.toNamed(Routes.OtpPage);
+  //         }
+  //       } else {
+  //         if (result.containsKey("duplicate_session") &&
+  //             result["duplicate_session"] == true) {
+  //           isDuplicate_session = true;
+  //           showDialog_duplicateSession(result["message"].toString());
+  //         } else if (result.containsKey("change_password") &&
+  //             result["change_password"] == true) {
+  //           showDialog_changePassword();
+  //         } else {
+  //           if (Get.isDialogOpen ?? false) {
+  //             Get.back();
+  //           }
+  //           Get.snackbar("Error ", json["result"]["message"],
+  //               snackPosition: SnackPosition.BOTTOM,
+  //               backgroundColor: Colors.redAccent,
+  //               colorText: Colors.white);
+  //         }
+  //       }
+  //     }
+  //     LoadingScreen.dismiss();
+  //   }
+  // }
 
   getLoginUserDetailsAndAuthType() async {
     isUserDataLoading.value = true;
@@ -958,6 +957,7 @@ class LoginController extends GetxController {
     if (response != "") {
       var json = jsonDecode(response);
       if (json["result"]["success"].toString().toLowerCase() == "true") {
+        globalVariableController.USER_NAME.value = _username;
         FocusManager.instance.primaryFocus?.unfocus();
         final authUserdetails = AuthUserDetailsModel.fromJson(json["result"]);
         isPWD_auth.value = authUserdetails.pwdauth!;

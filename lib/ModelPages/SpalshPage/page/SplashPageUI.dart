@@ -155,18 +155,18 @@ class _SplashPageState extends State<SplashPage>
   }
 
   setupDefaultProject() async {
-    // ProjectModel ubProject = ProjectModel(
-    //     DateTime.now().toString(),
-    //     "genie",
-    //     "https://app.ublnet.in/genie",
-    //     "https://app.ublnet.in/arm114",
-    //     "Bottle Sampling");
     ProjectModel ubProject = ProjectModel(
         DateTime.now().toString(),
         "genie",
-        "https://ublwebdev.ublnet.in/axpert114",
-        "https://ublwebdev.ublnet.in/ARM_API",
-        "genie");
+        "https://app.ublnet.in/genie",
+        "https://app.ublnet.in/ARM_API",
+        "Bottle Sampling");
+    // ProjectModel ubProject = ProjectModel(
+    //     DateTime.now().toString(),
+    //     "genie",
+    //     "https://ublwebdev.ublnet.in/axpert114",
+    //     "https://ublwebdev.ublnet.in/ARM_API",
+    //     "genie");
     List<ProjectModel> projects = [ubProject];
 
     String? storedData = appStorage.retrieveValue("projects");

@@ -10,6 +10,7 @@ const String _tag = '[OFFLINE_CONFIG]';
 
 const int kDefaultSyncInterval = 15;
 const int kDefaultCachedBatchSize = 30;
+const int kDefaultQueuePendingTime = 12;
 
 class OfflineConfigService {
   OfflineConfigService._();
@@ -40,8 +41,12 @@ class OfflineConfigService {
       final int batchSize =
           (json[AppStorage.CACHED_BATCH_SIZE] as num?)?.toInt() ??
               kDefaultCachedBatchSize;
+      final int queuePendingTime =
+          (json[AppStorage.QUEUE_PENDING_TIME] as num?)?.toInt() ??
+              kDefaultCachedBatchSize;
       AppStorage().storeValue(AppStorage.OFFLINE_SYNC_INTERVAL, interval);
       AppStorage().storeValue(AppStorage.CACHED_BATCH_SIZE, batchSize);
+      AppStorage().storeValue(AppStorage.QUEUE_PENDING_TIME, queuePendingTime);
 
       log('$_tag interval=${interval}min.', name: _tag);
       log('$_tag batchSize=${batchSize} nos.', name: _tag);
@@ -69,6 +74,15 @@ class OfflineConfigService {
     log(stored.toString(), name: "cached_batch_size");
     if (stored == null) return kDefaultCachedBatchSize;
     return int.tryParse(stored.toString()) ?? kDefaultCachedBatchSize;
+  }
+
+  static int getQueuePendingTime() {
+    final dynamic stored =
+        AppStorage().retrieveValue(AppStorage.QUEUE_PENDING_TIME);
+
+    log(stored.toString(), name: "queue_pending_time");
+    if (stored == null) return kDefaultQueuePendingTime;
+    return int.tryParse(stored.toString()) ?? kDefaultQueuePendingTime;
   }
 
   static _useFallback() {

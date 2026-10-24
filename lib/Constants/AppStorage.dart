@@ -34,6 +34,7 @@ class AppStorage {
   static const String OFFLINE_SYNC_INTERVAL = 'sync_interval_minutes';
   // batch cached save
   static const String CACHED_BATCH_SIZE = 'cached_batch_size';
+  static const String QUEUE_PENDING_TIME = 'queuePendingTimeInHR';
 
   AppStorage() {
     box = GetStorage();

@@ -10,8 +10,8 @@ final globalVariableController = Get.find<GlobalVariableController>();
 class Const {
   static DateTime DEMO_END_DATE = DateTime(2025, 2, 8);
   // static String APP_RELEASE_ID = "test6267";
-  static String APP_RELEASE_ID = "_build17";
-  static String APP_RELEASE_DATE = "30072026"; //"_release031025";
+  static String APP_RELEASE_ID = "";
+  static String APP_RELEASE_DATE = "24092026"; //"_release031025";
   static String DEVICE_ID = "";
   static String GUID = "";
   static const String SEED = "1993";
@@ -48,6 +48,18 @@ class Const {
       return globalVariableController.ARM_URL.value.endsWith("/")
           ? globalVariableController.ARM_URL.value + Entrypoint
           : globalVariableController.ARM_URL.value + "/" + Entrypoint;
+  }
+
+  static String getFullARMUrlBackground(String entrypoint) {
+    final dynamic storedUrl = AppStorage().retrieveValue(AppStorage.ARM_URL);
+
+    final String armUrl = storedUrl?.toString() ?? '';
+
+    if (armUrl.isEmpty) {
+      return entrypoint;
+    }
+
+    return armUrl.endsWith('/') ? '$armUrl$entrypoint' : '$armUrl/$entrypoint';
   }
 
   static String getFullWebUrl(String Entrypoint) {

@@ -704,9 +704,11 @@ class CachedRefreshDialogWidget extends GetView<OfflineFormController> {
           controller.pendingQueResolveResults.clear();
 
           try {
-            final List<QueueResolveResultModel> results =
-                await OfflineDbModule.resolvePendingCachedSaveQueueBatches(
-                    controller: controller);
+            final List<QueueResolveResultModel> results = await OfflineDbModule
+                .resolvePendingCachedSaveQueueBatchesBackgroundSafe(
+                    onProgress: (message) {
+              controller.cachedSaveUpdateMessage.value = message;
+            });
 
             controller.pendingQueResolveResults.assignAll(results);
             controller.isPendingQueResolveComplete.value = true;

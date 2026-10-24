@@ -267,24 +267,6 @@ class InwardEntryDynamicPageV1 extends GetView<InwardEntryDynamicController> {
     }
   }
 
-//todo => capitalize from expressions field
-
-  // Widget _text(String label, TextEditingController ctrl, String key,
-  //     {bool mandatory = false}) {
-  //   return _RowWithField(
-  //     label: label,
-  //     mandatory: mandatory,
-  //     errorKey: key,
-  //     child: Obx(() {
-  //       final hasError = controller.errors.containsKey(key);
-  //       return TextFormField(
-  //         controller: ctrl,
-  //         decoration: _inputDecoration(label, hasError),
-  //       );
-  //     }),
-  //   );
-  // }
-
   Widget _text(
     String label,
     TextEditingController ctrl,
@@ -337,9 +319,6 @@ class InwardEntryDynamicPageV1 extends GetView<InwardEntryDynamicController> {
     );
   }
 
-  // todo
-// auto select value if length ==1
-// if auto_select == true then def_value??first_value
   Widget _dropdown(
     String label,
     RxString value,

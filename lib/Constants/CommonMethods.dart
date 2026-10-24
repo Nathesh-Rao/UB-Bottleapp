@@ -35,6 +35,7 @@ final globalVariableController = Get.find<GlobalVariableController>();
 
 class CommonMethods {
   static String capitalize(String value) {
+    if(value.isEmpty)return '';
     var result = value[0].toUpperCase();
     bool cap = true;
     for (int i = 1; i < value.length; i++) {

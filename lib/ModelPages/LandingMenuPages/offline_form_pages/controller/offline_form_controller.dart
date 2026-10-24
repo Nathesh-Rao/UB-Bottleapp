@@ -2116,9 +2116,19 @@ class OfflineFormController extends GetxController {
         barrierDismissible: false,
       );
 
-      await OfflineDbModule.startCachedSave(
+      var result = await OfflineDbModule.startCachedSave(
         controller: Get.find<OfflineFormController>(),
       );
+
+      if (result == CachedSaveStartResult.alreadyRunning) {
+        if (result == CachedSaveStartResult.alreadyRunning) {
+          _confirm(
+            title: "Sync Already in Progress",
+            message:
+                "A cached data sync is already in progress. Please wait for it to finish before starting another sync.",
+          );
+        }
+      }
     } catch (e, st) {
       LogService.writeLog(
         message: "$tag [FAILED]\n$e\n$st",

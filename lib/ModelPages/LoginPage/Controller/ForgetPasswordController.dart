@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -133,7 +134,7 @@ class ForgetPasswordController extends GetxController {
       passError.value = "Password is Weak Must be more than 8 characters";
       return false;
     }
-    if (confirmPasswordController.text.trim() == "") {
+    if (confirmPasswordController.text.trim() == "") {  
       conPassError.value = "Enter Confirm password";
       return false;
     }
@@ -159,10 +160,21 @@ class ForgetPasswordController extends GetxController {
           url: url, body: jsonEncode(body));
       LoadingScreen.dismiss();
       if (resp.toString() != "") {
-        var jsonMsg = jsonDecode(resp);
-        print(jsonMsg);
+        final regex = RegExp(r'^__.*?__');
+
+        final cleaned = resp.replaceFirst(regex, '');
+        log(cleaned, name: "cleaned");
+
+        var jsonMsg = jsonDecode(cleaned);
+        log(jsonMsg.toString(), name: "jsonMsg");
         if (jsonMsg['result']['success'].toString() == "false") {
           Get.snackbar("Alert!", jsonMsg['result']['message'],
+              snackPosition: SnackPosition.BOTTOM,
+              colorText: Colors.white,
+              backgroundColor: Colors.red);
+        } else if (jsonMsg['result']['statuscode'] == 404) {
+          Get.snackbar("Error!",
+              "${jsonMsg['result']['statuscode']} ${jsonMsg['result']['message']}",
               snackPosition: SnackPosition.BOTTOM,
               colorText: Colors.white,
               backgroundColor: Colors.red);

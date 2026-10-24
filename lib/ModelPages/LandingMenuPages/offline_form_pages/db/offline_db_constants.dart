@@ -37,7 +37,6 @@ class OfflineDBConstants {
     Uri uri = Uri.parse(userEnteredUrl);
 
     String baseUrl = "${uri.scheme}://${uri.host}";
-
     return "$baseUrl/MobileOfflineStruct/appVersionInfo.json";
   }
 
@@ -63,6 +62,7 @@ class OfflineDBConstants {
   static const String TABLE_OFFLINE_USER = 'offline_user';
   static const String TABLE_AUDIT_LOGS = 'ax_audit_logs';
   static const String TABLE_CACHED_SAVE_QUEUE = 'cached_save_queue';
+  static const String TABLE_SYNC_LOCK = 'offline_sync_lock';
 
   // ================= COMMON COLUMNS =================
 
@@ -92,6 +92,13 @@ class OfflineDBConstants {
   static const String COL_REQUEST_JSON = 'request_json';
   static const String COL_STATUS = 'status';
   // static const String COL_RESPONSE = 'response';
+
+  // ================= LOCK TABLE =================
+
+  static const String COL_LOCK_NAME = 'lock_name';
+  static const String COL_LOCK_OWNER = 'lock_owner';
+  static const String COL_LOCK_ACQUIRED_AT = 'acquired_at';
+  static const String COL_LOCK_EXPIRES_AT = 'expires_at';
 
   // ================= Audit TABLE =================
   static const String COL_ACTION = 'action';
@@ -280,5 +287,14 @@ class OfflineDBConstants {
     $COL_CREATED_AT      TEXT    NOT NULL,
     $COL_UPDATED_AT      TEXT    NOT NULL
   )
+''';
+
+  static const String CREATE_SYNC_LOCK_TABLE = '''
+CREATE TABLE IF NOT EXISTS $TABLE_SYNC_LOCK (
+  $COL_LOCK_NAME TEXT PRIMARY KEY,
+  $COL_LOCK_OWNER TEXT NOT NULL,
+  $COL_LOCK_ACQUIRED_AT TEXT NOT NULL,
+  $COL_LOCK_EXPIRES_AT TEXT NOT NULL
+)
 ''';
 }
